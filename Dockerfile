@@ -34,6 +34,6 @@ COPY --from=build /app/dist ./dist
 # Copy built server
 COPY --from=build /app/server/dist ./server/dist
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "server/dist/index.js"]
