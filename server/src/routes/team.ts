@@ -8,6 +8,8 @@ import type { AuthenticatedRequest, UserRow } from '../types.js'
 
 const router = Router()
 
+const SUPER_ADMIN_EMAIL = 'admin@contentforge.com'
+
 function formatUser(user: UserRow) {
   return {
     id: user.id,
@@ -71,6 +73,12 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: AuthenticatedR
     return
   }
 
+  // Prevent demoting super admin
+  if (user.email === SUPER_ADMIN_EMAIL) {
+    res.status(403).json({ error: 'Cannot change the role of the super admin' })
+    return
+  }
+
   // Prevent removing last admin
   if (user.role === 'admin' && role === 'user') {
     const adminCount = (await queryOne<{ count: number }>("SELECT COUNT(*) as count FROM users WHERE role = 'admin'"))!
@@ -90,6 +98,12 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedReque
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.params.id])
   if (!user) {
     res.status(404).json({ error: 'User not found' })
+    return
+  }
+
+  // Prevent deleting super admin
+  if (user.email === SUPER_ADMIN_EMAIL) {
+    res.status(403).json({ error: 'Cannot delete the super admin' })
     return
   }
 

@@ -72,6 +72,7 @@ export default function TeamTab() {
         <div className="space-y-2">
           {teamMembers.map((member) => {
             const isSelf = member.id === currentUser?.id
+            const isSuperAdmin = member.email === 'admin@contentforge.com'
             return (
               <div
                 key={member.id}
@@ -103,7 +104,12 @@ export default function TeamTab() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {!isSelf && (
+                  {isSuperAdmin && (
+                    <Badge variant="outline" className="text-[#00f0ff] border-[#00f0ff]/30">
+                      Super Admin
+                    </Badge>
+                  )}
+                  {!isSelf && !isSuperAdmin && (
                     <>
                       <Button
                         variant="outline"

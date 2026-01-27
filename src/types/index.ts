@@ -41,12 +41,25 @@ export interface TokenUsage {
   model: string
 }
 
+export interface AgentPipelineStep {
+  agentName: string
+  agentDescription: string
+  agentIcon: string
+  systemPrompt: string
+  knowledgeBase: string | null
+  files: string[]
+  instructions: string
+  feedback: { avgRating: number; recentTexts: string[] } | null
+  memories: { topic: string; summary: string; createdAt: string }[] | null
+}
+
 export interface ForgeOutput {
   content: string
   metrics: ContentMetrics
   tips: WritingTip[]
   generatedAt: string
   tokenUsage?: TokenUsage
+  agentPipeline?: AgentPipelineStep[]
 }
 
 export interface User {

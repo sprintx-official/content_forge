@@ -202,8 +202,21 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
 
     const now = new Date().toISOString()
 
+    // Build agent pipeline preview data
+    const agentPipeline = agentContexts?.map(ctx => ({
+      agentName: ctx.agent.name,
+      agentDescription: ctx.agent.description,
+      agentIcon: ctx.agent.icon,
+      systemPrompt: ctx.agent.system_prompt,
+      knowledgeBase: ctx.agent.knowledge_base || null,
+      files: ctx.files.map(f => f.name),
+      instructions: ctx.instructions,
+      feedback: ctx.feedback || null,
+      memories: ctx.memories || null,
+    }))
+
     // Build output
-    const output = {
+    const output: Record<string, unknown> = {
       content: aiResponse.content,
       metrics,
       tips,
@@ -216,6 +229,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
         provider,
         model: resolvedModelId,
       },
+      ...(agentPipeline && agentPipeline.length > 0 && { agentPipeline }),
     }
 
     // Insert into history

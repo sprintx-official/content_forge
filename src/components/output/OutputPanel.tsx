@@ -5,6 +5,7 @@ import { useForgeStore } from '@/stores/useForgeStore'
 import ContentDisplay from '@/components/output/ContentDisplay'
 import MetricsCards from '@/components/output/MetricsCards'
 import WritingTips from '@/components/output/WritingTips'
+import AgentPipelinePreview from '@/components/output/AgentPipelinePreview'
 import ExportActions from '@/components/output/ExportActions'
 import type { Editor } from '@tiptap/react'
 
@@ -52,6 +53,11 @@ export default function OutputPanel() {
 
       {/* Writing tips */}
       <WritingTips tips={output.tips} contentType={contentType} />
+
+      {/* Agent pipeline preview */}
+      {output.agentPipeline && output.agentPipeline.length > 0 && (
+        <AgentPipelinePreview pipeline={output.agentPipeline} />
+      )}
 
       {/* Export / actions */}
       <ExportActions
