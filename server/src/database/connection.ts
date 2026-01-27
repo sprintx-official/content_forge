@@ -1,31 +1,44 @@
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
+import pg from 'pg'
 import { config } from '../config.js'
 
-let db: Database.Database | null = null
+// Parse TIMESTAMP columns as ISO strings (not Date objects)
+pg.types.setTypeParser(1114, (val: string) => val) // timestamp without tz
+pg.types.setTypeParser(1184, (val: string) => val) // timestamptz
 
-export function getDb(): Database.Database {
-  if (db) return db
+// Parse INT8 (bigint) as number — used by COUNT(*)
+pg.types.setTypeParser(20, (val: string) => parseInt(val, 10))
 
-  // Ensure the data directory exists
-  const dir = path.dirname(config.databasePath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
+const pool = new pg.Pool({
+  connectionString: config.databaseUrl,
+})
 
-  db = new Database(config.databasePath)
-
-  // Enable WAL mode for better concurrency
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
-
-  return db
+export async function query<T extends pg.QueryResultRow = any>(
+  sql: string,
+  params?: unknown[]
+): Promise<T[]> {
+  const result = await pool.query<T>(sql, params)
+  return result.rows
 }
 
-export function closeDb(): void {
-  if (db) {
-    db.close()
-    db = null
-  }
+export async function queryOne<T extends pg.QueryResultRow = any>(
+  sql: string,
+  params?: unknown[]
+): Promise<T | undefined> {
+  const result = await pool.query<T>(sql, params)
+  return result.rows[0]
+}
+
+export async function execute(
+  sql: string,
+  params?: unknown[]
+): Promise<void> {
+  await pool.query(sql, params)
+}
+
+export async function exec(sql: string): Promise<void> {
+  await pool.query(sql)
+}
+
+export async function closeDb(): Promise<void> {
+  await pool.end()
 }

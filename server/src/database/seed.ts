@@ -1,24 +1,26 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import { getDb } from './connection.js'
+import { queryOne, execute } from './connection.js'
 
-export function seedDatabase(): void {
-  const db = getDb()
+export async function seedDatabase(): Promise<void> {
   const now = new Date().toISOString()
 
   // Seed admin user if none exists
-  const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@contentforge.com')
+  const adminExists = await queryOne(
+    'SELECT id FROM users WHERE email = $1', ['admin@contentforge.com']
+  )
   if (!adminExists) {
     const hash = bcrypt.hashSync('admin123', 10)
-    db.prepare(
-      'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(crypto.randomUUID(), 'Admin', 'admin@contentforge.com', hash, 'admin', now)
+    await execute(
+      'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+      [crypto.randomUUID(), 'Admin', 'admin@contentforge.com', hash, 'admin', now]
+    )
     console.log('Seeded admin user: admin@contentforge.com / admin123')
   }
 
   // Seed default agents if none exist
-  const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get() as { count: number }
-  if (agentCount.count === 0) {
+  const agentCount = await queryOne<{ count: number }>('SELECT COUNT(*) as count FROM agents')
+  if (agentCount!.count === 0) {
     const agents = [
       {
         id: crypto.randomUUID(),
@@ -50,22 +52,18 @@ export function seedDatabase(): void {
       },
     ]
 
-    const insertAgent = db.prepare(
-      'INSERT INTO agents (id, name, description, system_prompt, knowledge_base, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    )
-
     for (const agent of agents) {
-      insertAgent.run(agent.id, agent.name, agent.description, agent.systemPrompt, '', agent.icon, now, now)
+      await execute(
+        'INSERT INTO agents (id, name, description, system_prompt, knowledge_base, icon, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [agent.id, agent.name, agent.description, agent.systemPrompt, '', agent.icon, now, now]
+      )
     }
 
     // Seed default workflow
     const workflowId = crypto.randomUUID()
-    db.prepare(
-      'INSERT INTO workflows (id, name, description, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(workflowId, 'Standard Content Pipeline', 'A four-stage pipeline: analyze, research, draft, and polish your content.', 1, now, now)
-
-    const insertStep = db.prepare(
-      'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES (?, ?, ?, ?, ?)'
+    await execute(
+      'INSERT INTO workflows (id, name, description, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+      [workflowId, 'Standard Content Pipeline', 'A four-stage pipeline: analyze, research, draft, and polish your content.', 1, now, now]
     )
 
     const steps = [
@@ -76,15 +74,18 @@ export function seedDatabase(): void {
     ]
 
     for (const step of steps) {
-      insertStep.run(crypto.randomUUID(), workflowId, step.agentId, step.instructions, step.order)
+      await execute(
+        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES ($1, $2, $3, $4, $5)',
+        [crypto.randomUUID(), workflowId, step.agentId, step.instructions, step.order]
+      )
     }
 
     console.log('Seeded default agents and workflow')
   }
 
   // Seed model pricing if none exists
-  const pricingCount = db.prepare('SELECT COUNT(*) as count FROM model_pricing').get() as { count: number }
-  if (pricingCount.count === 0) {
+  const pricingCount = await queryOne<{ count: number }>('SELECT COUNT(*) as count FROM model_pricing')
+  if (pricingCount!.count === 0) {
     const pricing = [
       { provider: 'openai', model_pattern: 'gpt-4o', input: 2.50, output: 10.00 },
       { provider: 'openai', model_pattern: 'gpt-4o-mini', input: 0.15, output: 0.60 },
@@ -103,12 +104,11 @@ export function seedDatabase(): void {
       { provider: 'google', model_pattern: 'gemini-2.0-flash', input: 0.10, output: 0.40 },
     ]
 
-    const insertPricing = db.prepare(
-      'INSERT INTO model_pricing (id, provider, model_pattern, input_price_per_million, output_price_per_million, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-    )
-
     for (const p of pricing) {
-      insertPricing.run(crypto.randomUUID(), p.provider, p.model_pattern, p.input, p.output, now)
+      await execute(
+        'INSERT INTO model_pricing (id, provider, model_pattern, input_price_per_million, output_price_per_million, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+        [crypto.randomUUID(), p.provider, p.model_pattern, p.input, p.output, now]
+      )
     }
 
     console.log('Seeded model pricing data')

@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
-import { getDb } from '../database/connection.js'
+import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { callProvider, ProviderError } from '../services/aiProvider.js'
 import { buildSystemPrompt, buildUserPrompt, getMaxTokens, type AgentContext } from '../services/promptBuilder.js'
@@ -46,8 +46,6 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
     return
   }
 
-  const db = getDb()
-
   // Build agent contexts if workflow is provided
   let agentContexts: AgentContext[] | undefined
   let workflowName: string | undefined
@@ -55,23 +53,29 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
 
   const effectiveWorkflowId = workflowId || input.workflowId
   if (effectiveWorkflowId) {
-    const workflow = db.prepare('SELECT * FROM workflows WHERE id = ?').get(effectiveWorkflowId) as { name: string } | undefined
+    const workflow = await queryOne<{ name: string }>(
+      'SELECT * FROM workflows WHERE id = $1', [effectiveWorkflowId]
+    )
     if (workflow) {
       workflowName = workflow.name
-      const steps = db.prepare(
-        'SELECT * FROM workflow_steps WHERE workflow_id = ? ORDER BY sort_order ASC'
-      ).all(effectiveWorkflowId) as WorkflowStepRow[]
+      const steps = await query<WorkflowStepRow>(
+        'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [effectiveWorkflowId]
+      )
 
       agentContexts = []
       for (const step of steps) {
-        const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(step.agent_id) as AgentRow | undefined
+        const agent = await queryOne<AgentRow>(
+          'SELECT * FROM agents WHERE id = $1', [step.agent_id]
+        )
         if (agent) {
-          const files = db.prepare('SELECT * FROM agent_files WHERE agent_id = ?').all(agent.id) as AgentFileRow[]
+          const files = await query<AgentFileRow>(
+            'SELECT * FROM agent_files WHERE agent_id = $1', [agent.id]
+          )
 
           // Load feedback for this agent
-          const feedbackRows = db.prepare(
-            'SELECT * FROM feedback WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10'
-          ).all(agent.id) as FeedbackRow[]
+          const feedbackRows = await query<FeedbackRow>(
+            'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]
+          )
           let feedbackCtx: AgentContext['feedback']
           if (feedbackRows.length > 0) {
             const sum = feedbackRows.reduce((acc, r) => acc + r.rating, 0)
@@ -81,9 +85,9 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
           }
 
           // Load memory for this agent
-          const memoryRows = db.prepare(
-            'SELECT * FROM agent_memory WHERE agent_id = ? ORDER BY created_at DESC LIMIT 10'
-          ).all(agent.id) as AgentMemoryRow[]
+          const memoryRows = await query<AgentMemoryRow>(
+            'SELECT * FROM agent_memory WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]
+          )
           const memoriesCtx = memoryRows.map((m) => ({
             topic: m.topic,
             summary: m.summary,
@@ -110,7 +114,9 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
   // If no model found from workflow agents, pick the first available model from active API keys
   // Priority order: openai > anthropic > xai > google (free tiers exhaust quickly on Google)
   if (!resolvedModelId) {
-    const activeKeys = db.prepare('SELECT provider FROM api_keys WHERE is_active = 1').all() as { provider: string }[]
+    const activeKeys = await query<{ provider: string }>(
+      'SELECT provider FROM api_keys WHERE is_active = 1'
+    )
     const activeProviders = new Set(activeKeys.map((r) => r.provider))
 
     const fallbackOrder: { provider: string; model: string }[] = [
@@ -141,9 +147,9 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
   }
 
   // Look up active API key for provider
-  const keyRow = db.prepare(
-    'SELECT * FROM api_keys WHERE provider = ? AND is_active = 1'
-  ).get(provider) as ApiKeyRow | undefined
+  const keyRow = await queryOne<ApiKeyRow>(
+    'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [provider]
+  )
 
   if (!keyRow) {
     res.status(422).json({ error: `No active API key configured for ${provider}. Add one in Settings.` })
@@ -175,7 +181,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
     })
 
     // Calculate cost
-    const costUsd = calculateCost(provider, resolvedModelId, aiResponse.inputTokens, aiResponse.outputTokens)
+    const costUsd = await calculateCost(provider, resolvedModelId, aiResponse.inputTokens, aiResponse.outputTokens)
 
     // Compute metrics and tips
     const metrics = calculateMetrics(aiResponse.content)
@@ -201,39 +207,42 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
 
     // Insert into history
     const historyId = crypto.randomUUID()
-    db.prepare(
-      'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(historyId, req.user!.userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, now)
+    await execute(
+      'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+      [historyId, req.user!.userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, now]
+    )
 
     // Insert into token_usage
-    db.prepare(
-      'INSERT INTO token_usage (id, history_id, user_id, provider, model, input_tokens, output_tokens, total_tokens, cost_usd, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(
-      crypto.randomUUID(),
-      historyId,
-      req.user!.userId,
-      provider,
-      resolvedModelId,
-      aiResponse.inputTokens,
-      aiResponse.outputTokens,
-      aiResponse.totalTokens,
-      costUsd,
-      now,
+    await execute(
+      'INSERT INTO token_usage (id, history_id, user_id, provider, model, input_tokens, output_tokens, total_tokens, cost_usd, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [
+        crypto.randomUUID(),
+        historyId,
+        req.user!.userId,
+        provider,
+        resolvedModelId,
+        aiResponse.inputTokens,
+        aiResponse.outputTokens,
+        aiResponse.totalTokens,
+        costUsd,
+        now,
+      ]
     )
 
     // Save memory for each participating agent
     if (agentContexts && agentContexts.length > 0) {
       for (const ctx of agentContexts) {
-        db.prepare(
-          'INSERT INTO agent_memory (id, agent_id, topic, summary, output_text, history_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).run(
-          crypto.randomUUID(),
-          ctx.agent.id,
-          input.topic,
-          aiResponse.content.slice(0, 200),
-          aiResponse.content,
-          historyId,
-          now,
+        await execute(
+          'INSERT INTO agent_memory (id, agent_id, topic, summary, output_text, history_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+          [
+            crypto.randomUUID(),
+            ctx.agent.id,
+            input.topic,
+            aiResponse.content.slice(0, 200),
+            aiResponse.content,
+            historyId,
+            now,
+          ]
         )
       }
     }

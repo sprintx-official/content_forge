@@ -1,5 +1,5 @@
 import { Router, type Response } from 'express'
-import { getDb } from '../database/connection.js'
+import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import type { AuthenticatedRequest, AgentMemoryRow } from '../types.js'
@@ -19,31 +19,29 @@ function formatMemory(row: AgentMemoryRow) {
 }
 
 // GET /api/memory/agent/:agentId
-router.get('/agent/:agentId', authenticate, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
+router.get('/agent/:agentId', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100)
-  const rows = db.prepare(
-    'SELECT * FROM agent_memory WHERE agent_id = ? ORDER BY created_at DESC LIMIT ?'
-  ).all(req.params.agentId, limit) as AgentMemoryRow[]
+  const rows = await query<AgentMemoryRow>(
+    'SELECT * FROM agent_memory WHERE agent_id = $1 ORDER BY created_at DESC LIMIT $2',
+    [req.params.agentId, limit]
+  )
   res.json(rows.map(formatMemory))
 })
 
 // DELETE /api/memory/:id
-router.delete('/:id', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const existing = db.prepare('SELECT id FROM agent_memory WHERE id = ?').get(req.params.id)
+router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const existing = await queryOne('SELECT id FROM agent_memory WHERE id = $1', [req.params.id])
   if (!existing) {
     res.status(404).json({ error: 'Memory entry not found' })
     return
   }
-  db.prepare('DELETE FROM agent_memory WHERE id = ?').run(req.params.id)
+  await execute('DELETE FROM agent_memory WHERE id = $1', [req.params.id])
   res.json({ success: true })
 })
 
 // DELETE /api/memory/agent/:agentId
-router.delete('/agent/:agentId', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  db.prepare('DELETE FROM agent_memory WHERE agent_id = ?').run(req.params.agentId)
+router.delete('/agent/:agentId', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  await execute('DELETE FROM agent_memory WHERE agent_id = $1', [req.params.agentId])
   res.json({ success: true })
 })
 

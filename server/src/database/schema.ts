@@ -1,31 +1,25 @@
-import { getDb } from './connection.js'
+import { exec, query } from './connection.js'
 
-/**
- * Add missing columns to existing tables (for databases created before
- * these columns were added to the CREATE TABLE statement).
- */
-function runMigrations(): void {
-  const db = getDb()
-
-  // Check if 'model' column exists on agents table
-  const agentColumns = db.prepare('PRAGMA table_info(agents)').all() as { name: string }[]
-  const hasModel = agentColumns.some((c) => c.name === 'model')
+async function runMigrations(): Promise<void> {
+  const cols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'agents'`
+  )
+  const hasModel = cols.some((c) => c.column_name === 'model')
   if (!hasModel) {
-    db.exec("ALTER TABLE agents ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+    await exec("ALTER TABLE agents ADD COLUMN model TEXT NOT NULL DEFAULT ''")
   }
 }
 
-export function initializeSchema(): void {
-  const db = getDb()
-
-  db.exec(`
+export async function initializeSchema(): Promise<void> {
+  await exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin', 'user')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS agents (
@@ -36,8 +30,8 @@ export function initializeSchema(): void {
       knowledge_base TEXT NOT NULL DEFAULT '',
       icon TEXT NOT NULL DEFAULT 'Brain',
       model TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS agent_files (
@@ -48,7 +42,7 @@ export function initializeSchema(): void {
       size INTEGER NOT NULL DEFAULT 0,
       r2_key TEXT NOT NULL DEFAULT '',
       content_text TEXT NOT NULL DEFAULT '',
-      uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+      uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS workflows (
@@ -56,8 +50,8 @@ export function initializeSchema(): void {
       name TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
       is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS workflow_steps (
@@ -75,7 +69,7 @@ export function initializeSchema(): void {
       user_name TEXT NOT NULL DEFAULT '',
       text TEXT NOT NULL DEFAULT '',
       rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS history (
@@ -84,7 +78,7 @@ export function initializeSchema(): void {
       input_json TEXT NOT NULL DEFAULT '{}',
       output_json TEXT NOT NULL DEFAULT '{}',
       workflow_name TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS api_keys (
@@ -92,8 +86,8 @@ export function initializeSchema(): void {
       provider TEXT NOT NULL UNIQUE CHECK(provider IN ('openai', 'anthropic', 'xai', 'google')),
       api_key TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS token_usage (
@@ -106,7 +100,7 @@ export function initializeSchema(): void {
       output_tokens INTEGER NOT NULL DEFAULT 0,
       total_tokens INTEGER NOT NULL DEFAULT 0,
       cost_usd REAL NOT NULL DEFAULT 0.0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS model_pricing (
@@ -115,7 +109,7 @@ export function initializeSchema(): void {
       model_pattern TEXT NOT NULL,
       input_price_per_million REAL NOT NULL DEFAULT 0.0,
       output_price_per_million REAL NOT NULL DEFAULT 0.0,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(provider, model_pattern)
     );
 
@@ -126,10 +120,9 @@ export function initializeSchema(): void {
       summary TEXT NOT NULL DEFAULT '',
       output_text TEXT NOT NULL DEFAULT '',
       history_id TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `)
 
-  // Run column-level migrations for pre-existing databases
-  runMigrations()
+  await runMigrations()
 }

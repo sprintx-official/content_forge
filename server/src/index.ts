@@ -20,10 +20,6 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
-// Initialize database
-initializeSchema()
-seedDatabase()
-
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/agents', agentRoutes)
@@ -39,6 +35,16 @@ app.use('/api/memory', memoryRoutes)
 // Error handler
 app.use(errorHandler)
 
-app.listen(config.port, () => {
-  console.log(`ContentForge server running on http://localhost:${config.port}`)
+async function startServer() {
+  await initializeSchema()
+  await seedDatabase()
+
+  app.listen(config.port, () => {
+    console.log(`ContentForge server running on http://localhost:${config.port}`)
+  })
+}
+
+startServer().catch((err) => {
+  console.error('Failed to start server:', err)
+  process.exit(1)
 })

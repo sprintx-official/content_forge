@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
-import { getDb } from '../database/connection.js'
+import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import type { AuthenticatedRequest, FeedbackRow } from '../types.js'
@@ -20,21 +20,22 @@ function formatFeedback(row: FeedbackRow) {
 }
 
 // GET /api/feedback
-router.get('/', authenticate, (_req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const rows = db.prepare('SELECT * FROM feedback ORDER BY created_at DESC').all() as FeedbackRow[]
+router.get('/', authenticate, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const rows = await query<FeedbackRow>('SELECT * FROM feedback ORDER BY created_at DESC')
   res.json(rows.map(formatFeedback))
 })
 
 // GET /api/feedback/agent/:agentId
-router.get('/agent/:agentId', authenticate, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const rows = db.prepare('SELECT * FROM feedback WHERE agent_id = ? ORDER BY created_at DESC').all(req.params.agentId) as FeedbackRow[]
+router.get('/agent/:agentId', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const rows = await query<FeedbackRow>(
+    'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC',
+    [req.params.agentId]
+  )
   res.json(rows.map(formatFeedback))
 })
 
 // POST /api/feedback
-router.post('/', authenticate, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { agentId, text, rating } = req.body
   if (!agentId || !text || !rating) {
     res.status(400).json({ error: 'agentId, text, and rating are required' })
@@ -46,33 +47,32 @@ router.post('/', authenticate, (req: AuthenticatedRequest, res: Response): void 
     return
   }
 
-  const db = getDb()
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
   const userId = req.user?.userId || 'anonymous'
 
   // Get user name
-  const user = db.prepare('SELECT name FROM users WHERE id = ?').get(userId) as { name: string } | undefined
+  const user = await queryOne<{ name: string }>('SELECT name FROM users WHERE id = $1', [userId])
   const userName = user?.name || 'Anonymous'
 
-  db.prepare(
-    'INSERT INTO feedback (id, agent_id, user_id, user_name, text, rating, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, agentId, userId, userName, text.trim(), rating, now)
+  await execute(
+    'INSERT INTO feedback (id, agent_id, user_id, user_name, text, rating, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [id, agentId, userId, userName, text.trim(), rating, now]
+  )
 
-  const row = db.prepare('SELECT * FROM feedback WHERE id = ?').get(id) as FeedbackRow
+  const row = (await queryOne<FeedbackRow>('SELECT * FROM feedback WHERE id = $1', [id]))!
   res.status(201).json(formatFeedback(row))
 })
 
 // DELETE /api/feedback/:id
-router.delete('/:id', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const existing = db.prepare('SELECT id FROM feedback WHERE id = ?').get(req.params.id)
+router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const existing = await queryOne('SELECT id FROM feedback WHERE id = $1', [req.params.id])
   if (!existing) {
     res.status(404).json({ error: 'Feedback not found' })
     return
   }
 
-  db.prepare('DELETE FROM feedback WHERE id = ?').run(req.params.id)
+  await execute('DELETE FROM feedback WHERE id = $1', [req.params.id])
   res.json({ success: true })
 })
 

@@ -16,12 +16,18 @@ import { getAllAgents } from '@/services/agentService'
 import { buildStagesFromWorkflow } from '@/services/workflowService'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
+interface SelectedModel {
+  modelId: string
+  provider: string
+}
+
 interface ForgeState {
   input: ForgeInput
   output: ForgeOutput | null
   processingStage: ProcessingStageId | null
   isProcessing: boolean
   selectedWorkflow: Workflow | null
+  selectedModel: SelectedModel | null
   dynamicStages: ProcessingStage[] | null
   error: string | null
   setInput: (partial: Partial<ForgeInput>) => void
@@ -31,6 +37,7 @@ interface ForgeState {
   setLength: (length: ContentLength) => void
   setTopic: (topic: string) => void
   setWorkflow: (workflow: Workflow | null) => void
+  setModel: (model: SelectedModel | null) => void
   generate: () => Promise<void>
   reset: () => void
 }
@@ -52,6 +59,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
   processingStage: null,
   isProcessing: false,
   selectedWorkflow: null,
+  selectedModel: null,
   dynamicStages: null,
   error: null,
 
@@ -81,6 +89,10 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
 
   setWorkflow: (workflow: Workflow | null) => {
     set({ selectedWorkflow: workflow })
+  },
+
+  setModel: (model: SelectedModel | null) => {
+    set({ selectedModel: model })
   },
 
   generate: async () => {

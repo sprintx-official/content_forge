@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
 import multer from 'multer'
-import { getDb } from '../database/connection.js'
+import { queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import { isR2Configured, uploadToR2, deleteFromR2 } from '../services/r2.js'
@@ -43,8 +43,7 @@ router.post('/upload', authenticate, requireAdmin, upload.single('file'), async 
     }
 
     // Verify agent exists
-    const db = getDb()
-    const agent = db.prepare('SELECT id FROM agents WHERE id = ?').get(agentId)
+    const agent = await queryOne('SELECT id FROM agents WHERE id = $1', [agentId])
     if (!agent) {
       res.status(404).json({ error: 'Agent not found' })
       return
@@ -62,11 +61,12 @@ router.post('/upload', authenticate, requireAdmin, upload.single('file'), async 
     // Extract text content
     const contentText = await extractText(file.buffer, file.originalname)
 
-    db.prepare(
-      'INSERT INTO agent_files (id, agent_id, name, type, size, r2_key, content_text, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(fileId, agentId, file.originalname, file.mimetype || '', file.size, r2Key, contentText, now)
+    await execute(
+      'INSERT INTO agent_files (id, agent_id, name, type, size, r2_key, content_text, uploaded_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [fileId, agentId, file.originalname, file.mimetype || '', file.size, r2Key, contentText, now]
+    )
 
-    const row = db.prepare('SELECT * FROM agent_files WHERE id = ?').get(fileId) as AgentFileRow
+    const row = (await queryOne<AgentFileRow>('SELECT * FROM agent_files WHERE id = $1', [fileId]))!
 
     res.status(201).json({
       id: row.id,
@@ -86,8 +86,7 @@ router.post('/upload', authenticate, requireAdmin, upload.single('file'), async 
 // DELETE /api/files/:id
 router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const db = getDb()
-    const file = db.prepare('SELECT * FROM agent_files WHERE id = ?').get(req.params.id) as AgentFileRow | undefined
+    const file = await queryOne<AgentFileRow>('SELECT * FROM agent_files WHERE id = $1', [req.params.id])
     if (!file) {
       res.status(404).json({ error: 'File not found' })
       return
@@ -103,7 +102,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedReque
       }
     }
 
-    db.prepare('DELETE FROM agent_files WHERE id = ?').run(req.params.id)
+    await execute('DELETE FROM agent_files WHERE id = $1', [req.params.id])
     res.json({ success: true })
   } catch (err) {
     console.error('File delete error:', err)

@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
-import { getDb } from '../database/connection.js'
+import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import type { AuthenticatedRequest, WorkflowRow, WorkflowStepRow } from '../types.js'
@@ -24,10 +24,9 @@ function formatWorkflow(row: WorkflowRow, steps: WorkflowStepRow[]) {
   }
 }
 
-function getAllFormattedWorkflows() {
-  const db = getDb()
-  const workflows = db.prepare('SELECT * FROM workflows ORDER BY created_at ASC').all() as WorkflowRow[]
-  const allSteps = db.prepare('SELECT * FROM workflow_steps ORDER BY sort_order ASC').all() as WorkflowStepRow[]
+async function getAllFormattedWorkflows() {
+  const workflows = await query<WorkflowRow>('SELECT * FROM workflows ORDER BY created_at ASC')
+  const allSteps = await query<WorkflowStepRow>('SELECT * FROM workflow_steps ORDER BY sort_order ASC')
 
   const stepsByWorkflow = new Map<string, WorkflowStepRow[]>()
   for (const s of allSteps) {
@@ -40,57 +39,66 @@ function getAllFormattedWorkflows() {
 }
 
 // GET /api/workflows
-router.get('/', authenticate, (_req: AuthenticatedRequest, res: Response): void => {
-  res.json(getAllFormattedWorkflows())
+router.get('/', authenticate, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  res.json(await getAllFormattedWorkflows())
 })
 
 // GET /api/workflows/:id
-router.get('/:id', authenticate, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const workflow = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id) as WorkflowRow | undefined
+router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const workflow = await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [req.params.id]
+  )
   if (!workflow) {
     res.status(404).json({ error: 'Workflow not found' })
     return
   }
 
-  const steps = db.prepare('SELECT * FROM workflow_steps WHERE workflow_id = ? ORDER BY sort_order ASC').all(req.params.id) as WorkflowStepRow[]
+  const steps = await query<WorkflowStepRow>(
+    'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [req.params.id]
+  )
   res.json(formatWorkflow(workflow, steps))
 })
 
 // POST /api/workflows
-router.post('/', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, description, steps, isActive } = req.body
   if (!name) {
     res.status(400).json({ error: 'Name is required' })
     return
   }
 
-  const db = getDb()
   const workflowId = crypto.randomUUID()
   const now = new Date().toISOString()
 
-  db.prepare(
-    'INSERT INTO workflows (id, name, description, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(workflowId, name.trim(), (description || '').trim(), isActive !== false ? 1 : 0, now, now)
+  await execute(
+    'INSERT INTO workflows (id, name, description, is_active, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+    [workflowId, name.trim(), (description || '').trim(), isActive !== false ? 1 : 0, now, now]
+  )
 
   if (Array.isArray(steps)) {
-    const insertStep = db.prepare(
-      'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES (?, ?, ?, ?, ?)'
-    )
-    steps.forEach((step: { agentId: string; instructions: string }, i: number) => {
-      insertStep.run(crypto.randomUUID(), workflowId, step.agentId, step.instructions || '', i)
-    })
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i] as { agentId: string; instructions: string }
+      await execute(
+        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES ($1, $2, $3, $4, $5)',
+        [crypto.randomUUID(), workflowId, step.agentId, step.instructions || '', i]
+      )
+    }
   }
 
-  const workflow = db.prepare('SELECT * FROM workflows WHERE id = ?').get(workflowId) as WorkflowRow
-  const savedSteps = db.prepare('SELECT * FROM workflow_steps WHERE workflow_id = ? ORDER BY sort_order ASC').all(workflowId) as WorkflowStepRow[]
+  const workflow = (await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [workflowId]
+  ))!
+  const savedSteps = await query<WorkflowStepRow>(
+    'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [workflowId]
+  )
   res.status(201).json(formatWorkflow(workflow, savedSteps))
 })
 
 // PUT /api/workflows/:id
-router.put('/:id', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const existing = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id) as WorkflowRow | undefined
+router.put('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const existing = await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [req.params.id]
+  )
   if (!existing) {
     res.status(404).json({ error: 'Workflow not found' })
     return
@@ -99,36 +107,43 @@ router.put('/:id', authenticate, requireAdmin, (req: AuthenticatedRequest, res: 
   const { name, description, steps, isActive } = req.body
   const now = new Date().toISOString()
 
-  db.prepare(
-    'UPDATE workflows SET name = ?, description = ?, is_active = ?, updated_at = ? WHERE id = ?'
-  ).run(
-    (name ?? existing.name).trim(),
-    (description ?? existing.description).trim(),
-    isActive !== undefined ? (isActive ? 1 : 0) : existing.is_active,
-    now,
-    req.params.id
+  await execute(
+    'UPDATE workflows SET name = $1, description = $2, is_active = $3, updated_at = $4 WHERE id = $5',
+    [
+      (name ?? existing.name).trim(),
+      (description ?? existing.description).trim(),
+      isActive !== undefined ? (isActive ? 1 : 0) : existing.is_active,
+      now,
+      req.params.id,
+    ]
   )
 
   // Replace steps if provided
   if (Array.isArray(steps)) {
-    db.prepare('DELETE FROM workflow_steps WHERE workflow_id = ?').run(req.params.id)
-    const insertStep = db.prepare(
-      'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES (?, ?, ?, ?, ?)'
-    )
-    steps.forEach((step: { agentId: string; instructions: string }, i: number) => {
-      insertStep.run(crypto.randomUUID(), req.params.id, step.agentId, step.instructions || '', i)
-    })
+    await execute('DELETE FROM workflow_steps WHERE workflow_id = $1', [req.params.id])
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i] as { agentId: string; instructions: string }
+      await execute(
+        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES ($1, $2, $3, $4, $5)',
+        [crypto.randomUUID(), req.params.id, step.agentId, step.instructions || '', i]
+      )
+    }
   }
 
-  const workflow = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id) as WorkflowRow
-  const savedSteps = db.prepare('SELECT * FROM workflow_steps WHERE workflow_id = ? ORDER BY sort_order ASC').all(req.params.id) as WorkflowStepRow[]
+  const workflow = (await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [req.params.id]
+  ))!
+  const savedSteps = await query<WorkflowStepRow>(
+    'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [req.params.id]
+  )
   res.json(formatWorkflow(workflow, savedSteps))
 })
 
 // PATCH /api/workflows/:id/toggle
-router.patch('/:id/toggle', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const existing = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id) as WorkflowRow | undefined
+router.patch('/:id/toggle', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const existing = await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [req.params.id]
+  )
   if (!existing) {
     res.status(404).json({ error: 'Workflow not found' })
     return
@@ -136,23 +151,31 @@ router.patch('/:id/toggle', authenticate, requireAdmin, (req: AuthenticatedReque
 
   const now = new Date().toISOString()
   const newActive = existing.is_active === 1 ? 0 : 1
-  db.prepare('UPDATE workflows SET is_active = ?, updated_at = ? WHERE id = ?').run(newActive, now, req.params.id)
+  await execute(
+    'UPDATE workflows SET is_active = $1, updated_at = $2 WHERE id = $3',
+    [newActive, now, req.params.id]
+  )
 
-  const workflow = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id) as WorkflowRow
-  const steps = db.prepare('SELECT * FROM workflow_steps WHERE workflow_id = ? ORDER BY sort_order ASC').all(req.params.id) as WorkflowStepRow[]
+  const workflow = (await queryOne<WorkflowRow>(
+    'SELECT * FROM workflows WHERE id = $1', [req.params.id]
+  ))!
+  const steps = await query<WorkflowStepRow>(
+    'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [req.params.id]
+  )
   res.json(formatWorkflow(workflow, steps))
 })
 
 // DELETE /api/workflows/:id
-router.delete('/:id', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const existing = db.prepare('SELECT id FROM workflows WHERE id = ?').get(req.params.id)
+router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const existing = await queryOne(
+    'SELECT id FROM workflows WHERE id = $1', [req.params.id]
+  )
   if (!existing) {
     res.status(404).json({ error: 'Workflow not found' })
     return
   }
 
-  db.prepare('DELETE FROM workflows WHERE id = ?').run(req.params.id)
+  await execute('DELETE FROM workflows WHERE id = $1', [req.params.id])
   res.json({ success: true })
 })
 

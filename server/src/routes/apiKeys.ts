@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
-import { getDb } from '../database/connection.js'
+import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import type { AuthenticatedRequest, ApiKeyRow } from '../types.js'
@@ -229,17 +229,14 @@ function invalidateModelsCache() {
 // ────────────────────────────────────────────────────────────
 
 // GET /api/keys — List all keys (masked)
-router.get('/', authenticate, requireAdmin, (_req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const rows = db.prepare('SELECT * FROM api_keys ORDER BY provider ASC').all() as ApiKeyRow[]
+router.get('/', authenticate, requireAdmin, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const rows = await query<ApiKeyRow>('SELECT * FROM api_keys ORDER BY provider ASC')
   res.json(rows.map(formatApiKey))
 })
 
 // GET /api/keys/usage — Aggregate token usage stats (admin only)
-router.get('/usage', authenticate, requireAdmin, (_req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-
-  const byModel = db.prepare(`
+router.get('/usage', authenticate, requireAdmin, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const byModel = await query(`
     SELECT provider, model,
       COUNT(*) as generation_count,
       SUM(input_tokens) as total_input_tokens,
@@ -249,9 +246,9 @@ router.get('/usage', authenticate, requireAdmin, (_req: AuthenticatedRequest, re
     FROM token_usage
     GROUP BY provider, model
     ORDER BY total_cost_usd DESC
-  `).all()
+  `)
 
-  const byProvider = db.prepare(`
+  const byProvider = await query(`
     SELECT provider,
       COUNT(*) as generation_count,
       SUM(input_tokens) as total_input_tokens,
@@ -261,7 +258,7 @@ router.get('/usage', authenticate, requireAdmin, (_req: AuthenticatedRequest, re
     FROM token_usage
     GROUP BY provider
     ORDER BY total_cost_usd DESC
-  `).all()
+  `)
 
   res.json({ byModel, byProvider })
 })
@@ -274,8 +271,9 @@ router.get('/models', authenticate, async (_req: AuthenticatedRequest, res: Resp
     return
   }
 
-  const db = getDb()
-  const rows = db.prepare('SELECT provider, api_key FROM api_keys WHERE is_active = 1').all() as ApiKeyRow[]
+  const rows = await query<ApiKeyRow>(
+    'SELECT provider, api_key FROM api_keys WHERE is_active = 1'
+  )
 
   // Fetch from all providers in parallel
   const results = await Promise.all(
@@ -295,8 +293,9 @@ router.get('/:provider/models', authenticate, async (req: AuthenticatedRequest, 
     return
   }
 
-  const db = getDb()
-  const row = db.prepare('SELECT * FROM api_keys WHERE provider = ? AND is_active = 1').get(provider) as ApiKeyRow | undefined
+  const row = await queryOne<ApiKeyRow>(
+    'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [provider]
+  )
   if (!row) {
     res.status(404).json({ error: 'No active API key for this provider' })
     return
@@ -325,42 +324,52 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
     return
   }
 
-  const db = getDb()
   const now = new Date().toISOString()
-  const existing = db.prepare('SELECT * FROM api_keys WHERE provider = ?').get(provider) as ApiKeyRow | undefined
+  const existing = await queryOne<ApiKeyRow>(
+    'SELECT * FROM api_keys WHERE provider = $1', [provider]
+  )
 
   if (existing) {
-    db.prepare('UPDATE api_keys SET api_key = ?, is_active = 1, updated_at = ? WHERE provider = ?').run(apiKey, now, provider)
-    const updated = db.prepare('SELECT * FROM api_keys WHERE provider = ?').get(provider) as ApiKeyRow
+    await execute(
+      'UPDATE api_keys SET api_key = $1, is_active = 1, updated_at = $2 WHERE provider = $3',
+      [apiKey, now, provider]
+    )
+    const updated = (await queryOne<ApiKeyRow>(
+      'SELECT * FROM api_keys WHERE provider = $1', [provider]
+    ))!
     invalidateModelsCache()
     res.json(formatApiKey(updated))
   } else {
     const id = crypto.randomUUID()
-    db.prepare(
-      'INSERT INTO api_keys (id, provider, api_key, is_active, created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)'
-    ).run(id, provider, apiKey, now, now)
-    const created = db.prepare('SELECT * FROM api_keys WHERE id = ?').get(id) as ApiKeyRow
+    await execute(
+      'INSERT INTO api_keys (id, provider, api_key, is_active, created_at, updated_at) VALUES ($1, $2, $3, 1, $4, $5)',
+      [id, provider, apiKey, now, now]
+    )
+    const created = (await queryOne<ApiKeyRow>(
+      'SELECT * FROM api_keys WHERE id = $1', [id]
+    ))!
     invalidateModelsCache()
     res.status(201).json(formatApiKey(created))
   }
 })
 
 // DELETE /api/keys/:provider — Remove key for a provider
-router.delete('/:provider', authenticate, requireAdmin, (req: AuthenticatedRequest, res: Response): void => {
+router.delete('/:provider', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const provider = req.params.provider as string
   if (!VALID_PROVIDERS.includes(provider)) {
     res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` })
     return
   }
 
-  const db = getDb()
-  const existing = db.prepare('SELECT id FROM api_keys WHERE provider = ?').get(provider)
+  const existing = await queryOne(
+    'SELECT id FROM api_keys WHERE provider = $1', [provider]
+  )
   if (!existing) {
     res.status(404).json({ error: 'No API key found for this provider' })
     return
   }
 
-  db.prepare('DELETE FROM api_keys WHERE provider = ?').run(provider)
+  await execute('DELETE FROM api_keys WHERE provider = $1', [provider])
   invalidateModelsCache()
   res.json({ success: true })
 })

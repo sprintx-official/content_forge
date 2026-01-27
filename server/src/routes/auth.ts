@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import { getDb } from '../database/connection.js'
+import { queryOne, execute } from '../database/connection.js'
 import { config } from '../config.js'
 import { authenticate } from '../middleware/auth.js'
 import type { AuthenticatedRequest, UserRow } from '../types.js'
@@ -18,15 +18,14 @@ function signToken(user: UserRow): string {
 }
 
 // POST /api/auth/login
-router.post('/login', (req: Request, res: Response): void => {
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required' })
     return
   }
 
-  const db = getDb()
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRow | undefined
+  const user = await queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email])
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     res.status(401).json({ error: 'Invalid email or password' })
     return
@@ -40,7 +39,7 @@ router.post('/login', (req: Request, res: Response): void => {
 })
 
 // POST /api/auth/signup
-router.post('/signup', (req: Request, res: Response): void => {
+router.post('/signup', async (req: Request, res: Response): Promise<void> => {
   const { name, email, password } = req.body
   if (!name || !email || !password) {
     res.status(400).json({ error: 'Name, email, and password are required' })
@@ -52,8 +51,7 @@ router.post('/signup', (req: Request, res: Response): void => {
     return
   }
 
-  const db = getDb()
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email)
+  const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email])
   if (existing) {
     res.status(409).json({ error: 'An account with this email already exists' })
     return
@@ -63,11 +61,12 @@ router.post('/signup', (req: Request, res: Response): void => {
   const hash = bcrypt.hashSync(password, 10)
   const now = new Date().toISOString()
 
-  db.prepare(
-    'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(id, name.trim(), email.trim(), hash, 'user', now)
+  await execute(
+    'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+    [id, name.trim(), email.trim(), hash, 'user', now]
+  )
 
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow
+  const user = (await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [id]))!
   const token = signToken(user)
 
   res.status(201).json({
@@ -77,9 +76,8 @@ router.post('/signup', (req: Request, res: Response): void => {
 })
 
 // GET /api/auth/me
-router.get('/me', authenticate, (req: AuthenticatedRequest, res: Response): void => {
-  const db = getDb()
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user!.userId) as UserRow | undefined
+router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.user!.userId])
   if (!user) {
     res.status(404).json({ error: 'User not found' })
     return

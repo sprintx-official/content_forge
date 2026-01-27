@@ -1,16 +1,15 @@
-import { getDb } from '../database/connection.js'
+import { query } from '../database/connection.js'
 import type { ModelPricingRow } from '../types.js'
 
-export function calculateCost(
+export async function calculateCost(
   provider: string,
   model: string,
   inputTokens: number,
   outputTokens: number
-): number {
-  const db = getDb()
-  const rows = db.prepare(
-    'SELECT * FROM model_pricing WHERE provider = ?'
-  ).all(provider) as ModelPricingRow[]
+): Promise<number> {
+  const rows = await query<ModelPricingRow>(
+    'SELECT * FROM model_pricing WHERE provider = $1', [provider]
+  )
 
   if (rows.length === 0) return 0
 
