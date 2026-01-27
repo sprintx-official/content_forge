@@ -62,6 +62,7 @@ export interface HistoryItem {
   input: ForgeInput
   output: ForgeOutput
   workflowName?: string
+  userName?: string
   createdAt: string
 }
 
@@ -113,6 +114,7 @@ export interface Workflow {
   description: string
   steps: WorkflowStep[]
   isActive: boolean
+  assignedUserIds?: string[]
   createdAt: string
   updatedAt: string
 }

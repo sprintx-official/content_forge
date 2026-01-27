@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Loader from '@/components/ui/Loader'
 import { getIconComponent } from './IconPicker'
 import AgentForm from './AgentForm'
 import AgentFeedbackPanel from './AgentFeedbackPanel'
@@ -17,15 +18,16 @@ interface AgentFeedbackInfo {
 }
 
 export default function AgentsTab() {
-  const { agents, loadAgents, deleteAgent, isAgentInUse } = useAdminStore()
+  const { agents, loading, loadAgents, deleteAgent, isAgentInUse } = useAdminStore()
   const [editing, setEditing] = useState<AgentConfig | null>(null)
   const [creating, setCreating] = useState(false)
   const [viewingFeedback, setViewingFeedback] = useState<AgentConfig | null>(null)
   const [viewingMemory, setViewingMemory] = useState<AgentConfig | null>(null)
   const [feedbackInfo, setFeedbackInfo] = useState<Record<string, AgentFeedbackInfo>>({})
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
-    loadAgents()
+    loadAgents().then(() => setInitialLoad(false))
   }, [loadAgents])
 
   useEffect(() => {
@@ -54,6 +56,10 @@ export default function AgentsTab() {
     if (confirm(`Delete agent "${agent.name}"? This cannot be undone.`)) {
       await deleteAgent(agent.id)
     }
+  }
+
+  if (initialLoad && loading) {
+    return <Loader label="Loading agents..." />
   }
 
   if (viewingFeedback) {

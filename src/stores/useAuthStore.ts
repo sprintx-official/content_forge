@@ -8,7 +8,6 @@ interface AuthState {
   isAdmin: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  signup: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => void
   initialize: () => Promise<void>
 }
@@ -22,16 +21,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string): Promise<boolean> => {
     try {
       const { user } = await authService.login(email, password)
-      set({ user, isAuthenticated: true, isAdmin: user.role === 'admin' })
-      return true
-    } catch {
-      return false
-    }
-  },
-
-  signup: async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      const { user } = await authService.signup(name, email, password)
       set({ user, isAuthenticated: true, isAdmin: user.role === 'admin' })
       return true
     } catch {

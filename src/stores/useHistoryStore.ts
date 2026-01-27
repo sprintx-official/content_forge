@@ -4,16 +4,18 @@ import type { ForgeInput, ForgeOutput, HistoryItem } from '@/types'
 
 interface HistoryState {
   items: HistoryItem[]
+  loading: boolean
   addItem: (input: ForgeInput, output: ForgeOutput, workflowName?: string) => Promise<void>
   prependItem: (item: HistoryItem) => void
   removeItem: (id: string) => Promise<void>
   updateItem: (id: string, content: string) => Promise<void>
   clearHistory: () => Promise<void>
-  loadHistory: () => Promise<void>
+  loadHistory: (search?: string) => Promise<void>
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   items: [],
+  loading: false,
 
   addItem: async (input: ForgeInput, output: ForgeOutput, workflowName?: string) => {
     try {
@@ -57,12 +59,18 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     }
   },
 
-  loadHistory: async () => {
+  loadHistory: async (search?: string) => {
+    set({ loading: true })
     try {
-      const items = await api.get<HistoryItem[]>('/api/history')
+      const path = search
+        ? `/api/history?search=${encodeURIComponent(search)}`
+        : '/api/history'
+      const items = await api.get<HistoryItem[]>(path)
       set({ items })
     } catch {
       set({ items: [] })
+    } finally {
+      set({ loading: false })
     }
   },
 }))

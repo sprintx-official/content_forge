@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, GitBranch } from 'lucide-react'
+import { Plus, Edit2, Trash2, GitBranch, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Toggle } from '@/components/ui/toggle'
+import Loader from '@/components/ui/Loader'
 import { getIconComponent } from './IconPicker'
 import WorkflowForm from './WorkflowForm'
 import type { Workflow } from '@/types'
 
 export default function WorkflowsTab() {
-  const { workflows, agents, loadWorkflows, loadAgents, deleteWorkflow, toggleWorkflow } =
+  const { workflows, agents, loading, loadWorkflows, loadAgents, loadTeam, deleteWorkflow, toggleWorkflow } =
     useAdminStore()
   const [editing, setEditing] = useState<Workflow | null>(null)
   const [creating, setCreating] = useState(false)
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
-    loadWorkflows()
-    loadAgents()
-  }, [loadWorkflows, loadAgents])
+    Promise.all([loadWorkflows(), loadAgents(), loadTeam()]).then(() => setInitialLoad(false))
+  }, [loadWorkflows, loadAgents, loadTeam])
 
   const handleDelete = async (workflow: Workflow) => {
     if (confirm(`Delete workflow "${workflow.name}"? This cannot be undone.`)) {
@@ -33,6 +34,10 @@ export default function WorkflowsTab() {
   const getAgentIcon = (agentId: string) => {
     const agent = agents.find((a) => a.id === agentId)
     return agent ? agent.icon : 'Brain'
+  }
+
+  if (initialLoad && loading) {
+    return <Loader label="Loading workflows..." />
   }
 
   if (creating || editing) {
@@ -76,6 +81,12 @@ export default function WorkflowsTab() {
                     <Badge variant={workflow.isActive ? 'green' : 'outline'}>
                       {workflow.isActive ? 'Active' : 'Inactive'}
                     </Badge>
+                    {(workflow.assignedUserIds?.length ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-[#9ca3af]">
+                        <Users className="h-3 w-3" />
+                        {workflow.assignedUserIds!.length} {workflow.assignedUserIds!.length === 1 ? 'user' : 'users'}
+                      </span>
+                    )}
                   </div>
                   {workflow.description && (
                     <p className="text-xs text-[#9ca3af] mt-0.5">

@@ -3,6 +3,7 @@ import { ArrowLeft, Star, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Loader from '@/components/ui/Loader'
 import * as feedbackService from '@/services/feedbackService'
 import type { FeedbackItem } from '@/types'
 
@@ -32,13 +33,19 @@ function StarDisplay({ rating }: { rating: number }) {
 export default function AgentFeedbackPanel({ agentId, agentName, onClose }: AgentFeedbackPanelProps) {
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [avgRating, setAvgRating] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
-      const feedback = await feedbackService.getFeedbackByAgentId(agentId)
-      setItems(feedback)
-      const avg = await feedbackService.getAverageRatingByAgentId(agentId)
-      setAvgRating(avg)
+      setLoading(true)
+      try {
+        const feedback = await feedbackService.getFeedbackByAgentId(agentId)
+        setItems(feedback)
+        const avg = await feedbackService.getAverageRatingByAgentId(agentId)
+        setAvgRating(avg)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [agentId])
@@ -50,6 +57,10 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
     setItems(feedback)
     const avg = await feedbackService.getAverageRatingByAgentId(agentId)
     setAvgRating(avg)
+  }
+
+  if (loading) {
+    return <Loader label="Loading feedback..." />
   }
 
   return (

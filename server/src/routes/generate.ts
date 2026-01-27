@@ -7,7 +7,7 @@ import { buildSystemPrompt, buildUserPrompt, getMaxTokens, type AgentContext } f
 import { calculateCost } from '../services/costCalculator.js'
 import { calculateMetrics } from '../services/metricsCalculator.js'
 import { getTips } from '../services/tipsProvider.js'
-import type { AuthenticatedRequest, ApiKeyRow, AgentRow, AgentFileRow, WorkflowStepRow, FeedbackRow, AgentMemoryRow } from '../types.js'
+import type { AuthenticatedRequest, ApiKeyRow, AgentRow, AgentFileRow, WorkflowStepRow, FeedbackRow, AgentMemoryRow, WorkflowAccessRow } from '../types.js'
 
 const router = Router()
 
@@ -52,6 +52,19 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
   let resolvedModelId: string | null = null
 
   const effectiveWorkflowId = workflowId || input.workflowId
+
+  // Workflow access guard for non-admin users
+  if (effectiveWorkflowId && req.user!.role !== 'admin') {
+    const access = await queryOne<WorkflowAccessRow>(
+      'SELECT * FROM workflow_access WHERE workflow_id = $1 AND user_id = $2',
+      [effectiveWorkflowId, req.user!.userId]
+    )
+    if (!access) {
+      res.status(403).json({ error: 'You do not have access to this workflow' })
+      return
+    }
+  }
+
   if (effectiveWorkflowId) {
     const workflow = await queryOne<{ name: string }>(
       'SELECT * FROM workflows WHERE id = $1', [effectiveWorkflowId]

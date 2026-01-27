@@ -122,6 +122,14 @@ export async function initializeSchema(): Promise<void> {
       history_id TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS workflow_access (
+      id TEXT PRIMARY KEY,
+      workflow_id TEXT NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(workflow_id, user_id)
+    );
   `)
 
   await runMigrations()

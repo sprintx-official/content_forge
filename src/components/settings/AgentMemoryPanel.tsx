@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Trash2, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Loader from '@/components/ui/Loader'
 import * as memoryService from '@/services/memoryService'
 import type { AgentMemoryItem } from '@/types'
 
@@ -13,10 +14,16 @@ interface AgentMemoryPanelProps {
 
 export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentMemoryPanelProps) {
   const [items, setItems] = useState<AgentMemoryItem[]>([])
+  const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    const memory = await memoryService.getMemoryByAgentId(agentId)
-    setItems(memory)
+    setLoading(true)
+    try {
+      const memory = await memoryService.getMemoryByAgentId(agentId)
+      setItems(memory)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -33,6 +40,10 @@ export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentM
     if (!confirm(`Clear all memory for "${agentName}"? This cannot be undone.`)) return
     await memoryService.clearAgentMemory(agentId)
     load()
+  }
+
+  if (loading) {
+    return <Loader label="Loading memory..." />
   }
 
   return (

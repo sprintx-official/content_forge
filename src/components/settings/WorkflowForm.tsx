@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, X, Plus } from 'lucide-react'
+import { Save, X, Plus, Users } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,17 +14,19 @@ interface WorkflowFormProps {
 }
 
 export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
-  const { addWorkflow, editWorkflow, agents, loadAgents } = useAdminStore()
+  const { addWorkflow, editWorkflow, setWorkflowAccess, agents, loadAgents, teamMembers, loadTeam } = useAdminStore()
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [steps, setSteps] = useState<WorkflowStep[]>([])
   const [isActive, setIsActive] = useState(true)
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState('')
 
   useEffect(() => {
     loadAgents()
-  }, [loadAgents])
+    loadTeam()
+  }, [loadAgents, loadTeam])
 
   useEffect(() => {
     if (workflow) {
@@ -32,8 +34,23 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       setDescription(workflow.description)
       setSteps(workflow.steps.map((s) => ({ ...s })))
       setIsActive(workflow.isActive)
+      setSelectedUserIds(new Set(workflow.assignedUserIds ?? []))
     }
   }, [workflow])
+
+  const nonAdminMembers = teamMembers.filter((m) => m.role !== 'admin')
+
+  const toggleUser = (userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) {
+        next.delete(userId)
+      } else {
+        next.add(userId)
+      }
+      return next
+    })
+  }
 
   const addStep = () => {
     setSteps([...steps, { agentId: '', instructions: '' }])
@@ -86,6 +103,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
     try {
       if (workflow) {
         await editWorkflow(workflow.id, data)
+        await setWorkflowAccess(workflow.id, Array.from(selectedUserIds))
       } else {
         await addWorkflow(data)
       }
@@ -168,6 +186,52 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
           </p>
         )}
       </div>
+
+      {/* User Access — only shown when editing an existing workflow */}
+      {workflow && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-[#9ca3af]" />
+            <label className="text-sm font-medium text-[#9ca3af]">
+              User Access ({selectedUserIds.size})
+            </label>
+          </div>
+
+          {nonAdminMembers.length === 0 ? (
+            <p className="text-xs text-[#6b7280]">
+              No non-admin team members to assign.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {nonAdminMembers.map((member) => (
+                <label
+                  key={member.id}
+                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 cursor-pointer hover:bg-white/10 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedUserIds.has(member.id)}
+                    onChange={() => toggleUser(member.id)}
+                    className="rounded border-white/20 bg-white/5 text-[#00f0ff] focus:ring-[#00f0ff]/30"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-sm text-[#f9fafb] block truncate">
+                      {member.name}
+                    </span>
+                    <span className="text-xs text-[#6b7280] block truncate">
+                      {member.email}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <p className="text-xs text-[#6b7280]">
+            Admin users always have access to all workflows.
+          </p>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 

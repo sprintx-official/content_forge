@@ -9,7 +9,6 @@ import { useAuthStore } from '@/stores/useAuthStore'
 const ForgePage = lazy(() => import('@/pages/ForgePage'))
 const HistoryPage = lazy(() => import('@/pages/HistoryPage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
-const SignupPage = lazy(() => import('@/pages/SignupPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 
 function LoadingFallback() {
@@ -52,10 +51,6 @@ export default function App() {
             <Route
               path="/login"
               element={isAuthenticated ? <Navigate to="/forge" replace /> : <LoginPage />}
-            />
-            <Route
-              path="/signup"
-              element={isAuthenticated ? <Navigate to="/forge" replace /> : <SignupPage />}
             />
 
             {/* Protected routes - require authentication */}

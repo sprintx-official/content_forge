@@ -12,12 +12,6 @@ export async function login(email: string, password: string): Promise<{ user: Us
   return { user: data.user }
 }
 
-export async function signup(name: string, email: string, password: string): Promise<{ user: User }> {
-  const data = await api.post<AuthResponse>('/api/auth/signup', { name, email, password })
-  setToken(data.token)
-  return { user: data.user }
-}
-
 export async function getMe(): Promise<User> {
   return api.get<User>('/api/auth/me')
 }

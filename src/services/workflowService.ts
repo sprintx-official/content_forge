@@ -35,6 +35,14 @@ export async function toggleWorkflowActive(id: string): Promise<Workflow> {
   return api.patch<Workflow>(`/api/workflows/${id}/toggle`)
 }
 
+export async function getWorkflowAccess(workflowId: string): Promise<string[]> {
+  return api.get<string[]>(`/api/workflows/${workflowId}/access`)
+}
+
+export async function setWorkflowAccess(workflowId: string, userIds: string[]): Promise<void> {
+  await api.put(`/api/workflows/${workflowId}/access`, { userIds })
+}
+
 export function buildStagesFromWorkflow(
   steps: WorkflowStep[],
   agents: { id: string; name: string }[]

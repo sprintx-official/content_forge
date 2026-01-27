@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Mail, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -103,15 +103,6 @@ export default function LoginForm() {
         </button>
       </form>
 
-      <p className="text-[#9ca3af] text-sm mt-6 text-center">
-        Don&apos;t have an account?{' '}
-        <Link
-          to="/signup"
-          className="text-[#00f0ff] hover:underline font-medium"
-        >
-          Sign up
-        </Link>
-      </p>
     </div>
   )
 }

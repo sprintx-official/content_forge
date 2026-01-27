@@ -2,26 +2,45 @@ import { Router, type Response } from 'express'
 import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
-import type { AuthenticatedRequest, HistoryRow } from '../types.js'
+import type { AuthenticatedRequest, HistoryRowWithUser } from '../types.js'
 
 const router = Router()
 
-function formatHistory(row: HistoryRow) {
+function formatHistory(row: HistoryRowWithUser) {
   return {
     id: row.id,
     input: JSON.parse(row.input_json),
     output: JSON.parse(row.output_json),
     workflowName: row.workflow_name,
+    userName: row.user_name,
     createdAt: row.created_at,
   }
 }
 
 // GET /api/history
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const rows = await query<HistoryRow>(
-    'SELECT * FROM history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
-    [req.user!.userId]
-  )
+  const isAdmin = req.user!.role === 'admin'
+  const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
+
+  let rows: HistoryRowWithUser[]
+
+  if (isAdmin) {
+    if (search) {
+      rows = await query<HistoryRowWithUser>(
+        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1 ORDER BY h.created_at DESC LIMIT 50',
+        [`%${search}%`]
+      )
+    } else {
+      rows = await query<HistoryRowWithUser>(
+        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id ORDER BY h.created_at DESC LIMIT 50'
+      )
+    }
+  } else {
+    rows = await query<HistoryRowWithUser>(
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.user_id = $1 ORDER BY h.created_at DESC LIMIT 50',
+      [req.user!.userId]
+    )
+  }
 
   res.json(rows.map(formatHistory))
 })
@@ -42,14 +61,17 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
     [id, req.user!.userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, now]
   )
 
-  const row = (await queryOne<HistoryRow>('SELECT * FROM history WHERE id = $1', [id]))!
+  const row = (await queryOne<HistoryRowWithUser>(
+    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1',
+    [id]
+  ))!
   res.status(201).json(formatHistory(row))
 })
 
 // DELETE /api/history/:id
 router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const existing = await queryOne<HistoryRow>(
-    'SELECT * FROM history WHERE id = $1 AND user_id = $2',
+  const existing = await queryOne<HistoryRowWithUser>(
+    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
     [req.params.id, req.user!.userId]
   )
 
@@ -70,8 +92,8 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
     return
   }
 
-  const existing = await queryOne<HistoryRow>(
-    'SELECT * FROM history WHERE id = $1 AND user_id = $2',
+  const existing = await queryOne<HistoryRowWithUser>(
+    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
     [req.params.id, req.user!.userId]
   )
 
@@ -80,14 +102,17 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
     return
   }
 
-  const output = JSON.parse(existing.output_json)
-  output.content = content
+  const outputData = JSON.parse(existing.output_json)
+  outputData.content = content
   await execute(
     'UPDATE history SET output_json = $1 WHERE id = $2',
-    [JSON.stringify(output), req.params.id]
+    [JSON.stringify(outputData), req.params.id]
   )
 
-  const row = (await queryOne<HistoryRow>('SELECT * FROM history WHERE id = $1', [req.params.id]))!
+  const row = (await queryOne<HistoryRowWithUser>(
+    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1',
+    [req.params.id]
+  ))!
   res.json(formatHistory(row))
 })
 
@@ -98,7 +123,7 @@ router.delete('/', authenticate, async (req: AuthenticatedRequest, res: Response
     return
   }
 
-  await execute('DELETE FROM history WHERE user_id = $1', [req.user!.userId])
+  await execute('DELETE FROM history')
   res.json({ success: true })
 })
 

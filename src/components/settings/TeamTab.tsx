@@ -6,15 +6,17 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { getAdminCount } from '@/services/teamService'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import Loader from '@/components/ui/Loader'
 import AddMemberForm from './AddMemberForm'
 
 export default function TeamTab() {
-  const { teamMembers, loadTeam, changeRole, removeMember } = useAdminStore()
+  const { teamMembers, loading, loadTeam, changeRole, removeMember } = useAdminStore()
   const currentUser = useAuthStore((s) => s.user)
   const [adminCount, setAdminCount] = useState(0)
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
-    loadTeam()
+    loadTeam().then(() => setInitialLoad(false))
     getAdminCount().then(setAdminCount)
   }, [loadTeam])
 
@@ -52,6 +54,10 @@ export default function TeamTab() {
         setAdminCount(count)
       }
     }
+  }
+
+  if (initialLoad && loading) {
+    return <Loader label="Loading team..." />
   }
 
   return (

@@ -9,6 +9,7 @@ type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys'
 
 interface AdminState {
   activeTab: AdminTab
+  loading: boolean
   teamMembers: User[]
   agents: AgentConfig[]
   workflows: Workflow[]
@@ -35,6 +36,7 @@ interface AdminState {
   editWorkflow: (id: string, data: Partial<Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Workflow | null>
   deleteWorkflow: (id: string) => Promise<boolean>
   toggleWorkflow: (id: string) => Promise<Workflow | null>
+  setWorkflowAccess: (workflowId: string, userIds: string[]) => Promise<void>
 
   // API Key actions
   loadApiKeys: () => Promise<void>
@@ -44,6 +46,7 @@ interface AdminState {
 
 export const useAdminStore = create<AdminState>((set, get) => ({
   activeTab: 'team',
+  loading: false,
   teamMembers: [],
   agents: [],
   workflows: [],
@@ -53,8 +56,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // Team
   loadTeam: async () => {
-    const members = await teamService.getAllMembers()
-    set({ teamMembers: members })
+    set({ loading: true })
+    try {
+      const members = await teamService.getAllMembers()
+      set({ teamMembers: members })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   addMember: async (name, email, password, role) => {
@@ -89,8 +97,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // Agents
   loadAgents: async () => {
-    const agents = await agentService.getAllAgents()
-    set({ agents })
+    set({ loading: true })
+    try {
+      const agents = await agentService.getAllAgents()
+      set({ agents })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   addAgent: async (data) => {
@@ -125,8 +138,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // Workflows
   loadWorkflows: async () => {
-    const workflows = await workflowService.getAllWorkflows()
-    set({ workflows })
+    set({ loading: true })
+    try {
+      const workflows = await workflowService.getAllWorkflows()
+      set({ workflows })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   addWorkflow: async (data) => {
@@ -165,10 +183,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
+  setWorkflowAccess: async (workflowId, userIds) => {
+    await workflowService.setWorkflowAccess(workflowId, userIds)
+    await get().loadWorkflows()
+  },
+
   // API Keys
   loadApiKeys: async () => {
-    const apiKeys = await apiKeyService.getApiKeys()
-    set({ apiKeys })
+    set({ loading: true })
+    try {
+      const apiKeys = await apiKeyService.getApiKeys()
+      set({ apiKeys })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   saveApiKey: async (provider, apiKey) => {

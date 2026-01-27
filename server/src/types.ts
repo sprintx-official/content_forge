@@ -78,6 +78,10 @@ export interface HistoryRow {
   created_at: string
 }
 
+export interface HistoryRowWithUser extends HistoryRow {
+  user_name: string
+}
+
 export interface ApiKeyRow {
   id: string
   provider: string
@@ -116,5 +120,12 @@ export interface AgentMemoryRow {
   summary: string
   output_text: string
   history_id: string
+  created_at: string
+}
+
+export interface WorkflowAccessRow {
+  id: string
+  workflow_id: string
+  user_id: string
   created_at: string
 }

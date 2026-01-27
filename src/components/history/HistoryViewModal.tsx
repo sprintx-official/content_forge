@@ -12,6 +12,7 @@ import {
   Clock,
   Cpu,
   DollarSign,
+  User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ContentDisplay from '@/components/output/ContentDisplay'
@@ -223,6 +224,12 @@ ${getHTML()}
 
         {/* Metadata row */}
         <div className="flex items-center gap-4 px-6 py-3 text-xs text-[#9ca3af] border-b border-white/5">
+          {item.userName && (
+            <span className="inline-flex items-center gap-1 text-[#d1d5db]">
+              <User className="h-3.5 w-3.5" />
+              {item.userName}
+            </span>
+          )}
           <span>{formattedDate}</span>
           <span className="inline-flex items-center gap-1">
             <FileText className="h-3.5 w-3.5" />

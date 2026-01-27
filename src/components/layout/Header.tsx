@@ -5,7 +5,6 @@ import {
   Hammer,
   Clock,
   LogIn,
-  UserPlus,
   LogOut,
   Menu,
   X,
@@ -91,20 +90,12 @@ export default function Header() {
               </Button>
             </>
           ) : (
-            <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="default" size="sm">
-                  <UserPlus className="h-4 w-4" />
-                  Sign Up
-                </Button>
-              </Link>
-            </>
+            <Link to="/login">
+              <Button variant="ghost" size="sm">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            </Link>
           )}
         </div>
 
@@ -178,24 +169,14 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <>
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#9ca3af] transition-colors hover:bg-white/5 hover:text-[#f9fafb]"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#00f0ff] transition-colors hover:bg-[#00f0ff]/10"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Sign Up
-                </Link>
-              </>
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#9ca3af] transition-colors hover:bg-white/5 hover:text-[#f9fafb]"
+              >
+                <LogIn className="h-4 w-4" />
+                Login
+              </Link>
             )}
           </div>
         </div>

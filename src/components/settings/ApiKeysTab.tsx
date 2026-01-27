@@ -6,6 +6,7 @@ import { getUsageStats } from '@/services/usageService'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import Loader from '@/components/ui/Loader'
 import type { AiProvider, AiModel, ProviderUsageSummary } from '@/types'
 
 const PROVIDERS: { id: AiProvider; name: string }[] = [
@@ -16,7 +17,7 @@ const PROVIDERS: { id: AiProvider; name: string }[] = [
 ]
 
 export default function ApiKeysTab() {
-  const { apiKeys, loadApiKeys, saveApiKey, deleteApiKey } = useAdminStore()
+  const { apiKeys, loading, loadApiKeys, saveApiKey, deleteApiKey } = useAdminStore()
   const [keyInputs, setKeyInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -24,19 +25,21 @@ export default function ApiKeysTab() {
   const [providerModels, setProviderModels] = useState<Record<string, AiModel[]>>({})
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({})
   const [usageByProvider, setUsageByProvider] = useState<Record<string, ProviderUsageSummary>>({})
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
-    loadApiKeys()
-    // Fetch usage stats
-    getUsageStats()
-      .then((stats) => {
-        const map: Record<string, ProviderUsageSummary> = {}
-        for (const row of stats.byProvider) {
-          map[row.provider] = row
-        }
-        setUsageByProvider(map)
-      })
-      .catch(() => {})
+    Promise.all([
+      loadApiKeys(),
+      getUsageStats()
+        .then((stats) => {
+          const map: Record<string, ProviderUsageSummary> = {}
+          for (const row of stats.byProvider) {
+            map[row.provider] = row
+          }
+          setUsageByProvider(map)
+        })
+        .catch(() => {}),
+    ]).then(() => setInitialLoad(false))
   }, [loadApiKeys])
 
   // Fetch models for each connected provider
@@ -100,6 +103,10 @@ export default function ApiKeysTab() {
       delete next[provider]
       return next
     })
+  }
+
+  if (initialLoad && loading) {
+    return <Loader label="Loading API keys..." />
   }
 
   return (
