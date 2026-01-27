@@ -1,0 +1,562 @@
+/* ============================================================
+   ContentForge - Global Styles
+   Tailwind CSS v4 CSS-first configuration
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* ============================================================
+   @theme - Design Tokens
+   ============================================================ */
+@theme {
+  /* --- Color Palette --- */
+  --color-space-dark: #0a0e1a;
+  --color-surface: #111827;
+  --color-surface-light: #1f2937;
+  --color-border: #374151;
+
+  --color-cyan-glow: #00f0ff;
+  --color-purple-glow: #a855f7;
+  --color-pink-glow: #f472b6;
+
+  --color-success-mint: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #ef4444;
+
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+
+  /* --- Font Families --- */
+  --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* --- Custom Animations --- */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-slide-up: slide-up 0.5s ease-out both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-particle-drift: particle-drift 12s linear infinite;
+  --animate-spin-slow: spin-slow 8s linear infinite;
+}
+
+/* ============================================================
+   Keyframe Animations
+   ============================================================ */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.75;
+    filter: brightness(1.3);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(200px, -400px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Particle system --- */
+@keyframes particle-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translate(60px, -80px) scale(1.2);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-30px, -160px) scale(0.8);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(40px, -100px) scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes particle-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(0.8);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translate(-70px, -120px) scale(1);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translate(50px, -200px) scale(0.9);
+    opacity: 0.4;
+  }
+}
+
+/* --- Neural network pulse --- */
+@keyframes neural-pulse {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0.2;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0.2;
+  }
+}
+
+@keyframes neural-node-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--color-cyan-glow),
+      0 0 8px rgba(0, 240, 255, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px var(--color-cyan-glow),
+      0 0 24px rgba(0, 240, 255, 0.5);
+    transform: scale(1.15);
+  }
+}
+
+/* --- Agent node glow --- */
+@keyframes agent-node-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px var(--color-purple-glow),
+      0 0 12px rgba(168, 85, 247, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 16px var(--color-purple-glow),
+      0 0 32px rgba(168, 85, 247, 0.45),
+      0 0 48px rgba(168, 85, 247, 0.15);
+  }
+}
+
+@keyframes agent-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* --- Shimmer / skeleton loading --- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ============================================================
+   Base / Reset Styles
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--color-space-dark);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   Background Grid Pattern
+   ============================================================ */
+.bg-grid-pattern {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(55, 65, 81, 0.12) 0px,
+      rgba(55, 65, 81, 0.12) 1px,
+      transparent 1px,
+      transparent 60px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(55, 65, 81, 0.12) 0px,
+      rgba(55, 65, 81, 0.12) 1px,
+      transparent 1px,
+      transparent 60px
+    );
+  background-size: 60px 60px;
+}
+
+/* ============================================================
+   Glassmorphism Components
+   ============================================================ */
+.glass {
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(55, 65, 81, 0.5);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-subtle {
+  background: rgba(17, 24, 39, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* ============================================================
+   Text Glow Utilities
+   ============================================================ */
+.text-glow-cyan {
+  color: var(--color-cyan-glow);
+  text-shadow:
+    0 0 8px rgba(0, 240, 255, 0.6),
+    0 0 20px rgba(0, 240, 255, 0.3),
+    0 0 40px rgba(0, 240, 255, 0.1);
+}
+
+.text-glow-purple {
+  color: var(--color-purple-glow);
+  text-shadow:
+    0 0 8px rgba(168, 85, 247, 0.6),
+    0 0 20px rgba(168, 85, 247, 0.3),
+    0 0 40px rgba(168, 85, 247, 0.1);
+}
+
+/* ============================================================
+   Border & Shadow Glow Utilities
+   ============================================================ */
+.border-glow-cyan {
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.06);
+}
+
+.shadow-glow-cyan {
+  box-shadow:
+    0 0 12px rgba(0, 240, 255, 0.25),
+    0 0 24px rgba(0, 240, 255, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.shadow-glow-purple {
+  box-shadow:
+    0 0 12px rgba(168, 85, 247, 0.25),
+    0 0 24px rgba(168, 85, 247, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   Neural Network / Agent Utility Classes
+   ============================================================ */
+.neural-line {
+  stroke-dasharray: 8 4;
+  animation: neural-pulse 3s ease-in-out infinite;
+}
+
+.agent-node {
+  animation: agent-node-glow 3s ease-in-out infinite;
+}
+
+.agent-node::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  animation: agent-ripple 2.5s ease-out infinite;
+  pointer-events: none;
+}
+
+.neural-node {
+  animation: neural-node-glow 2.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   Particle System Classes
+   ============================================================ */
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-cyan-glow);
+  pointer-events: none;
+}
+
+.particle--cyan {
+  background: var(--color-cyan-glow);
+  box-shadow: 0 0 6px var(--color-cyan-glow);
+  animation: particle-float-a 8s ease-in-out infinite;
+}
+
+.particle--purple {
+  background: var(--color-purple-glow);
+  box-shadow: 0 0 6px var(--color-purple-glow);
+  animation: particle-float-b 10s ease-in-out infinite;
+}
+
+/* ============================================================
+   Shimmer / Skeleton Loading
+   ============================================================ */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(31, 41, 55, 0.4) 25%,
+    rgba(55, 65, 81, 0.4) 50%,
+    rgba(31, 41, 55, 0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ============================================================
+   Custom Scrollbar (Dark Theme)
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-space-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+  border: 2px solid var(--color-space-dark);
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-space-dark);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-space-dark);
+}
+
+/* ============================================================
+   Selection Highlight
+   ============================================================ */
+::selection {
+  background: rgba(0, 240, 255, 0.2);
+  color: var(--color-text-primary);
+}
+
+::-moz-selection {
+  background: rgba(0, 240, 255, 0.2);
+  color: var(--color-text-primary);
+}
+
+/* ============================================================
+   Focus Styles (Accessibility)
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--color-cyan-glow);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Link Defaults
+   ============================================================ */
+a {
+  color: var(--color-cyan-glow);
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-text-primary);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+/* ============================================================
+   Heading Defaults
+   ============================================================ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   Code / Monospace Defaults
+   ============================================================ */
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+code {
+  padding: 0.15em 0.4em;
+  background: rgba(31, 41, 55, 0.6);
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* ============================================================
+   Transition Defaults
+   ============================================================ */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ============================================================
+   Reduced Motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .particle,
+  .particle--cyan,
+  .particle--purple {
+    display: none;
+  }
+
+  .glass,
+  .glass-subtle {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .text-glow-cyan,
+  .text-glow-purple {
+    text-shadow: none;
+  }
+
+  .shadow-glow-cyan,
+  .shadow-glow-purple {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+}
