@@ -1,8 +1,24 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
+import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
+import { validateBody, validateParams, validateQuery, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, HistoryRowWithUser } from '../types.js'
+
+const historyPostSchema = z.object({
+  input: z.object({}).passthrough(),
+  output: z.object({}).passthrough(),
+  workflowName: z.string().optional(),
+})
+
+const historyUpdateSchema = z.object({
+  content: z.string().min(1, 'Content is required'),
+})
+
+const searchQuerySchema = z.object({
+  search: z.string().optional(),
+})
 
 const router = Router()
 
@@ -18,7 +34,7 @@ function formatHistory(row: HistoryRowWithUser) {
 }
 
 // GET /api/history
-router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const isAdmin = req.user!.role === 'admin'
   const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
 
@@ -46,12 +62,8 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
 })
 
 // POST /api/history
-router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, validateBody(historyPostSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { input, output, workflowName } = req.body
-  if (!input || !output) {
-    res.status(400).json({ error: 'input and output are required' })
-    return
-  }
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -69,33 +81,52 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
 })
 
 // DELETE /api/history/:id
-router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const existing = await queryOne<HistoryRowWithUser>(
-    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
-    [req.params.id, req.user!.userId]
-  )
+router.delete('/:id', authenticate, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const isAdmin = req.user!.role === 'admin'
+  const id = req.params.id as string
+
+  // Admins can delete any history item, users can only delete their own
+  let existing: HistoryRowWithUser | undefined
+  if (isAdmin) {
+    existing = await queryOne<HistoryRowWithUser>(
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1',
+      [id]
+    )
+  } else {
+    existing = await queryOne<HistoryRowWithUser>(
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
+      [id, req.user!.userId]
+    )
+  }
 
   if (!existing) {
     res.status(404).json({ error: 'History item not found' })
     return
   }
 
-  await execute('DELETE FROM history WHERE id = $1', [req.params.id])
+  await execute('DELETE FROM history WHERE id = $1', [id])
   res.json({ success: true })
 })
 
 // PUT /api/history/:id (update content)
-router.put('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/:id', authenticate, validateParams(idParamSchema), validateBody(historyUpdateSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { content } = req.body
-  if (!content || typeof content !== 'string') {
-    res.status(400).json({ error: 'content is required' })
-    return
-  }
+  const isAdmin = req.user!.role === 'admin'
+  const id = req.params.id as string
 
-  const existing = await queryOne<HistoryRowWithUser>(
-    'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
-    [req.params.id, req.user!.userId]
-  )
+  // Admins can edit any history item, users can only edit their own
+  let existing: HistoryRowWithUser | undefined
+  if (isAdmin) {
+    existing = await queryOne<HistoryRowWithUser>(
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1',
+      [id]
+    )
+  } else {
+    existing = await queryOne<HistoryRowWithUser>(
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1 AND h.user_id = $2',
+      [id, req.user!.userId]
+    )
+  }
 
   if (!existing) {
     res.status(404).json({ error: 'History item not found' })
@@ -106,12 +137,12 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
   outputData.content = content
   await execute(
     'UPDATE history SET output_json = $1 WHERE id = $2',
-    [JSON.stringify(outputData), req.params.id]
+    [JSON.stringify(outputData), id]
   )
 
   const row = (await queryOne<HistoryRowWithUser>(
     'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.id = $1',
-    [req.params.id]
+    [id]
   ))!
   res.json(formatHistory(row))
 })

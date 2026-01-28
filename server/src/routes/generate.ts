@@ -2,6 +2,7 @@ import { Router, type Response } from 'express'
 import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
+import { validateBody, generateSchema } from '../validation/index.js'
 import { callProvider, ProviderError } from '../services/aiProvider.js'
 import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, type AgentContext } from '../services/promptBuilder.js'
 import { calculateCost } from '../services/costCalculator.js'
@@ -37,14 +38,8 @@ interface GenerateBody {
 }
 
 // POST /api/generate
-router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, validateBody(generateSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { input, workflowId } = req.body as GenerateBody
-
-  // Validate required fields
-  if (!input?.topic?.trim()) {
-    res.status(400).json({ error: 'Topic is required' })
-    return
-  }
 
   // Build agent contexts if workflow is provided
   let agentContexts: AgentContext[] | undefined

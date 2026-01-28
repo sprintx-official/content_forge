@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createAgentSchema, updateAgentSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, AgentRow, AgentFileRow } from '../types.js'
 
 const router = Router()
@@ -46,7 +47,7 @@ router.get('/', authenticate, async (_req: AuthenticatedRequest, res: Response):
 })
 
 // GET /api/agents/:id
-router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/:id', authenticate, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const agent = await queryOne<AgentRow>(
     'SELECT * FROM agents WHERE id = $1', [req.params.id]
   )
@@ -62,7 +63,7 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
 })
 
 // GET /api/agents/:id/in-use
-router.get('/:id/in-use', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/:id/in-use', authenticate, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const step = await queryOne(
     'SELECT id FROM workflow_steps WHERE agent_id = $1 LIMIT 1', [req.params.id]
   )
@@ -70,12 +71,8 @@ router.get('/:id/in-use', authenticate, async (req: AuthenticatedRequest, res: R
 })
 
 // POST /api/agents
-router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireAdmin, validateBody(createAgentSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, description, systemPrompt, knowledgeBase, icon, model } = req.body
-  if (!name || !description) {
-    res.status(400).json({ error: 'Name and description are required' })
-    return
-  }
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -91,7 +88,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
 })
 
 // PUT /api/agents/:id
-router.put('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), validateBody(updateAgentSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne<AgentRow>(
     'SELECT * FROM agents WHERE id = $1', [req.params.id]
   )
@@ -125,7 +122,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest,
 })
 
 // DELETE /api/agents/:id
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne('SELECT id FROM agents WHERE id = $1', [req.params.id])
   if (!existing) {
     res.status(404).json({ error: 'Agent not found' })

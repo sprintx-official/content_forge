@@ -1,13 +1,19 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
+import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createApiKeySchema } from '../validation/index.js'
 import type { AuthenticatedRequest, ApiKeyRow } from '../types.js'
 
 const router = Router()
 
-const VALID_PROVIDERS = ['openai', 'anthropic', 'xai', 'google']
+const VALID_PROVIDERS = ['openai', 'anthropic', 'xai', 'google'] as const
+
+const providerParamSchema = z.object({
+  provider: z.enum(VALID_PROVIDERS),
+})
 
 function maskKey(key: string): string {
   if (key.length <= 4) return '••••••••'
@@ -286,12 +292,8 @@ router.get('/models', authenticate, async (_req: AuthenticatedRequest, res: Resp
 })
 
 // GET /api/keys/:provider/models — Fetch live models for a specific provider
-router.get('/:provider/models', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/:provider/models', authenticate, validateParams(providerParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const provider = req.params.provider as string
-  if (!VALID_PROVIDERS.includes(provider)) {
-    res.status(400).json({ error: 'Invalid provider' })
-    return
-  }
 
   const row = await queryOne<ApiKeyRow>(
     'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [provider]
@@ -306,16 +308,8 @@ router.get('/:provider/models', authenticate, async (req: AuthenticatedRequest, 
 })
 
 // POST /api/keys — Add or update key (upsert by provider)
-router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireAdmin, validateBody(createApiKeySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { provider, apiKey } = req.body
-  if (!provider || !apiKey) {
-    res.status(400).json({ error: 'Provider and apiKey are required' })
-    return
-  }
-  if (!VALID_PROVIDERS.includes(provider)) {
-    res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` })
-    return
-  }
 
   // Validate the key by making a test API call
   const validationError = await validateApiKey(provider, apiKey)
@@ -354,12 +348,8 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
 })
 
 // DELETE /api/keys/:provider — Remove key for a provider
-router.delete('/:provider', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const provider = req.params.provider as string
-  if (!VALID_PROVIDERS.includes(provider)) {
-    res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` })
-    return
-  }
+router.delete('/:provider', authenticate, requireAdmin, validateParams(providerParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { provider } = req.params
 
   const existing = await queryOne(
     'SELECT id FROM api_keys WHERE provider = $1', [provider]

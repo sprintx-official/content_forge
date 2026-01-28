@@ -1,10 +1,16 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createUserSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, UserRow } from '../types.js'
+
+const roleUpdateSchema = z.object({
+  role: z.enum(['admin', 'user']),
+})
 
 const router = Router()
 
@@ -33,12 +39,8 @@ router.get('/admin-count', authenticate, requireAdmin, async (_req: Authenticate
 })
 
 // POST /api/team
-router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireAdmin, validateBody(createUserSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, email, password, role } = req.body
-  if (!name || !email || !password) {
-    res.status(400).json({ error: 'Name, email, and password are required' })
-    return
-  }
 
   const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email])
   if (existing) {
@@ -60,12 +62,8 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
 })
 
 // PATCH /api/team/:id/role
-router.patch('/:id/role', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:id/role', authenticate, requireAdmin, validateParams(idParamSchema), validateBody(roleUpdateSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { role } = req.body
-  if (!role || !['admin', 'user'].includes(role)) {
-    res.status(400).json({ error: 'Valid role is required (admin or user)' })
-    return
-  }
 
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.params.id])
   if (!user) {
@@ -94,7 +92,7 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: AuthenticatedR
 })
 
 // DELETE /api/team/:id
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.params.id])
   if (!user) {
     res.status(404).json({ error: 'User not found' })

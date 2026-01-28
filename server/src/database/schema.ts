@@ -142,6 +142,24 @@ export async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(workflow_id, user_id)
     );
+
+    -- Indexes for frequently queried columns
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_agent_files_agent_id ON agent_files(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_workflow_steps_workflow_id ON workflow_steps(workflow_id);
+    CREATE INDEX IF NOT EXISTS idx_feedback_agent_id ON feedback(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_history_user_id ON history(user_id);
+    CREATE INDEX IF NOT EXISTS idx_history_created_at ON history(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_user_id ON token_usage(user_id);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_history_id ON token_usage(history_id);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_created_at ON token_usage(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_model_pricing_provider ON model_pricing(provider);
+    CREATE INDEX IF NOT EXISTS idx_agent_memory_agent_id ON agent_memory(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_memory_created_at ON agent_memory(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_workflow_access_user_id ON workflow_access(user_id);
+    CREATE INDEX IF NOT EXISTS idx_workflow_access_workflow_id ON workflow_access(workflow_id);
   `)
 
   await runMigrations()

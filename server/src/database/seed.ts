@@ -10,12 +10,21 @@ export async function seedDatabase(): Promise<void> {
     'SELECT id FROM users WHERE email = $1', ['admin@contentforge.com']
   )
   if (!adminExists) {
-    const hash = bcrypt.hashSync('C0nt3ntF@rg3!2025#Adm', 10)
-    await execute(
-      'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-      [crypto.randomUUID(), 'Admin', 'admin@contentforge.com', hash, 'admin', now]
-    )
-    console.log('Seeded admin user: admin@contentforge.com')
+    const adminPassword = process.env.ADMIN_INITIAL_PASSWORD
+    if (!adminPassword) {
+      console.warn('⚠️  ADMIN_INITIAL_PASSWORD not set. Skipping admin user creation.')
+      console.warn('   Set ADMIN_INITIAL_PASSWORD in your .env file to create the initial admin user.')
+    } else {
+      if (adminPassword.length < 12) {
+        console.warn('⚠️  ADMIN_INITIAL_PASSWORD should be at least 12 characters for security.')
+      }
+      const hash = bcrypt.hashSync(adminPassword, 10)
+      await execute(
+        'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+        [crypto.randomUUID(), 'Admin', 'admin@contentforge.com', hash, 'admin', now]
+      )
+      console.log('✓ Seeded admin user: admin@contentforge.com')
+    }
   }
 
   // Seed default agents if none exist

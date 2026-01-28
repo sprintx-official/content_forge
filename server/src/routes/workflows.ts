@@ -1,9 +1,15 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
+import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createWorkflowSchema, updateWorkflowSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, WorkflowRow, WorkflowStepRow, WorkflowAccessRow } from '../types.js'
+
+const userIdsSchema = z.object({
+  userIds: z.array(z.string().uuid()),
+})
 
 const router = Router()
 
@@ -68,7 +74,7 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
 })
 
 // GET /api/workflows/:id
-router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/:id', authenticate, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const workflow = await queryOne<WorkflowRow>(
     'SELECT * FROM workflows WHERE id = $1', [req.params.id]
   )
@@ -99,7 +105,7 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res: Response
 })
 
 // GET /api/workflows/:id/access — admin only, returns assigned user IDs
-router.get('/:id/access', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/:id/access', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const workflow = await queryOne<WorkflowRow>(
     'SELECT id FROM workflows WHERE id = $1', [req.params.id]
   )
@@ -115,7 +121,7 @@ router.get('/:id/access', authenticate, requireAdmin, async (req: AuthenticatedR
 })
 
 // PUT /api/workflows/:id/access — admin only, replaces all assignments
-router.put('/:id/access', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/:id/access', authenticate, requireAdmin, validateParams(idParamSchema), validateBody(userIdsSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const workflow = await queryOne<WorkflowRow>(
     'SELECT id FROM workflows WHERE id = $1', [req.params.id]
   )
@@ -125,10 +131,6 @@ router.put('/:id/access', authenticate, requireAdmin, async (req: AuthenticatedR
   }
 
   const { userIds } = req.body as { userIds: string[] }
-  if (!Array.isArray(userIds)) {
-    res.status(400).json({ error: 'userIds must be an array' })
-    return
-  }
 
   // Delete all existing access then insert new
   await execute('DELETE FROM workflow_access WHERE workflow_id = $1', [req.params.id])
@@ -144,12 +146,8 @@ router.put('/:id/access', authenticate, requireAdmin, async (req: AuthenticatedR
 })
 
 // POST /api/workflows
-router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, description, steps, isActive } = req.body
-  if (!name) {
-    res.status(400).json({ error: 'Name is required' })
-    return
-  }
 
   const workflowId = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -179,7 +177,7 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
 })
 
 // PUT /api/workflows/:id
-router.put('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), validateBody(updateWorkflowSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne<WorkflowRow>(
     'SELECT * FROM workflows WHERE id = $1', [req.params.id]
   )
@@ -227,7 +225,7 @@ router.put('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest,
 })
 
 // PATCH /api/workflows/:id/toggle
-router.patch('/:id/toggle', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:id/toggle', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne<WorkflowRow>(
     'SELECT * FROM workflows WHERE id = $1', [req.params.id]
   )
@@ -253,7 +251,7 @@ router.patch('/:id/toggle', authenticate, requireAdmin, async (req: Authenticate
 })
 
 // DELETE /api/workflows/:id
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne(
     'SELECT id FROM workflows WHERE id = $1', [req.params.id]
   )

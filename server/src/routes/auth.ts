@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { queryOne } from '../database/connection.js'
 import { config } from '../config.js'
 import { authenticate } from '../middleware/auth.js'
+import { validateBody, loginSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, UserRow } from '../types.js'
 
 const router = Router()
@@ -17,12 +18,8 @@ function signToken(user: UserRow): string {
 }
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', validateBody(loginSchema), async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email and password are required' })
-    return
-  }
 
   const user = await queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email])
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {

@@ -3,11 +3,10 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createPricingSchema, updatePricingSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, ModelPricingRow } from '../types.js'
 
 const router = Router()
-
-const VALID_PROVIDERS = ['openai', 'anthropic', 'xai', 'google']
 
 function formatPricing(row: ModelPricingRow) {
   return {
@@ -28,21 +27,8 @@ router.get('/', authenticate, requireAdmin, async (_req: AuthenticatedRequest, r
 })
 
 // POST /api/pricing — Create new pricing entry
-router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, requireAdmin, validateBody(createPricingSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { provider, modelPattern, inputPricePerMillion, cachedInputPricePerMillion, outputPricePerMillion } = req.body
-
-  if (!provider || !modelPattern) {
-    res.status(400).json({ error: 'Provider and modelPattern are required' })
-    return
-  }
-  if (!VALID_PROVIDERS.includes(provider)) {
-    res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` })
-    return
-  }
-  if (typeof inputPricePerMillion !== 'number' || typeof outputPricePerMillion !== 'number') {
-    res.status(400).json({ error: 'inputPricePerMillion and outputPricePerMillion must be numbers' })
-    return
-  }
 
   // Check for duplicate
   const existing = await queryOne<ModelPricingRow>(
@@ -68,18 +54,13 @@ router.post('/', authenticate, requireAdmin, async (req: AuthenticatedRequest, r
 })
 
 // PATCH /api/pricing/:id — Update pricing entry
-router.patch('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.patch('/:id', authenticate, requireAdmin, validateParams(idParamSchema), validateBody(updatePricingSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const id = req.params.id as string
   const { provider, modelPattern, inputPricePerMillion, cachedInputPricePerMillion, outputPricePerMillion } = req.body
 
   const existing = await queryOne<ModelPricingRow>('SELECT * FROM model_pricing WHERE id = $1', [id])
   if (!existing) {
     res.status(404).json({ error: 'Pricing entry not found' })
-    return
-  }
-
-  if (provider && !VALID_PROVIDERS.includes(provider)) {
-    res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` })
     return
   }
 
@@ -123,7 +104,7 @@ router.patch('/:id', authenticate, requireAdmin, async (req: AuthenticatedReques
 })
 
 // DELETE /api/pricing/:id — Delete pricing entry
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const id = req.params.id as string
 
   const existing = await queryOne('SELECT id FROM model_pricing WHERE id = $1', [id])

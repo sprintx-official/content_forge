@@ -1,9 +1,15 @@
 import { Router, type Response } from 'express'
 import crypto from 'crypto'
+import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import { validateBody, validateParams, createFeedbackSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, FeedbackRow } from '../types.js'
+
+const agentIdParamSchema = z.object({
+  agentId: z.string().uuid('Invalid agent ID'),
+})
 
 const router = Router()
 
@@ -26,7 +32,7 @@ router.get('/', authenticate, async (_req: AuthenticatedRequest, res: Response):
 })
 
 // GET /api/feedback/agent/:agentId
-router.get('/agent/:agentId', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/agent/:agentId', authenticate, validateParams(agentIdParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const rows = await query<FeedbackRow>(
     'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC',
     [req.params.agentId]
@@ -35,17 +41,8 @@ router.get('/agent/:agentId', authenticate, async (req: AuthenticatedRequest, re
 })
 
 // POST /api/feedback
-router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, validateBody(createFeedbackSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { agentId, text, rating } = req.body
-  if (!agentId || !text || !rating) {
-    res.status(400).json({ error: 'agentId, text, and rating are required' })
-    return
-  }
-
-  if (rating < 1 || rating > 5) {
-    res.status(400).json({ error: 'Rating must be between 1 and 5' })
-    return
-  }
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -65,7 +62,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
 })
 
 // DELETE /api/feedback/:id
-router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, requireAdmin, validateParams(idParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const existing = await queryOne('SELECT id FROM feedback WHERE id = $1', [req.params.id])
   if (!existing) {
     res.status(404).json({ error: 'Feedback not found' })
