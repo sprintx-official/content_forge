@@ -18,6 +18,8 @@ const historyUpdateSchema = z.object({
 
 const searchQuerySchema = z.object({
   search: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
 const router = Router()
@@ -37,28 +39,54 @@ function formatHistory(row: HistoryRowWithUser) {
 router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const isAdmin = req.user!.role === 'admin'
   const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
+  const page = typeof req.query.page === 'number' ? req.query.page : 1
+  const limit = typeof req.query.limit === 'number' ? req.query.limit : 20
+  const offset = (page - 1) * limit
 
   let rows: HistoryRowWithUser[]
+  let totalCount: number
 
   if (isAdmin) {
     if (search) {
       rows = await query<HistoryRowWithUser>(
-        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1 ORDER BY h.created_at DESC LIMIT 50',
+        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1 ORDER BY h.created_at DESC LIMIT $2 OFFSET $3',
+        [`%${search}%`, limit, offset]
+      )
+      const countResult = await queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1',
         [`%${search}%`]
       )
+      totalCount = parseInt(countResult?.count || '0', 10)
     } else {
       rows = await query<HistoryRowWithUser>(
-        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id ORDER BY h.created_at DESC LIMIT 50'
+        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id ORDER BY h.created_at DESC LIMIT $1 OFFSET $2',
+        [limit, offset]
       )
+      const countResult = await queryOne<{ count: string }>('SELECT COUNT(*) as count FROM history')
+      totalCount = parseInt(countResult?.count || '0', 10)
     }
   } else {
     rows = await query<HistoryRowWithUser>(
-      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.user_id = $1 ORDER BY h.created_at DESC LIMIT 50',
+      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.user_id = $1 ORDER BY h.created_at DESC LIMIT $2 OFFSET $3',
+      [req.user!.userId, limit, offset]
+    )
+    const countResult = await queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM history WHERE user_id = $1',
       [req.user!.userId]
     )
+    totalCount = parseInt(countResult?.count || '0', 10)
   }
 
-  res.json(rows.map(formatHistory))
+  res.json({
+    data: rows.map(formatHistory),
+    pagination: {
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasMore: page * limit < totalCount,
+    },
+  })
 })
 
 // POST /api/history

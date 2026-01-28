@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -8,6 +9,7 @@ import { config } from './config.js'
 import { initializeSchema } from './database/schema.js'
 import { seedDatabase } from './database/seed.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
 import authRoutes from './routes/auth.js'
 import agentRoutes from './routes/agents.js'
 import workflowRoutes from './routes/workflows.js'
@@ -23,8 +25,36 @@ import pricingRoutes from './routes/pricing.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
-app.use(cors())
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: config.isProduction ? undefined : false, // Disable CSP in dev for hot reload
+  crossOriginEmbedderPolicy: false, // Allow embedding
+}))
+
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000']
+
+app.use(cors({
+  origin: config.isProduction
+    ? (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true)
+        } else {
+          callback(new Error('Not allowed by CORS'))
+        }
+      }
+    : true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
+
 app.use(express.json({ limit: '10mb' }))
+
+// Request logging
+app.use('/api', requestLogger)
 
 // Rate limiters
 const generalLimiter = rateLimit({

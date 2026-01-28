@@ -4,11 +4,16 @@ import { z } from 'zod'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
-import { validateBody, validateParams, createFeedbackSchema, idParamSchema } from '../validation/index.js'
+import { validateBody, validateParams, validateQuery, createFeedbackSchema, idParamSchema } from '../validation/index.js'
 import type { AuthenticatedRequest, FeedbackRow } from '../types.js'
 
 const agentIdParamSchema = z.object({
   agentId: z.string().uuid('Invalid agent ID'),
+})
+
+const paginationQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
 const router = Router()
@@ -26,18 +31,57 @@ function formatFeedback(row: FeedbackRow) {
 }
 
 // GET /api/feedback
-router.get('/', authenticate, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const rows = await query<FeedbackRow>('SELECT * FROM feedback ORDER BY created_at DESC')
-  res.json(rows.map(formatFeedback))
+router.get('/', authenticate, validateQuery(paginationQuerySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const page = typeof req.query.page === 'number' ? req.query.page : 1
+  const limit = typeof req.query.limit === 'number' ? req.query.limit : 20
+  const offset = (page - 1) * limit
+
+  const rows = await query<FeedbackRow>(
+    'SELECT * FROM feedback ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+    [limit, offset]
+  )
+  const countResult = await queryOne<{ count: string }>('SELECT COUNT(*) as count FROM feedback')
+  const totalCount = parseInt(countResult?.count || '0', 10)
+
+  res.json({
+    data: rows.map(formatFeedback),
+    pagination: {
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasMore: page * limit < totalCount,
+    },
+  })
 })
 
 // GET /api/feedback/agent/:agentId
-router.get('/agent/:agentId', authenticate, validateParams(agentIdParamSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get('/agent/:agentId', authenticate, validateParams(agentIdParamSchema), validateQuery(paginationQuerySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const agentId = req.params.agentId as string
+  const page = typeof req.query.page === 'number' ? req.query.page : 1
+  const limit = typeof req.query.limit === 'number' ? req.query.limit : 20
+  const offset = (page - 1) * limit
+
   const rows = await query<FeedbackRow>(
-    'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC',
-    [req.params.agentId]
+    'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+    [agentId, limit, offset]
   )
-  res.json(rows.map(formatFeedback))
+  const countResult = await queryOne<{ count: string }>(
+    'SELECT COUNT(*) as count FROM feedback WHERE agent_id = $1',
+    [agentId]
+  )
+  const totalCount = parseInt(countResult?.count || '0', 10)
+
+  res.json({
+    data: rows.map(formatFeedback),
+    pagination: {
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasMore: page * limit < totalCount,
+    },
+  })
 })
 
 // POST /api/feedback
