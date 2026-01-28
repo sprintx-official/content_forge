@@ -5,7 +5,8 @@ export async function calculateCost(
   provider: string,
   model: string,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  cachedInputTokens: number = 0
 ): Promise<number> {
   const rows = await query<ModelPricingRow>(
     'SELECT * FROM model_pricing WHERE provider = $1', [provider]
@@ -27,7 +28,8 @@ export async function calculateCost(
   if (!bestMatch) return 0
 
   const inputCost = (inputTokens / 1_000_000) * bestMatch.input_price_per_million
+  const cachedInputCost = (cachedInputTokens / 1_000_000) * bestMatch.cached_input_price_per_million
   const outputCost = (outputTokens / 1_000_000) * bestMatch.output_price_per_million
 
-  return Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000
+  return Math.round((inputCost + cachedInputCost + outputCost) * 1_000_000) / 1_000_000
 }

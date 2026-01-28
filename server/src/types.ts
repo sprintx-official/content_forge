@@ -109,6 +109,7 @@ export interface ModelPricingRow {
   provider: string
   model_pattern: string
   input_price_per_million: number
+  cached_input_price_per_million: number
   output_price_per_million: number
   updated_at: string
 }

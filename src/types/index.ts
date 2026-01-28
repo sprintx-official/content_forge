@@ -34,6 +34,7 @@ export interface WritingTip {
 
 export interface TokenUsage {
   inputTokens: number
+  cachedInputTokens: number
   outputTokens: number
   totalTokens: number
   costUsd: number
@@ -51,6 +52,26 @@ export interface AgentPipelineStep {
   instructions: string
   feedback: { avgRating: number; recentTexts: string[] } | null
   memories: { topic: string; summary: string; createdAt: string }[] | null
+  input: string
+  output: string
+  tokenUsage?: {
+    inputTokens: number
+    cachedInputTokens: number
+    outputTokens: number
+    totalTokens: number
+    costUsd: number
+    model: string
+  }
+}
+
+export interface ModelPricing {
+  id: string
+  provider: AiProvider
+  modelPattern: string
+  inputPricePerMillion: number
+  cachedInputPricePerMillion: number
+  outputPricePerMillion: number
+  updatedAt: string
 }
 
 export interface ForgeOutput {

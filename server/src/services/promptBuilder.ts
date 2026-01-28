@@ -93,6 +93,45 @@ export function buildSystemPrompt(agentContexts?: AgentContext[]): string {
   return prompt
 }
 
+/**
+ * Build a system prompt for a single agent in a pipeline
+ */
+export function buildSingleAgentSystemPrompt(ctx: AgentContext): string {
+  let prompt = `You are ContentForge, an expert content creation assistant. You produce high-quality, well-structured content tailored to the user's specifications. Always write in a natural, human style. Do not include meta-commentary about the writing process — just produce the content directly.`
+
+  if (ctx.agent.system_prompt) {
+    prompt += `\n\nAgent "${ctx.agent.name}" instructions:\n${ctx.agent.system_prompt}`
+  }
+  if (ctx.agent.knowledge_base) {
+    prompt += `\n\nKnowledge base for "${ctx.agent.name}":\n${ctx.agent.knowledge_base}`
+  }
+  if (ctx.files.length > 0) {
+    for (const file of ctx.files) {
+      if (file.content_text) {
+        prompt += `\n\nFile "${file.name}":\n${file.content_text}`
+      }
+    }
+  }
+  if (ctx.instructions) {
+    prompt += `\n\nStep instructions: ${ctx.instructions}`
+  }
+  if (ctx.feedback && ctx.feedback.recentTexts.length > 0) {
+    prompt += `\n\nUser feedback for "${ctx.agent.name}" (avg rating: ${ctx.feedback.avgRating}/5):`
+    for (const text of ctx.feedback.recentTexts) {
+      prompt += `\n- ${text}`
+    }
+  }
+  if (ctx.memories && ctx.memories.length > 0) {
+    prompt += `\n\nRecent outputs by "${ctx.agent.name}" (for context and consistency):`
+    for (const mem of ctx.memories) {
+      const date = mem.createdAt.slice(0, 10)
+      prompt += `\n- [${date}] Topic: "${mem.topic}" — ${mem.summary}`
+    }
+  }
+
+  return prompt
+}
+
 export function buildUserPrompt(input: PromptInput): string {
   let lengthGuide: string
   if (input.length === 'custom' && input.customWordCount) {

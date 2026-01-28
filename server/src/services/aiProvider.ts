@@ -10,6 +10,7 @@ export interface GenerationRequest {
 export interface GenerationResponse {
   content: string
   inputTokens: number
+  cachedInputTokens: number
   outputTokens: number
   totalTokens: number
 }
@@ -50,12 +51,20 @@ async function callOpenAI(req: GenerationRequest): Promise<GenerationResponse> {
 
   const data = await res.json() as {
     choices: { message: { content: string } }[]
-    usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+    usage: {
+      prompt_tokens: number
+      completion_tokens: number
+      total_tokens: number
+      prompt_tokens_details?: { cached_tokens?: number }
+    }
   }
+
+  const cachedTokens = data.usage.prompt_tokens_details?.cached_tokens ?? 0
 
   return {
     content: data.choices[0].message.content,
-    inputTokens: data.usage.prompt_tokens,
+    inputTokens: data.usage.prompt_tokens - cachedTokens,
+    cachedInputTokens: cachedTokens,
     outputTokens: data.usage.completion_tokens,
     totalTokens: data.usage.total_tokens,
   }
@@ -84,17 +93,24 @@ async function callAnthropic(req: GenerationRequest): Promise<GenerationResponse
 
   const data = await res.json() as {
     content: { type: string; text: string }[]
-    usage: { input_tokens: number; output_tokens: number }
+    usage: {
+      input_tokens: number
+      output_tokens: number
+      cache_creation_input_tokens?: number
+      cache_read_input_tokens?: number
+    }
   }
 
-  const inputTokens = data.usage.input_tokens
+  const cachedTokens = (data.usage.cache_read_input_tokens ?? 0)
+  const inputTokens = data.usage.input_tokens - cachedTokens
   const outputTokens = data.usage.output_tokens
 
   return {
     content: data.content[0].text,
     inputTokens,
+    cachedInputTokens: cachedTokens,
     outputTokens,
-    totalTokens: inputTokens + outputTokens,
+    totalTokens: data.usage.input_tokens + outputTokens,
   }
 }
 
@@ -122,12 +138,20 @@ async function callXAI(req: GenerationRequest): Promise<GenerationResponse> {
 
   const data = await res.json() as {
     choices: { message: { content: string } }[]
-    usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+    usage: {
+      prompt_tokens: number
+      completion_tokens: number
+      total_tokens: number
+      prompt_tokens_details?: { cached_tokens?: number }
+    }
   }
+
+  const cachedTokens = data.usage.prompt_tokens_details?.cached_tokens ?? 0
 
   return {
     content: data.choices[0].message.content,
-    inputTokens: data.usage.prompt_tokens,
+    inputTokens: data.usage.prompt_tokens - cachedTokens,
+    cachedInputTokens: cachedTokens,
     outputTokens: data.usage.completion_tokens,
     totalTokens: data.usage.total_tokens,
   }
@@ -153,12 +177,20 @@ async function callGoogle(req: GenerationRequest): Promise<GenerationResponse> {
 
   const data = await res.json() as {
     candidates: { content: { parts: { text: string }[] } }[]
-    usageMetadata: { promptTokenCount: number; candidatesTokenCount: number; totalTokenCount: number }
+    usageMetadata: {
+      promptTokenCount: number
+      candidatesTokenCount: number
+      totalTokenCount: number
+      cachedContentTokenCount?: number
+    }
   }
+
+  const cachedTokens = data.usageMetadata.cachedContentTokenCount ?? 0
 
   return {
     content: data.candidates[0].content.parts[0].text,
-    inputTokens: data.usageMetadata.promptTokenCount,
+    inputTokens: data.usageMetadata.promptTokenCount - cachedTokens,
+    cachedInputTokens: cachedTokens,
     outputTokens: data.usageMetadata.candidatesTokenCount,
     totalTokens: data.usageMetadata.totalTokenCount,
   }

@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { callProvider, ProviderError } from '../services/aiProvider.js'
-import { buildSystemPrompt, buildUserPrompt, getMaxTokens, type AgentContext } from '../services/promptBuilder.js'
+import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, type AgentContext } from '../services/promptBuilder.js'
 import { calculateCost } from '../services/costCalculator.js'
 import { calculateMetrics } from '../services/metricsCalculator.js'
 import { getTips } from '../services/tipsProvider.js'
@@ -169,9 +169,8 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
     return
   }
 
-  // Build prompts
-  const systemPrompt = buildSystemPrompt(agentContexts)
-  const userPrompt = buildUserPrompt({
+  // Build initial user prompt
+  const initialUserPrompt = buildUserPrompt({
     contentType: input.contentType,
     topic: input.topic,
     tone: input.tone,
@@ -183,53 +182,166 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
   const maxTokens = getMaxTokens(input.length, input.customWordCount, input.tolerancePercent)
 
   try {
-    // Call AI provider
-    const aiResponse = await callProvider({
-      provider,
-      model: resolvedModelId,
-      apiKey: keyRow.api_key,
-      systemPrompt,
-      userPrompt,
-      maxTokens,
-    })
-
-    // Calculate cost
-    const costUsd = await calculateCost(provider, resolvedModelId, aiResponse.inputTokens, aiResponse.outputTokens)
-
-    // Compute metrics and tips
-    const metrics = calculateMetrics(aiResponse.content)
-    const tips = getTips(input.contentType)
-
     const now = new Date().toISOString()
+    let finalContent = ''
+    let totalInputTokens = 0
+    let totalCachedInputTokens = 0
+    let totalOutputTokens = 0
+    let totalCostUsd = 0
 
-    // Build agent pipeline preview data
-    const agentPipeline = agentContexts?.map(ctx => ({
-      agentName: ctx.agent.name,
-      agentDescription: ctx.agent.description,
-      agentIcon: ctx.agent.icon,
-      systemPrompt: ctx.agent.system_prompt,
-      knowledgeBase: ctx.agent.knowledge_base || null,
-      files: ctx.files.map(f => f.name),
-      instructions: ctx.instructions,
-      feedback: ctx.feedback || null,
-      memories: ctx.memories || null,
-    }))
+    // Store pipeline data with input/output for each agent
+    const agentPipeline: Array<{
+      agentName: string
+      agentDescription: string
+      agentIcon: string
+      systemPrompt: string
+      knowledgeBase: string | null
+      files: string[]
+      instructions: string
+      feedback: { avgRating: number; recentTexts: string[] } | null
+      memories: { topic: string; summary: string; createdAt: string }[] | null
+      input: string
+      output: string
+      tokenUsage: {
+        inputTokens: number
+        cachedInputTokens: number
+        outputTokens: number
+        totalTokens: number
+        costUsd: number
+        model: string
+      }
+    }> = []
+
+    // Execute agents sequentially if we have a pipeline
+    if (agentContexts && agentContexts.length > 0) {
+      let currentInput = initialUserPrompt
+
+      for (let i = 0; i < agentContexts.length; i++) {
+        const ctx = agentContexts[i]
+        const isLastAgent = i === agentContexts.length - 1
+
+        // Build system prompt for this specific agent
+        const agentSystemPrompt = buildSingleAgentSystemPrompt(ctx)
+
+        // For subsequent agents, modify the user prompt to process previous output
+        let agentUserPrompt: string
+        if (i === 0) {
+          // First agent gets the original user prompt
+          agentUserPrompt = currentInput
+        } else {
+          // Subsequent agents receive the previous output as input to refine/process
+          agentUserPrompt = `You are continuing in a content pipeline. The previous agent produced the following content:
+
+---
+${currentInput}
+---
+
+Your task: ${ctx.instructions || 'Process and improve the above content based on your expertise.'}
+
+Requirements from the original request:
+- Content type: ${input.contentType}
+- Tone: ${input.tone}
+- Target audience: ${input.audience}
+- Topic: ${input.topic}
+
+${isLastAgent ? 'This is the final step. Produce the polished, final content.' : 'Process and pass the improved content to the next agent.'}`
+        }
+
+        // Call AI for this agent
+        const agentResponse = await callProvider({
+          provider,
+          model: ctx.agent.model || resolvedModelId,
+          apiKey: keyRow.api_key,
+          systemPrompt: agentSystemPrompt,
+          userPrompt: agentUserPrompt,
+          maxTokens,
+        })
+
+        // Track tokens and cost separately
+        totalInputTokens += agentResponse.inputTokens
+        totalCachedInputTokens += agentResponse.cachedInputTokens
+        totalOutputTokens += agentResponse.outputTokens
+        const agentCost = await calculateCost(
+          provider,
+          ctx.agent.model || resolvedModelId,
+          agentResponse.inputTokens,
+          agentResponse.outputTokens,
+          agentResponse.cachedInputTokens
+        )
+        totalCostUsd += agentCost
+
+        // Store this agent's pipeline data with input/output and token usage
+        agentPipeline.push({
+          agentName: ctx.agent.name,
+          agentDescription: ctx.agent.description,
+          agentIcon: ctx.agent.icon,
+          systemPrompt: ctx.agent.system_prompt,
+          knowledgeBase: ctx.agent.knowledge_base || null,
+          files: ctx.files.map(f => f.name),
+          instructions: ctx.instructions,
+          feedback: ctx.feedback || null,
+          memories: ctx.memories || null,
+          input: i === 0 ? initialUserPrompt : currentInput,
+          output: agentResponse.content,
+          tokenUsage: {
+            inputTokens: agentResponse.inputTokens,
+            cachedInputTokens: agentResponse.cachedInputTokens,
+            outputTokens: agentResponse.outputTokens,
+            totalTokens: agentResponse.inputTokens + agentResponse.cachedInputTokens + agentResponse.outputTokens,
+            costUsd: agentCost,
+            model: ctx.agent.model || resolvedModelId,
+          },
+        })
+
+        // Pass output to next agent as input
+        currentInput = agentResponse.content
+        finalContent = agentResponse.content
+      }
+    } else {
+      // No pipeline - single call with default system prompt
+      const systemPrompt = buildSystemPrompt()
+      const aiResponse = await callProvider({
+        provider,
+        model: resolvedModelId,
+        apiKey: keyRow.api_key,
+        systemPrompt,
+        userPrompt: initialUserPrompt,
+        maxTokens,
+      })
+
+      finalContent = aiResponse.content
+      totalInputTokens = aiResponse.inputTokens
+      totalCachedInputTokens = aiResponse.cachedInputTokens
+      totalOutputTokens = aiResponse.outputTokens
+      totalCostUsd = await calculateCost(
+        provider,
+        resolvedModelId,
+        aiResponse.inputTokens,
+        aiResponse.outputTokens,
+        aiResponse.cachedInputTokens
+      )
+    }
+
+    // Compute metrics and tips based on final content
+    const metrics = calculateMetrics(finalContent)
+    const tips = getTips(input.contentType)
 
     // Build output
     const output: Record<string, unknown> = {
-      content: aiResponse.content,
+      content: finalContent,
       metrics,
       tips,
       generatedAt: now,
       tokenUsage: {
-        inputTokens: aiResponse.inputTokens,
-        outputTokens: aiResponse.outputTokens,
-        totalTokens: aiResponse.totalTokens,
-        costUsd,
+        inputTokens: totalInputTokens,
+        cachedInputTokens: totalCachedInputTokens,
+        outputTokens: totalOutputTokens,
+        totalTokens: totalInputTokens + totalCachedInputTokens + totalOutputTokens,
+        costUsd: totalCostUsd,
         provider,
         model: resolvedModelId,
       },
-      ...(agentPipeline && agentPipeline.length > 0 && { agentPipeline }),
+      ...(agentPipeline.length > 0 && { agentPipeline }),
     }
 
     // Insert into history
@@ -248,25 +360,27 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res: Response):
         req.user!.userId,
         provider,
         resolvedModelId,
-        aiResponse.inputTokens,
-        aiResponse.outputTokens,
-        aiResponse.totalTokens,
-        costUsd,
+        totalInputTokens,
+        totalOutputTokens,
+        totalInputTokens + totalOutputTokens,
+        totalCostUsd,
         now,
       ]
     )
 
-    // Save memory for each participating agent
+    // Save memory for each participating agent with their specific output
     if (agentContexts && agentContexts.length > 0) {
-      for (const ctx of agentContexts) {
+      for (let i = 0; i < agentContexts.length; i++) {
+        const ctx = agentContexts[i]
+        const agentOutput = agentPipeline[i]?.output || finalContent
         await execute(
           'INSERT INTO agent_memory (id, agent_id, topic, summary, output_text, history_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
           [
             crypto.randomUUID(),
             ctx.agent.id,
             input.topic,
-            aiResponse.content.slice(0, 200),
-            aiResponse.content,
+            agentOutput.slice(0, 200),
+            agentOutput,
             historyId,
             now,
           ]

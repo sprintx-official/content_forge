@@ -17,6 +17,7 @@ import teamRoutes from './routes/team.js'
 import apiKeyRoutes from './routes/apiKeys.js'
 import generateRoutes from './routes/generate.js'
 import memoryRoutes from './routes/memory.js'
+import pricingRoutes from './routes/pricing.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -35,6 +36,7 @@ app.use('/api/team', teamRoutes)
 app.use('/api/keys', apiKeyRoutes)
 app.use('/api/generate', generateRoutes)
 app.use('/api/memory', memoryRoutes)
+app.use('/api/pricing', pricingRoutes)
 
 // Error handler for API routes
 app.use(errorHandler)

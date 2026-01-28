@@ -1,13 +1,24 @@
 import { exec, query } from './connection.js'
 
 async function runMigrations(): Promise<void> {
-  const cols = await query<{ column_name: string }>(
+  // Migration: Add model column to agents
+  const agentCols = await query<{ column_name: string }>(
     `SELECT column_name FROM information_schema.columns
      WHERE table_name = 'agents'`
   )
-  const hasModel = cols.some((c) => c.column_name === 'model')
+  const hasModel = agentCols.some((c) => c.column_name === 'model')
   if (!hasModel) {
     await exec("ALTER TABLE agents ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+  }
+
+  // Migration: Add cached_input_price_per_million to model_pricing
+  const pricingCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'model_pricing'`
+  )
+  const hasCachedPrice = pricingCols.some((c) => c.column_name === 'cached_input_price_per_million')
+  if (!hasCachedPrice) {
+    await exec("ALTER TABLE model_pricing ADD COLUMN cached_input_price_per_million REAL NOT NULL DEFAULT 0.0")
   }
 }
 
@@ -108,6 +119,7 @@ export async function initializeSchema(): Promise<void> {
       provider TEXT NOT NULL,
       model_pattern TEXT NOT NULL,
       input_price_per_million REAL NOT NULL DEFAULT 0.0,
+      cached_input_price_per_million REAL NOT NULL DEFAULT 0.0,
       output_price_per_million REAL NOT NULL DEFAULT 0.0,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(provider, model_pattern)

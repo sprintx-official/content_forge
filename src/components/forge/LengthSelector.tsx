@@ -55,12 +55,20 @@ export default function LengthSelector() {
             </label>
             <input
               type="number"
-              min={50}
-              max={5000}
+              min={10}
+              max={10000}
               value={customWordCount ?? ''}
               onChange={(e) => {
-                const val = e.target.value === '' ? undefined : Math.max(50, Math.min(5000, Number(e.target.value)))
-                setInput({ customWordCount: val })
+                // Allow free typing - store raw value
+                const rawVal = e.target.value === '' ? undefined : Number(e.target.value)
+                setInput({ customWordCount: rawVal })
+              }}
+              onBlur={(e) => {
+                // Clamp value only on blur
+                if (e.target.value !== '') {
+                  const val = Math.max(10, Math.min(10000, Number(e.target.value)))
+                  setInput({ customWordCount: val })
+                }
               }}
               placeholder="e.g. 750"
               className={cn(
@@ -69,6 +77,7 @@ export default function LengthSelector() {
                 'placeholder:text-[#6b7280]',
               )}
             />
+            <p className="text-[10px] text-[#6b7280] mt-1">Min: 10 · Max: 10,000</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1.5">
@@ -80,8 +89,16 @@ export default function LengthSelector() {
               max={50}
               value={tolerancePercent ?? ''}
               onChange={(e) => {
-                const val = e.target.value === '' ? undefined : Math.max(0, Math.min(50, Number(e.target.value)))
-                setInput({ tolerancePercent: val })
+                // Allow free typing - store raw value
+                const rawVal = e.target.value === '' ? undefined : Number(e.target.value)
+                setInput({ tolerancePercent: rawVal })
+              }}
+              onBlur={(e) => {
+                // Clamp value only on blur
+                if (e.target.value !== '') {
+                  const val = Math.max(0, Math.min(50, Number(e.target.value)))
+                  setInput({ tolerancePercent: val })
+                }
               }}
               placeholder="e.g. 10"
               className={cn(
@@ -90,6 +107,7 @@ export default function LengthSelector() {
                 'placeholder:text-[#6b7280]',
               )}
             />
+            <p className="text-[10px] text-[#6b7280] mt-1">Max: 50%</p>
           </div>
         </div>
       )}

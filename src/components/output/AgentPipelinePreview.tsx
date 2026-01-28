@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Bot, FileText, MessageSquare, Brain, BookOpen, Terminal } from 'lucide-react'
+import { ChevronDown, Bot, FileText, MessageSquare, Brain, BookOpen, Terminal, ArrowDownToLine, ArrowUpFromLine, Coins } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AgentPipelineStep } from '@/types'
 
@@ -107,6 +107,35 @@ export default function AgentPipelinePreview({ pipeline }: AgentPipelinePreviewP
                   </div>
                 </div>
 
+                {/* Token Usage & Cost */}
+                {step.tokenUsage && (
+                  <div className="flex items-center gap-4 mb-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                    <Coins className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                      <span className="text-[#9ca3af]">
+                        Model: <span className="text-[#f9fafb] font-medium">{step.tokenUsage.model}</span>
+                      </span>
+                      <span className="text-[#9ca3af]">
+                        Input: <span className="text-[#00f0ff]">{step.tokenUsage.inputTokens.toLocaleString()}</span>
+                      </span>
+                      {step.tokenUsage.cachedInputTokens > 0 && (
+                        <span className="text-[#9ca3af]">
+                          Cached: <span className="text-emerald-400">{step.tokenUsage.cachedInputTokens.toLocaleString()}</span>
+                        </span>
+                      )}
+                      <span className="text-[#9ca3af]">
+                        Output: <span className="text-[#a855f7]">{step.tokenUsage.outputTokens.toLocaleString()}</span>
+                      </span>
+                      <span className="text-[#9ca3af]">
+                        Total: <span className="text-[#f9fafb]">{step.tokenUsage.totalTokens.toLocaleString()}</span>
+                      </span>
+                      <span className="text-emerald-400 font-semibold">
+                        ${step.tokenUsage.costUsd.toFixed(6)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Sub-sections */}
                 <div className="space-y-2">
                   {step.systemPrompt && (
@@ -179,10 +208,72 @@ export default function AgentPipelinePreview({ pipeline }: AgentPipelinePreviewP
                       </div>
                     </SubSection>
                   )}
+
+                  {/* Input Section */}
+                  {step.input && (
+                    <SubSection label="Input" icon={ArrowDownToLine}>
+                      <pre className="text-xs text-[#9ca3af] whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto bg-black/20 rounded-lg p-3 border border-[#00f0ff]/20">
+                        {step.input}
+                      </pre>
+                    </SubSection>
+                  )}
+
+                  {/* Output Section */}
+                  {step.output && (
+                    <SubSection label="Output" icon={ArrowUpFromLine}>
+                      <pre className="text-xs text-[#9ca3af] whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto bg-black/20 rounded-lg p-3 border border-[#a855f7]/20">
+                        {step.output}
+                      </pre>
+                    </SubSection>
+                  )}
                 </div>
               </div>
             </div>
           ))}
+
+          {/* Overall Summary */}
+          {pipeline.some(step => step.tokenUsage) && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="bg-gradient-to-r from-emerald-500/10 to-[#00f0ff]/10 rounded-xl border border-emerald-500/20 p-4">
+                <h4 className="text-sm font-semibold text-[#f9fafb] mb-3 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-emerald-400" />
+                  Pipeline Total
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="text-center">
+                    <div className="text-xs text-[#9ca3af] mb-1">Input Tokens</div>
+                    <div className="text-lg font-bold text-[#00f0ff]">
+                      {pipeline.reduce((sum, s) => sum + (s.tokenUsage?.inputTokens ?? 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-[#9ca3af] mb-1">Cached Tokens</div>
+                    <div className="text-lg font-bold text-emerald-400">
+                      {pipeline.reduce((sum, s) => sum + (s.tokenUsage?.cachedInputTokens ?? 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-[#9ca3af] mb-1">Output Tokens</div>
+                    <div className="text-lg font-bold text-[#a855f7]">
+                      {pipeline.reduce((sum, s) => sum + (s.tokenUsage?.outputTokens ?? 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-[#9ca3af] mb-1">Total Tokens</div>
+                    <div className="text-lg font-bold text-[#f9fafb]">
+                      {pipeline.reduce((sum, s) => sum + (s.tokenUsage?.totalTokens ?? 0), 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-[#9ca3af] mb-1">Total Cost</div>
+                    <div className="text-lg font-bold text-emerald-400">
+                      ${pipeline.reduce((sum, s) => sum + (s.tokenUsage?.costUsd ?? 0), 0).toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

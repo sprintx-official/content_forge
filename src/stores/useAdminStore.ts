@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import type { User, UserRole, AgentConfig, Workflow, ApiKeyConfig, AiProvider } from '@/types'
+import type { User, UserRole, AgentConfig, Workflow, ApiKeyConfig, AiProvider, ModelPricing } from '@/types'
 import * as teamService from '@/services/teamService'
 import * as agentService from '@/services/agentService'
 import * as workflowService from '@/services/workflowService'
 import * as apiKeyService from '@/services/apiKeyService'
+import * as pricingService from '@/services/pricingService'
 
-type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys'
+type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys' | 'pricing'
 
 interface AdminState {
   activeTab: AdminTab
@@ -14,6 +15,7 @@ interface AdminState {
   agents: AgentConfig[]
   workflows: Workflow[]
   apiKeys: ApiKeyConfig[]
+  modelPricing: ModelPricing[]
 
   setActiveTab: (tab: AdminTab) => void
 
@@ -42,6 +44,12 @@ interface AdminState {
   loadApiKeys: () => Promise<void>
   saveApiKey: (provider: AiProvider, apiKey: string) => Promise<ApiKeyConfig | null>
   deleteApiKey: (provider: AiProvider) => Promise<boolean>
+
+  // Pricing actions
+  loadPricing: () => Promise<void>
+  savePricing: (data: Omit<ModelPricing, 'id' | 'updatedAt'>) => Promise<ModelPricing | null>
+  updatePricing: (id: string, data: Partial<Omit<ModelPricing, 'id' | 'updatedAt'>>) => Promise<ModelPricing | null>
+  deletePricing: (id: string) => Promise<boolean>
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -51,6 +59,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   agents: [],
   workflows: [],
   apiKeys: [],
+  modelPricing: [],
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -209,6 +218,47 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       await apiKeyService.deleteApiKey(provider)
       await get().loadApiKeys()
+      return true
+    } catch {
+      return false
+    }
+  },
+
+  // Pricing
+  loadPricing: async () => {
+    set({ loading: true })
+    try {
+      const pricing = await pricingService.getAllPricing()
+      set({ modelPricing: pricing })
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  savePricing: async (data) => {
+    try {
+      const pricing = await pricingService.createPricing(data)
+      await get().loadPricing()
+      return pricing
+    } catch {
+      return null
+    }
+  },
+
+  updatePricing: async (id, data) => {
+    try {
+      const pricing = await pricingService.updatePricing(id, data)
+      await get().loadPricing()
+      return pricing
+    } catch {
+      return null
+    }
+  },
+
+  deletePricing: async (id) => {
+    try {
+      await pricingService.deletePricing(id)
+      await get().loadPricing()
       return true
     } catch {
       return false
