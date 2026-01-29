@@ -115,16 +115,39 @@ app.use('/api/pricing', pricingRoutes)
 app.use('/api', errorHandler)
 
 // Serve frontend static files in production
-const clientDist = path.resolve(__dirname, '../../dist')
-if (fs.existsSync(clientDist)) {
+// Try multiple possible locations for the dist folder
+const possibleDistPaths = [
+  path.resolve(__dirname, '../../dist'),      // From server/dist/index.js
+  path.resolve(__dirname, '../../../dist'),   // Alternative structure
+  path.resolve(process.cwd(), 'dist'),        // From working directory
+]
+
+let clientDist: string | null = null
+for (const distPath of possibleDistPaths) {
+  if (fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'))) {
+    clientDist = distPath
+    console.log('✓ Found client dist at:', clientDist)
+    break
+  }
+}
+
+if (clientDist) {
+  // Log available assets for debugging
+  const assetsDir = path.join(clientDist, 'assets')
+  if (fs.existsSync(assetsDir)) {
+    const assets = fs.readdirSync(assetsDir)
+    console.log('✓ Available assets:', assets.slice(0, 10).join(', '), assets.length > 10 ? `... (${assets.length} total)` : '')
+  }
+
   // Serve static assets with proper MIME types
   app.use(express.static(clientDist, {
-    maxAge: '1d',
+    maxAge: config.isProduction ? '1d' : '0',
+    etag: true,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript')
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
       } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css')
+        res.setHeader('Content-Type', 'text/css; charset=utf-8')
       }
     }
   }))
@@ -133,13 +156,23 @@ if (fs.existsSync(clientDist)) {
   app.get('*', (req, res) => {
     // Don't serve index.html for asset requests that failed
     if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|svg|ico|woff|woff2)$/)) {
-      res.status(404).send('Asset not found')
+      console.warn('Asset not found:', req.path)
+      res.status(404).send('Asset not found: ' + req.path)
       return
     }
-    res.sendFile(path.join(clientDist, 'index.html'))
+    res.sendFile(path.join(clientDist!, 'index.html'))
   })
 } else {
-  console.warn('Warning: Client dist folder not found at', clientDist)
+  console.error('ERROR: Client dist folder not found! Tried:', possibleDistPaths)
+  console.error('Current working directory:', process.cwd())
+  console.error('__dirname:', __dirname)
+
+  // Return error page for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.status(500).send('Application not properly deployed. Static files not found.')
+    }
+  })
 }
 
 async function startServer() {
