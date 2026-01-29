@@ -25,40 +25,31 @@ import pricingRoutes from './routes/pricing.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
-// Security headers - only enable strict headers in production with proper HTTPS
-if (config.isProduction) {
-  app.use(helmet({
-    contentSecurityPolicy: false, // Configure separately based on your needs
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false, // Disable COOP to avoid issues with OAuth popups
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  }))
-} else {
-  // In development, only use basic security headers
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: false,
-    originAgentCluster: false,
-  }))
-}
+// Only apply helmet to API routes, not static files
+app.use('/api', helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
+  originAgentCluster: false,
+}))
 
-// CORS configuration
+// CORS configuration - only for API routes
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
   : ['http://localhost:5173', 'http://localhost:3000']
 
-app.use(cors({
+app.use('/api', cors({
   origin: config.isProduction
     ? (origin, callback) => {
+        // Allow same-origin requests (origin is undefined for same-origin)
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true)
         } else {
           callback(new Error('Not allowed by CORS'))
         }
       }
-    : true, // Allow all origins in development
+    : true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
