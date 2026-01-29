@@ -6,6 +6,8 @@ cmds = ["npm ci", "cd server && npm ci"]
 
 [phases.build]
 cmds = [
+  "echo 'Build timestamp:' $(date +%s)",
+  "rm -rf server/public server/dist dist",
   "npm run build",
   "cd server && npm run build",
   "echo '=== Build complete ===' && ls -la server/public/ && ls -la server/dist/"

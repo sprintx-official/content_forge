@@ -114,6 +114,25 @@ app.use('/api/pricing', pricingRoutes)
 // Error handler for API routes only
 app.use('/api', errorHandler)
 
+// Debug endpoint to check static file paths
+app.get('/debug-paths', (req, res) => {
+  const paths = [
+    path.resolve(__dirname, '../public'),
+    path.resolve(process.cwd(), 'server/public'),
+  ]
+  const results = paths.map(p => ({
+    path: p,
+    exists: fs.existsSync(p),
+    hasIndex: fs.existsSync(path.join(p, 'index.html')),
+    files: fs.existsSync(p) ? fs.readdirSync(p).slice(0, 10) : []
+  }))
+  res.json({
+    cwd: process.cwd(),
+    dirname: __dirname,
+    paths: results
+  })
+})
+
 // Serve frontend static files in production
 // Frontend is built to server/public folder
 const possibleDistPaths = [
