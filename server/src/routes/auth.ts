@@ -70,56 +70,61 @@ function clearLoginAttempts(email: string): void {
 
 // POST /api/auth/login
 router.post('/login', validateBody(loginSchema), async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body
+  try {
+    const { email, password } = req.body
 
-  // Check if account is locked
-  const lockStatus = checkAccountLocked(email)
-  if (lockStatus.locked) {
-    const remainingMinutes = Math.ceil((lockStatus.remainingMs || 0) / 60000)
-    res.status(429).json({
-      error: `Account temporarily locked. Try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}.`
-    })
-    return
-  }
-
-  const user = await queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email])
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-    const result = recordFailedAttempt(email)
-    if (result.locked) {
+    // Check if account is locked
+    const lockStatus = checkAccountLocked(email)
+    if (lockStatus.locked) {
+      const remainingMinutes = Math.ceil((lockStatus.remainingMs || 0) / 60000)
       res.status(429).json({
-        error: 'Too many failed attempts. Account locked for 15 minutes.'
+        error: `Account temporarily locked. Try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}.`
       })
-    } else {
-      res.status(401).json({
-        error: 'Invalid email or password',
-        attemptsRemaining: result.attemptsRemaining,
-      })
+      return
     }
-    return
+
+    const user = await queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email])
+    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      const result = recordFailedAttempt(email)
+      if (result.locked) {
+        res.status(429).json({
+          error: 'Too many failed attempts. Account locked for 15 minutes.'
+        })
+      } else {
+        res.status(401).json({
+          error: 'Invalid email or password',
+          attemptsRemaining: result.attemptsRemaining,
+        })
+      }
+      return
+    }
+
+    // Successful login - clear any failed attempts
+    clearLoginAttempts(email)
+
+    const token = signToken(user)
+    const refreshToken = signRefreshToken(user)
+
+    res.json({
+      token,
+      refreshToken,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at },
+    })
+  } catch (error) {
+    console.error('Login error:', error)
+    res.status(500).json({ error: 'Login failed. Please try again.' })
   }
-
-  // Successful login - clear any failed attempts
-  clearLoginAttempts(email)
-
-  const token = signToken(user)
-  const refreshToken = signRefreshToken(user)
-
-  res.json({
-    token,
-    refreshToken,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at },
-  })
 })
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
-  const { refreshToken } = req.body
-  if (!refreshToken) {
-    res.status(400).json({ error: 'Refresh token required' })
-    return
-  }
-
   try {
+    const { refreshToken } = req.body
+    if (!refreshToken) {
+      res.status(400).json({ error: 'Refresh token required' })
+      return
+    }
+
     const decoded = jwt.verify(refreshToken, config.jwtSecret) as { userId: string; type: string }
 
     if (decoded.type !== 'refresh') {
@@ -141,26 +146,38 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
       refreshToken: newRefreshToken,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at },
     })
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired refresh token' })
+  } catch (error) {
+    // JWT verification errors
+    const err = error as Error
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+      res.status(401).json({ error: 'Invalid or expired refresh token' })
+      return
+    }
+    console.error('Refresh token error:', error)
+    res.status(500).json({ error: 'Token refresh failed. Please try again.' })
   }
 })
 
 // GET /api/auth/me
 router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.user!.userId])
-  if (!user) {
-    res.status(404).json({ error: 'User not found' })
-    return
-  }
+  try {
+    const user = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [req.user!.userId])
+    if (!user) {
+      res.status(404).json({ error: 'User not found' })
+      return
+    }
 
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    createdAt: user.created_at,
-  })
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.created_at,
+    })
+  } catch (error) {
+    console.error('Get user error:', error)
+    res.status(500).json({ error: 'Failed to retrieve user data' })
+  }
 })
 
 export default router
