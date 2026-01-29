@@ -151,49 +151,36 @@ app.get('/test-asset', (req, res) => {
   }
 })
 
-if (fs.existsSync(clientDist)) {
-  // Log available assets for debugging
-  const assetsDir = path.join(clientDist, 'assets')
-  if (fs.existsSync(assetsDir)) {
-    const assets = fs.readdirSync(assetsDir)
-    console.log('✓ Available assets:', assets.slice(0, 10).join(', '), assets.length > 10 ? `... (${assets.length} total)` : '')
+// Serve assets manually (express.static was failing)
+app.get('/assets/:filename', (req, res) => {
+  const filePath = path.join(clientDist, 'assets', req.params.filename)
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Asset not found')
   }
 
-  // Serve static assets with proper MIME types
-  app.use(express.static(clientDist, {
-    maxAge: config.isProduction ? '1d' : '0',
-    etag: true,
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
-      } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css; charset=utf-8')
-      }
-    }
-  }))
+  // Set correct MIME type
+  if (req.params.filename.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
+  } else if (req.params.filename.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8')
+  }
 
-  // SPA fallback - serve index.html for all non-asset routes
-  app.get('*', (req, res) => {
-    // Don't serve index.html for asset requests that failed
-    if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|svg|ico|woff|woff2)$/)) {
-      console.warn('Asset not found:', req.path)
-      res.status(404).send('Asset not found: ' + req.path)
-      return
-    }
-    res.sendFile(path.join(clientDist, 'index.html'))
-  })
-} else {
-  console.error('ERROR: Client dist folder not found at:', clientDist)
-  console.error('Current working directory:', process.cwd())
-  console.error('__dirname:', __dirname)
+  res.sendFile(filePath)
+})
 
-  // Return error page for all non-API routes
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.status(500).send('Application not properly deployed. Static files not found.')
-    }
-  })
-}
+// Serve other static files (favicon, etc)
+app.get('/:filename', (req, res, next) => {
+  const filePath = path.join(clientDist, req.params.filename)
+  if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
+    return res.sendFile(filePath)
+  }
+  next()
+})
+
+// SPA fallback - serve index.html for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'))
+})
 
 async function startServer() {
   await initializeSchema()
