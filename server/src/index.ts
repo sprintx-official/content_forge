@@ -116,20 +116,19 @@ app.use('/api', errorHandler)
 
 // Debug endpoint to check static file paths
 app.get('/debug-paths', (req, res) => {
-  const paths = [
-    path.resolve(__dirname, '../public'),
-    path.resolve(process.cwd(), 'server/public'),
-  ]
-  const results = paths.map(p => ({
-    path: p,
-    exists: fs.existsSync(p),
-    hasIndex: fs.existsSync(path.join(p, 'index.html')),
-    files: fs.existsSync(p) ? fs.readdirSync(p).slice(0, 10) : []
-  }))
+  const publicPath = path.resolve(__dirname, '../public')
+  const assetsPath = path.join(publicPath, 'assets')
+  const indexPath = path.join(publicPath, 'index.html')
+
   res.json({
     cwd: process.cwd(),
     dirname: __dirname,
-    paths: results
+    publicPath,
+    publicExists: fs.existsSync(publicPath),
+    assets: fs.existsSync(assetsPath) ? fs.readdirSync(assetsPath) : [],
+    indexHtmlSnippet: fs.existsSync(indexPath)
+      ? fs.readFileSync(indexPath, 'utf-8').match(/assets\/[^"']+/g)
+      : null
   })
 })
 
