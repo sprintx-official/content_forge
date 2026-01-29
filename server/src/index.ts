@@ -134,21 +134,24 @@ app.get('/debug-paths', (req, res) => {
 
 // Serve frontend static files in production
 // Frontend is built to server/public folder
-const possibleDistPaths = [
-  path.resolve(__dirname, '../public'),       // From server/dist/index.js -> server/public
-  path.resolve(process.cwd(), 'server/public'), // From working directory
-]
+const clientDist = path.resolve(__dirname, '../public')
+console.log('✓ Client dist path:', clientDist)
+console.log('✓ Client dist exists:', fs.existsSync(clientDist))
 
-let clientDist: string | null = null
-for (const distPath of possibleDistPaths) {
-  if (fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'))) {
-    clientDist = distPath
-    console.log('✓ Found client dist at:', clientDist)
-    break
+// Test route for a specific asset
+app.get('/test-asset', (req, res) => {
+  const files = fs.readdirSync(path.join(clientDist, 'assets'))
+  const jsFile = files.find(f => f.endsWith('.js') && f.startsWith('index-'))
+  if (jsFile) {
+    const filePath = path.join(clientDist, 'assets', jsFile)
+    console.log('Serving test file:', filePath)
+    res.sendFile(filePath)
+  } else {
+    res.status(404).send('No index JS found')
   }
-}
+})
 
-if (clientDist) {
+if (fs.existsSync(clientDist)) {
   // Log available assets for debugging
   const assetsDir = path.join(clientDist, 'assets')
   if (fs.existsSync(assetsDir)) {
@@ -177,10 +180,10 @@ if (clientDist) {
       res.status(404).send('Asset not found: ' + req.path)
       return
     }
-    res.sendFile(path.join(clientDist!, 'index.html'))
+    res.sendFile(path.join(clientDist, 'index.html'))
   })
 } else {
-  console.error('ERROR: Client dist folder not found! Tried:', possibleDistPaths)
+  console.error('ERROR: Client dist folder not found at:', clientDist)
   console.error('Current working directory:', process.cwd())
   console.error('__dirname:', __dirname)
 
