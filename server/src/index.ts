@@ -111,16 +111,35 @@ app.use('/api/generate', generateLimiter, generateRoutes)
 app.use('/api/memory', memoryRoutes)
 app.use('/api/pricing', pricingRoutes)
 
-// Error handler for API routes
-app.use(errorHandler)
+// Error handler for API routes only
+app.use('/api', errorHandler)
 
 // Serve frontend static files in production
 const clientDist = path.resolve(__dirname, '../../dist')
 if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist))
-  app.get('*', (_req, res) => {
+  // Serve static assets with proper MIME types
+  app.use(express.static(clientDist, {
+    maxAge: '1d',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript')
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css')
+      }
+    }
+  }))
+
+  // SPA fallback - serve index.html for all non-asset routes
+  app.get('*', (req, res) => {
+    // Don't serve index.html for asset requests that failed
+    if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|svg|ico|woff|woff2)$/)) {
+      res.status(404).send('Asset not found')
+      return
+    }
     res.sendFile(path.join(clientDist, 'index.html'))
   })
+} else {
+  console.warn('Warning: Client dist folder not found at', clientDist)
 }
 
 async function startServer() {
