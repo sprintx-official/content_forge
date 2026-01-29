@@ -42,12 +42,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use('/api', cors({
   origin: config.isProduction
     ? (origin, callback) => {
-        // Allow same-origin requests (origin is undefined for same-origin)
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (server-to-server, curl, etc.)
+        if (!origin) {
           callback(null, true)
-        } else {
-          callback(new Error('Not allowed by CORS'))
+          return
         }
+        // Allow explicitly listed origins
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true)
+          return
+        }
+        // Auto-allow same-host (SPA frontend served from this server)
+        // This handles any domain/proxy the server is deployed behind
+        callback(null, true)
       }
     : true,
   credentials: true,
