@@ -115,11 +115,10 @@ app.use('/api/pricing', pricingRoutes)
 app.use('/api', errorHandler)
 
 // Serve frontend static files in production
-// Try multiple possible locations for the dist folder
+// Frontend is built to server/public folder
 const possibleDistPaths = [
-  path.resolve(__dirname, '../../dist'),      // From server/dist/index.js
-  path.resolve(__dirname, '../../../dist'),   // Alternative structure
-  path.resolve(process.cwd(), 'dist'),        // From working directory
+  path.resolve(__dirname, '../public'),       // From server/dist/index.js -> server/public
+  path.resolve(process.cwd(), 'server/public'), // From working directory
 ]
 
 let clientDist: string | null = null

@@ -7,10 +7,9 @@ cmds = ["npm ci", "cd server && npm ci"]
 [phases.build]
 cmds = [
   "npm run build",
-  "echo '=== Frontend build complete ===' && ls -la dist/ && ls -la dist/assets/",
   "cd server && npm run build",
-  "echo '=== Server build complete ===' && ls -la server/dist/"
+  "echo '=== Build complete ===' && ls -la server/public/ && ls -la server/dist/"
 ]
 
 [start]
-cmd = "echo '=== Checking dist folder ===' && ls -la dist/ && ls -la dist/assets/ && echo '=== Starting server ===' && node server/dist/index.js"
+cmd = "node server/dist/index.js"

@@ -28,11 +28,9 @@ WORKDIR /app
 COPY server/package.json server/package-lock.json ./server/
 RUN cd server && npm ci --omit=dev
 
-# Copy built frontend
-COPY --from=build /app/dist ./dist
-
-# Copy built server
+# Copy built server (includes public folder with frontend)
 COPY --from=build /app/server/dist ./server/dist
+COPY --from=build /app/server/public ./server/public
 
 EXPOSE 3000
 
