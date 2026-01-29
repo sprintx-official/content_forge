@@ -65,8 +65,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       const path = search
         ? `/api/history?search=${encodeURIComponent(search)}`
         : '/api/history'
-      const items = await api.get<HistoryItem[]>(path)
-      set({ items })
+      const res = await api.get<{ data: HistoryItem[]; pagination: unknown }>(path)
+      set({ items: res.data })
     } catch {
       set({ items: [] })
     } finally {
