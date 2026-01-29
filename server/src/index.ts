@@ -25,11 +25,24 @@ import pricingRoutes from './routes/pricing.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
-// Security headers
-app.use(helmet({
-  contentSecurityPolicy: config.isProduction ? undefined : false, // Disable CSP in dev for hot reload
-  crossOriginEmbedderPolicy: false, // Allow embedding
-}))
+// Security headers - only enable strict headers in production with proper HTTPS
+if (config.isProduction) {
+  app.use(helmet({
+    contentSecurityPolicy: false, // Configure separately based on your needs
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false, // Disable COOP to avoid issues with OAuth popups
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }))
+} else {
+  // In development, only use basic security headers
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false,
+  }))
+}
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
