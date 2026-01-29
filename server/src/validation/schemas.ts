@@ -32,7 +32,7 @@ export const registerSchema = z.object({
 // Generate schemas
 export const generateInputSchema = z.object({
   contentType: z.enum(['article', 'blog', 'social', 'press', 'script', 'ad-copy']),
-  topic: z.string().min(1, 'Topic is required').max(1000, 'Topic too long'),
+  topic: z.string().min(1, 'Topic is required').max(5000, 'Topic too long'),
   tone: z.enum(['professional', 'casual', 'persuasive', 'informative', 'inspirational']),
   audience: z.enum(['general', 'students', 'professionals', 'youth', 'seniors']),
   length: z.enum(['short', 'medium', 'long', 'custom']),

@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 import { CONTENT_TYPES } from '@/constants'
 import { useForgeStore } from '@/stores/useForgeStore'
 
-const MAX_LENGTH = 500
+const MAX_LENGTH = 5000
 
 export default function TopicInput() {
   const topic = useForgeStore((s) => s.input.topic)
