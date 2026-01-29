@@ -2,11 +2,13 @@ import { api } from '@/lib/api'
 import type { FeedbackItem } from '@/types'
 
 export async function getAllFeedback(): Promise<FeedbackItem[]> {
-  return api.get<FeedbackItem[]>('/api/feedback')
+  const res = await api.get<{ data: FeedbackItem[]; pagination: unknown }>('/api/feedback')
+  return res.data
 }
 
 export async function getFeedbackByAgentId(agentId: string): Promise<FeedbackItem[]> {
-  return api.get<FeedbackItem[]>(`/api/feedback/agent/${agentId}`)
+  const res = await api.get<{ data: FeedbackItem[]; pagination: unknown }>(`/api/feedback/agent/${agentId}`)
+  return res.data
 }
 
 export async function getFeedbackCountByAgentId(agentId: string): Promise<number> {
