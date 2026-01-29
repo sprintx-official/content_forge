@@ -111,8 +111,14 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
       user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at },
     })
   } catch (error) {
-    console.error('Login error:', error)
-    res.status(500).json({ error: 'Login failed. Please try again.' })
+    const err = error as Error
+    console.error('Login error:', err.message)
+    console.error('Login error stack:', err.stack)
+    res.status(500).json({
+      error: 'Login failed. Please try again.',
+      // Include error details in development only
+      ...(process.env.NODE_ENV !== 'production' && { debug: err.message })
+    })
   }
 })
 
