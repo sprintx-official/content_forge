@@ -242,11 +242,25 @@ Requirements from the original request:
 ${isLastAgent ? 'This is the final step. Produce the polished, final content.' : 'Process and pass the improved content to the next agent.'}`
         }
 
+        // Resolve per-agent provider and API key (each agent may use a different model/provider)
+        const agentModelId: string = ctx.agent.model?.trim() || resolvedModelId!
+        const agentProvider: string = inferProvider(agentModelId) || provider
+        let agentApiKey = keyRow.api_key
+        if (agentProvider !== provider) {
+          const agentKeyRow = await queryOne<ApiKeyRow>(
+            'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [agentProvider]
+          )
+          if (!agentKeyRow) {
+            throw new ProviderError(agentProvider, 422, `No active API key configured for ${agentProvider} (needed by agent "${ctx.agent.name}"). Add one in Settings.`)
+          }
+          agentApiKey = agentKeyRow.api_key
+        }
+
         // Call AI for this agent
         const agentResponse = await callProvider({
-          provider,
-          model: ctx.agent.model || resolvedModelId,
-          apiKey: keyRow.api_key,
+          provider: agentProvider,
+          model: agentModelId,
+          apiKey: agentApiKey,
           systemPrompt: agentSystemPrompt,
           userPrompt: agentUserPrompt,
           maxTokens,
@@ -257,8 +271,8 @@ ${isLastAgent ? 'This is the final step. Produce the polished, final content.' :
         totalCachedInputTokens += agentResponse.cachedInputTokens
         totalOutputTokens += agentResponse.outputTokens
         const agentCost = await calculateCost(
-          provider,
-          ctx.agent.model || resolvedModelId,
+          agentProvider,
+          agentModelId,
           agentResponse.inputTokens,
           agentResponse.outputTokens,
           agentResponse.cachedInputTokens
@@ -284,7 +298,7 @@ ${isLastAgent ? 'This is the final step. Produce the polished, final content.' :
             outputTokens: agentResponse.outputTokens,
             totalTokens: agentResponse.inputTokens + agentResponse.cachedInputTokens + agentResponse.outputTokens,
             costUsd: agentCost,
-            model: ctx.agent.model || resolvedModelId,
+            model: agentModelId,
           },
         })
 
