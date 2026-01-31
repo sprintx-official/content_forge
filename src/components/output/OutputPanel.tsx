@@ -54,11 +54,12 @@ export default function OutputPanel() {
     return editorRef.current?.getHTML() ?? output?.content ?? ''
   }, [output])
 
-  if (!output) return null
-
-  // Resolve display names for badges
+  // Resolve display names for badges (hooks must be called before any early return)
   const tones = useForgeOptionsStore((s) => s.tones)
   const audiences = useForgeOptionsStore((s) => s.audiences)
+
+  if (!output) return null
+
   const toneName = tones.find((t) => t.id === input.tone)?.name ?? input.tone
   const audienceName = audiences.find((a) => a.id === input.audience)?.name ?? input.audience
 
