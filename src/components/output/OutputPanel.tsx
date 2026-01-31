@@ -12,7 +12,7 @@ import ExportActions from '@/components/output/ExportActions'
 import RefinePanel from '@/components/output/RefinePanel'
 import DiffView from '@/components/output/DiffView'
 import MiniChatPanel from '@/components/output/MiniChatPanel'
-import { TONES, AUDIENCES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import type { Editor } from '@tiptap/react'
 
 export default function OutputPanel() {
@@ -57,8 +57,10 @@ export default function OutputPanel() {
   if (!output) return null
 
   // Resolve display names for badges
-  const toneName = TONES.find((t) => t.id === input.tone)?.name ?? input.tone
-  const audienceName = AUDIENCES.find((a) => a.id === input.audience)?.name ?? input.audience
+  const tones = useForgeOptionsStore((s) => s.tones)
+  const audiences = useForgeOptionsStore((s) => s.audiences)
+  const toneName = tones.find((t) => t.id === input.tone)?.name ?? input.tone
+  const audienceName = audiences.find((a) => a.id === input.audience)?.name ?? input.audience
 
   // Active file for the editor
   const activeFile = parsedFiles[activeFileIndex] ?? null

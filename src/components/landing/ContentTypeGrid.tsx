@@ -9,9 +9,9 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CONTENT_TYPES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 
-// Map the string icon names stored in CONTENT_TYPES to actual Lucide components
+// Map the string icon names stored in content type options to actual Lucide components
 const ICON_MAP: Record<string, LucideIcon> = {
   FileText,
   PenTool,
@@ -23,6 +23,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export default function ContentTypeGrid() {
   const navigate = useNavigate()
+  const contentTypes = useForgeOptionsStore((s) => s.contentTypes)
+
+  if (contentTypes.length === 0) return null
 
   return (
     <section className="px-4 max-w-6xl mx-auto">
@@ -38,7 +41,7 @@ export default function ContentTypeGrid() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {CONTENT_TYPES.map((type) => {
+        {contentTypes.map((type) => {
           const Icon = ICON_MAP[type.icon] ?? FileText
 
           return (

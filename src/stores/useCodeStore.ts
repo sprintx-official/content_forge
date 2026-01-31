@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { CodeLanguage } from '@/types'
 import { useForgeStore } from '@/stores/useForgeStore'
+import { uploadAttachments } from '@/services/attachmentService'
 
 interface CodeTokenUsage {
   inputTokens: number
@@ -21,9 +22,11 @@ interface CodeState {
   tokenUsage: CodeTokenUsage | null
   abortController: AbortController | null
   error: string | null
+  attachments: File[]
 
   setPrompt: (prompt: string) => void
   setLanguage: (language: CodeLanguage) => void
+  setAttachments: (files: File[]) => void
   generate: () => Promise<void>
   cancelGeneration: () => void
   reset: () => void
@@ -40,12 +43,14 @@ export const useCodeStore = create<CodeState>((set, get) => ({
   tokenUsage: null,
   abortController: null,
   error: null,
+  attachments: [],
 
   setPrompt: (prompt: string) => set({ prompt }),
   setLanguage: (language: CodeLanguage) => set({ language }),
+  setAttachments: (files: File[]) => set({ attachments: files }),
 
   generate: async () => {
-    const { prompt, language } = get()
+    const { prompt, language, attachments } = get()
     if (!prompt.trim()) return
 
     set({
@@ -55,6 +60,21 @@ export const useCodeStore = create<CodeState>((set, get) => ({
       tokenUsage: null,
       error: null,
     })
+
+    // Upload attachments if any
+    let attachmentIds: string[] | undefined
+    if (attachments.length > 0) {
+      try {
+        const uploaded = await uploadAttachments(attachments)
+        attachmentIds = uploaded.map((a) => a.id)
+      } catch (err) {
+        set({
+          isGenerating: false,
+          error: err instanceof Error ? err.message : 'Failed to upload files',
+        })
+        return
+      }
+    }
 
     const controller = new AbortController()
     set({ abortController: controller })
@@ -73,6 +93,7 @@ export const useCodeStore = create<CodeState>((set, get) => ({
           language,
           ...(selectedModel?.modelId && { modelId: selectedModel.modelId }),
           ...(selectedModel?.provider && { provider: selectedModel.provider }),
+          ...(attachmentIds && { attachmentIds }),
         }),
         signal: controller.signal,
       })
@@ -167,5 +188,6 @@ export const useCodeStore = create<CodeState>((set, get) => ({
     tokenUsage: null,
     abortController: null,
     error: null,
+    attachments: [],
   }),
 }))

@@ -12,6 +12,14 @@ const badgeVariants = {
     'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
   outline:
     'bg-transparent text-[#9ca3af] border-white/20',
+  amber:
+    'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30',
+  blue:
+    'bg-[#3b82f6]/15 text-[#3b82f6] border-[#3b82f6]/30',
+  rose:
+    'bg-[#fb7185]/15 text-[#fb7185] border-[#fb7185]/30',
+  teal:
+    'bg-[#2dd4bf]/15 text-[#2dd4bf] border-[#2dd4bf]/30',
 } as const
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

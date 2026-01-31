@@ -1,11 +1,23 @@
 import { cn } from '@/lib/utils'
-import { TONES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import { useForgeStore } from '@/stores/useForgeStore'
 import type { Tone } from '@/types'
 
 export default function ToneSelector() {
   const tone = useForgeStore((s) => s.input.tone)
   const setTone = useForgeStore((s) => s.setTone)
+  const tones = useForgeOptionsStore((s) => s.tones)
+
+  if (tones.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+          Tone
+        </label>
+        <div className="text-sm text-[#6b7280]">Loading tones...</div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -13,7 +25,7 @@ export default function ToneSelector() {
         Tone
       </label>
       <div className="flex flex-wrap gap-2">
-        {TONES.map((t) => {
+        {tones.map((t) => {
           const isSelected = tone === t.id
 
           return (

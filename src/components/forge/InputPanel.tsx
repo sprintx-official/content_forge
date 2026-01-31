@@ -2,7 +2,6 @@ import { Zap, RotateCcw, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
 import WorkflowSelector from './WorkflowSelector'
-import ModelSelector from './ModelSelector'
 import ContentTypeSelector from './ContentTypeSelector'
 import ToneSelector from './ToneSelector'
 import AudienceSelector from './AudienceSelector'
@@ -27,7 +26,6 @@ export default function InputPanel() {
 
       <div className="space-y-6">
         <WorkflowSelector />
-        <ModelSelector />
         <ContentTypeSelector />
         <ToneSelector />
         <AudienceSelector />

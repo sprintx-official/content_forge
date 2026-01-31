@@ -29,8 +29,8 @@ export default function MiniChatPanel({ contentContext }: MiniChatPanelProps) {
     }
   }, [isOpen, activeConversationId, createConversation])
 
-  const handleSend = (content: string) => {
-    sendMessage(content, contentContext)
+  const handleSend = (content: string, files?: File[]) => {
+    sendMessage(content, contentContext, files)
   }
 
   const handleQuickAction = (prompt: string) => {

@@ -5,6 +5,7 @@ export const sendMessageSchema = z.object({
   context: z.string().max(50000, 'Context too long').optional(),
   modelId: z.string().max(100).optional(),
   provider: z.string().max(50).optional(),
+  attachmentIds: z.array(z.string().max(100)).max(10).optional(),
 })
 
 export const createConversationSchema = z.object({

@@ -4,10 +4,11 @@ import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateBody } from '../validation/middleware.js'
 import { sendMessageSchema, createConversationSchema } from '../validation/chatSchemas.js'
-import { callProviderStream, ProviderError, type GenerationResponse } from '../services/aiProvider.js'
+import { callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
 import { calculateCost } from '../services/costCalculator.js'
 import { autoRoute } from '../services/autoRouter.js'
-import type { AuthenticatedRequest, ChatConversationRow, ChatMessageRow, ApiKeyRow } from '../types.js'
+import { isR2Configured, downloadFromR2 } from '../services/r2.js'
+import type { AuthenticatedRequest, ChatConversationRow, ChatMessageRow, ApiKeyRow, ChatAttachmentRow } from '../types.js'
 
 const router = Router()
 
@@ -57,6 +58,67 @@ function buildMessages(
   parts.push(`User: ${userContent}`)
 
   return { systemPrompt, userPrompt: parts.join('\n\n') }
+}
+
+/**
+ * Load attachments from DB and build multimodal content array for the AI provider.
+ * Images are sent as base64 data URLs, documents have their text injected into the prompt.
+ */
+async function buildMultimodalContent(
+  textPrompt: string,
+  attachmentIds: string[],
+  userId: string,
+): Promise<MessageContent[]> {
+  if (!attachmentIds || attachmentIds.length === 0) return []
+
+  const placeholders = attachmentIds.map((_, i) => `$${i + 1}`).join(', ')
+  const attachments = await query<ChatAttachmentRow>(
+    `SELECT * FROM chat_attachments WHERE id IN (${placeholders}) AND user_id = $${attachmentIds.length + 1}`,
+    [...attachmentIds, userId]
+  )
+
+  if (attachments.length === 0) return []
+
+  const content: MessageContent[] = []
+  let enrichedText = textPrompt
+
+  for (const att of attachments) {
+    if (att.mime_type.startsWith('image/')) {
+      // Get image as base64 data URL
+      let dataUrl = att.data_url
+      if (!dataUrl && att.r2_key) {
+        try {
+          const { body, contentType } = await downloadFromR2(att.r2_key)
+          dataUrl = `data:${contentType};base64,${body.toString('base64')}`
+        } catch {
+          // Skip if download fails
+          continue
+        }
+      }
+      if (dataUrl) {
+        content.push({ type: 'image_url', image_url: { url: dataUrl } })
+      }
+    } else if (att.extracted_text) {
+      // Append document text to the text prompt
+      enrichedText += `\n\n[Attached file: ${att.filename}]\n${att.extracted_text}`
+    }
+  }
+
+  // Put text first, then images
+  return [{ type: 'text', text: enrichedText }, ...content]
+}
+
+function formatAttachmentForClient(row: ChatAttachmentRow) {
+  return {
+    id: row.id,
+    filename: row.filename,
+    mimeType: row.mime_type,
+    size: row.size,
+    url: row.data_url || `/api/attachments/${row.id}/file`,
+    extractedText: row.extracted_text || undefined,
+    width: row.width || undefined,
+    height: row.height || undefined,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +181,28 @@ router.get('/conversations/:id', authenticate, async (req: AuthenticatedRequest,
     [conv.id]
   )
 
-  res.json({ conversation: conv, messages })
+  // Load attachments for all messages in this conversation
+  const messageIds = messages.map((m) => m.id)
+  let attachmentsByMessage: Record<string, ChatAttachmentRow[]> = {}
+  if (messageIds.length > 0) {
+    const placeholders = messageIds.map((_, i) => `$${i + 1}`).join(', ')
+    const allAttachments = await query<ChatAttachmentRow>(
+      `SELECT * FROM chat_attachments WHERE message_id IN (${placeholders})`,
+      messageIds,
+    )
+    for (const att of allAttachments) {
+      if (!att.message_id) continue
+      if (!attachmentsByMessage[att.message_id]) attachmentsByMessage[att.message_id] = []
+      attachmentsByMessage[att.message_id].push(att)
+    }
+  }
+
+  const messagesWithAttachments = messages.map((m) => ({
+    ...m,
+    attachments: (attachmentsByMessage[m.id] || []).map(formatAttachmentForClient),
+  }))
+
+  res.json({ conversation: conv, messages: messagesWithAttachments })
 })
 
 // ---------------------------------------------------------------------------
@@ -148,11 +231,12 @@ router.delete('/conversations/:id', authenticate, async (req: AuthenticatedReque
 
 router.post('/conversations/:id/stream', authenticate, validateBody(sendMessageSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const userId = req.user!.userId
-  const { content, context, modelId: reqModelId, provider: reqProvider } = req.body as {
+  const { content, context, modelId: reqModelId, provider: reqProvider, attachmentIds } = req.body as {
     content: string
     context?: string
     modelId?: string
     provider?: string
+    attachmentIds?: string[]
   }
 
   const conv = await queryOne<ChatConversationRow>(
@@ -190,6 +274,20 @@ router.post('/conversations/:id/stream', authenticate, validateBody(sendMessageS
     [userMsgId, conv.id, 'user', content, userNow]
   )
 
+  // Link attachments to this message
+  let userAttachments: ChatAttachmentRow[] = []
+  if (attachmentIds && attachmentIds.length > 0) {
+    const placeholders = attachmentIds.map((_, i) => `$${i + 1}`).join(', ')
+    await execute(
+      `UPDATE chat_attachments SET message_id = $${attachmentIds.length + 1} WHERE id IN (${placeholders}) AND user_id = $${attachmentIds.length + 2}`,
+      [...attachmentIds, userMsgId, userId]
+    )
+    userAttachments = await query<ChatAttachmentRow>(
+      `SELECT * FROM chat_attachments WHERE message_id = $1`,
+      [userMsgId]
+    )
+  }
+
   // Get conversation history (last 20 messages for context window)
   const history = await query<ChatMessageRow>(
     'SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 20',
@@ -200,6 +298,11 @@ router.post('/conversations/:id/stream', authenticate, validateBody(sendMessageS
   const previousMessages = history.reverse().slice(0, -1)
 
   const { systemPrompt, userPrompt } = buildMessages(previousMessages, content, context)
+
+  // Build multimodal content if attachments exist
+  const userContent = attachmentIds && attachmentIds.length > 0
+    ? await buildMultimodalContent(userPrompt, attachmentIds, userId)
+    : undefined
 
   // Start SSE
   res.writeHead(200, {
@@ -212,8 +315,11 @@ router.post('/conversations/:id/stream', authenticate, validateBody(sendMessageS
   const abortController = new AbortController()
   req.on('close', () => abortController.abort())
 
-  // Emit user message ID
-  res.write(`event: user_message\ndata: ${JSON.stringify({ id: userMsgId })}\n\n`)
+  // Emit user message ID + attachment metadata
+  res.write(`event: user_message\ndata: ${JSON.stringify({
+    id: userMsgId,
+    attachments: userAttachments.map(formatAttachmentForClient),
+  })}\n\n`)
 
   try {
     const aiResponse = await new Promise<GenerationResponse>((resolve, reject) => {
@@ -223,6 +329,7 @@ router.post('/conversations/:id/stream', authenticate, validateBody(sendMessageS
         apiKey,
         systemPrompt,
         userPrompt,
+        userContent,
         maxTokens: 4096,
       }, {
         onToken: (chunk) => {

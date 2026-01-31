@@ -156,6 +156,36 @@ export interface ChatMessageRow {
   created_at: string
 }
 
+export interface ChatAttachmentRow {
+  id: string
+  message_id: string | null
+  user_id: string
+  filename: string
+  mime_type: string
+  size: number
+  r2_key: string | null
+  data_url: string | null
+  extracted_text: string | null
+  width: number | null
+  height: number | null
+  created_at: string
+}
+
+export interface ForgeOptionRow {
+  id: string
+  category: 'content_type' | 'tone' | 'audience'
+  value: string
+  label: string
+  description: string
+  guidance: string
+  icon: string
+  placeholder: string
+  sort_order: number
+  is_active: number
+  created_at: string
+  updated_at: string
+}
+
 export interface GeneratedImageRow {
   id: string
   user_id: string

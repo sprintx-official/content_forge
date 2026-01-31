@@ -1,6 +1,6 @@
 import { FileText, PenTool, Share2, Newspaper, Film, Megaphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CONTENT_TYPES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import { useForgeStore } from '@/stores/useForgeStore'
 import type { ContentType } from '@/types'
 import type { LucideIcon } from 'lucide-react'
@@ -17,6 +17,18 @@ const iconMap: Record<string, LucideIcon> = {
 export default function ContentTypeSelector() {
   const contentType = useForgeStore((s) => s.input.contentType)
   const setContentType = useForgeStore((s) => s.setContentType)
+  const contentTypes = useForgeOptionsStore((s) => s.contentTypes)
+
+  if (contentTypes.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+          Content Type
+        </label>
+        <div className="text-sm text-[#6b7280]">Loading content types...</div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -24,7 +36,7 @@ export default function ContentTypeSelector() {
         Content Type
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {CONTENT_TYPES.map((type) => {
+        {contentTypes.map((type) => {
           const Icon = iconMap[type.icon]
           const isSelected = contentType === type.id
 

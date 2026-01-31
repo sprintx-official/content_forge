@@ -129,7 +129,9 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
         placeholder={availableModels.length === 0 ? 'No models available — configure API keys first' : 'Select an AI model'}
         options={availableModels.map((m) => ({
           value: m.id,
-          label: `${m.name} (${m.provider})`,
+          label: m.tags?.length
+            ? `${m.name} (${m.provider}) — ${m.tags[0]}`
+            : `${m.name} (${m.provider})`,
         }))}
       />
 

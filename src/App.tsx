@@ -4,6 +4,7 @@ import Layout from '@/components/layout/Layout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import AdminGuard from '@/components/auth/AdminGuard'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 
 // Lazy load pages for code splitting
 const ForgePage = lazy(() => import('@/pages/ForgePage'))
@@ -26,10 +27,18 @@ export default function App() {
   const initialize = useAuthStore((s) => s.initialize)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isLoading = useAuthStore((s) => s.isLoading)
+  const loadOptions = useForgeOptionsStore((s) => s.loadOptions)
 
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  // Load forge options (content types, tones, audiences) once authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadOptions()
+    }
+  }, [isAuthenticated, loadOptions])
 
   if (isLoading) {
     return (

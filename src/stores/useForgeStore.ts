@@ -13,6 +13,7 @@ import type {
   RefineState,
 } from '@/types'
 import { generateContent, generateContentStream } from '@/services/contentGenerator'
+import { uploadAttachments } from '@/services/attachmentService'
 import { PROCESSING_STAGES } from '@/constants'
 import { getAllAgents } from '@/services/agentService'
 import { buildStagesFromWorkflow } from '@/services/workflowService'
@@ -64,6 +65,10 @@ interface ForgeState {
   applyRefinement: () => void
   rejectRefinement: () => void
 
+  // Attachments
+  attachments: File[]
+  setAttachments: (files: File[]) => void
+
   setInput: (partial: Partial<ForgeInput>) => void
   setContentType: (contentType: ContentType) => void
   setTone: (tone: Tone) => void
@@ -83,9 +88,9 @@ function makeTimestamp(): string {
 }
 
 const defaultInput: ForgeInput = {
-  contentType: 'article',
-  tone: 'professional',
-  audience: 'general',
+  contentType: '',
+  tone: '',
+  audience: '',
   length: 'medium',
   topic: '',
 }
@@ -109,6 +114,10 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
   parsedFiles: [],
   activeFileIndex: 0,
   setActiveFileIndex: (index: number) => set({ activeFileIndex: index }),
+
+  // Attachments
+  attachments: [],
+  setAttachments: (files: File[]) => set({ attachments: files }),
 
   // Fullscreen
   isFullscreen: false,
@@ -257,7 +266,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
   },
 
   generate: async () => {
-    const { input, selectedWorkflow } = get()
+    const { input, selectedWorkflow, attachments } = get()
 
     let stages: ProcessingStage[]
 
@@ -283,10 +292,28 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
       abortController: null,
     })
 
+    // Upload attachments if any
+    let attachmentIds: string[] | undefined
+    if (attachments.length > 0) {
+      try {
+        const uploaded = await uploadAttachments(attachments)
+        attachmentIds = uploaded.map((a) => a.id)
+      } catch (err) {
+        set({
+          isProcessing: false,
+          error: err instanceof Error ? err.message : 'Failed to upload files',
+        })
+        return
+      }
+    }
+
     // Start SSE streaming generation
     const controller = generateContentStream(
       {
-        input,
+        input: {
+          ...input,
+          ...(attachmentIds && { attachmentIds }),
+        },
         workflowId: selectedWorkflow?.id,
       },
       {
@@ -437,6 +464,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
       streamingContent: '',
       terminalLogs: [],
       abortController: null,
+      attachments: [],
     })
   },
 }))

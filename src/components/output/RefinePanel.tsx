@@ -1,6 +1,6 @@
 import { Wand2, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { TONES, AUDIENCES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import type { Tone, Audience } from '@/types'
 
 interface RefinePanelProps {
@@ -26,6 +26,8 @@ export default function RefinePanel({
   onApply,
   onCancel,
 }: RefinePanelProps) {
+  const tones = useForgeOptionsStore((s) => s.tones)
+  const audiences = useForgeOptionsStore((s) => s.audiences)
   const toneChanged = refineTone !== currentTone
   const audienceChanged = refineAudience !== currentAudience
   const hasChanges = toneChanged || audienceChanged
@@ -58,7 +60,7 @@ export default function RefinePanel({
           Tone {toneChanged && <span className="text-[#a855f7] normal-case">(changed)</span>}
         </label>
         <div className="flex flex-wrap gap-2">
-          {TONES.map((t) => (
+          {tones.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -83,7 +85,7 @@ export default function RefinePanel({
           Audience {audienceChanged && <span className="text-[#f472b6] normal-case">(changed)</span>}
         </label>
         <div className="flex flex-wrap gap-2">
-          {AUDIENCES.map((a) => (
+          {audiences.map((a) => (
             <button
               key={a.id}
               type="button"

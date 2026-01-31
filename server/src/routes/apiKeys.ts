@@ -6,6 +6,7 @@ import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
 import { validateBody, validateParams, createApiKeySchema } from '../validation/index.js'
 import type { AuthenticatedRequest, ApiKeyRow } from '../types.js'
+import { enrichModelsWithCatalog } from '../services/modelCatalog.js'
 
 const router = Router()
 
@@ -39,6 +40,8 @@ interface ProviderModel {
   id: string
   name: string
   provider: string
+  description?: string
+  tags?: string[]
 }
 
 /**
@@ -286,9 +289,10 @@ router.get('/models', authenticate, async (_req: AuthenticatedRequest, res: Resp
     rows.map((row) => fetchProviderModels(row.provider, row.api_key))
   )
   const models = results.flat()
+  const enrichedModels = enrichModelsWithCatalog(models)
 
-  modelsCache = { models, expiresAt: Date.now() + CACHE_TTL_MS }
-  res.json(models)
+  modelsCache = { models: enrichedModels, expiresAt: Date.now() + CACHE_TTL_MS }
+  res.json(enrichedModels)
 })
 
 // GET /api/keys/:provider/models — Fetch live models for a specific provider
@@ -304,7 +308,8 @@ router.get('/:provider/models', authenticate, validateParams(providerParamSchema
   }
 
   const models = await fetchProviderModels(provider, row.api_key)
-  res.json(models)
+  const enrichedModels = enrichModelsWithCatalog(models)
+  res.json(enrichedModels)
 })
 
 // POST /api/keys — Add or update key (upsert by provider)

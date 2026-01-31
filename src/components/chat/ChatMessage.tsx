@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Check, Bot, User } from 'lucide-react'
+import { Copy, Check, Bot, User, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage as ChatMessageType } from '@/types'
 
@@ -16,6 +16,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const imageAttachments = message.attachments?.filter((a) => a.mimeType.startsWith('image/')) || []
+  const docAttachments = message.attachments?.filter((a) => !a.mimeType.startsWith('image/')) || []
 
   return (
     <div
@@ -49,6 +52,45 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : 'bg-white/[0.04] border border-white/[0.08] text-white/80',
         )}
       >
+        {/* Image attachments */}
+        {imageAttachments.length > 0 && (
+          <div className={cn('flex flex-wrap gap-2', message.content && 'mb-2')}>
+            {imageAttachments.map((att) => (
+              <a
+                key={att.id}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img
+                  src={att.url}
+                  alt={att.filename}
+                  className="max-h-48 max-w-full rounded-lg object-contain border border-white/[0.08]"
+                />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* Document attachments */}
+        {docAttachments.length > 0 && (
+          <div className={cn('flex flex-wrap gap-1.5', message.content && 'mb-2')}>
+            {docAttachments.map((att) => (
+              <a
+                key={att.id}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md bg-white/[0.06] border border-white/[0.08] px-2 py-1 text-xs text-white/60 hover:text-white/80 transition-colors"
+              >
+                <FileText className="w-3 h-3" />
+                <span className="truncate max-w-[150px]">{att.filename}</span>
+              </a>
+            ))}
+          </div>
+        )}
+
         <div className="whitespace-pre-wrap break-words">{message.content}</div>
 
         {/* Copy button */}

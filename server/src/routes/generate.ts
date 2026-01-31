@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateBody, generateSchema, codeGenerateSchema } from '../validation/index.js'
-import { callProvider, callProviderStream, ProviderError, type GenerationResponse } from '../services/aiProvider.js'
+import { callProvider, callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
 import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, type AgentContext } from '../services/promptBuilder.js'
 import { generateImage } from '../services/imageProvider.js'
 import { uploadToR2 } from '../services/r2.js'
@@ -11,7 +11,9 @@ import { calculateCost } from '../services/costCalculator.js'
 import { calculateMetrics } from '../services/metricsCalculator.js'
 import { getTips } from '../services/tipsProvider.js'
 import { autoRoute } from '../services/autoRouter.js'
-import type { AuthenticatedRequest, ApiKeyRow, AgentRow, AgentFileRow, WorkflowStepRow, FeedbackRow, AgentMemoryRow, WorkflowAccessRow } from '../types.js'
+import { isR2Configured, downloadFromR2 } from '../services/r2.js'
+import { getGuidance } from '../services/forgeOptionsCache.js'
+import type { AuthenticatedRequest, ApiKeyRow, AgentRow, AgentFileRow, WorkflowStepRow, FeedbackRow, AgentMemoryRow, WorkflowAccessRow, ChatAttachmentRow } from '../types.js'
 
 const router = Router()
 
@@ -37,8 +39,52 @@ interface GenerateBody {
     tolerancePercent?: number
     workflowId?: string
     refineContent?: string
+    attachmentIds?: string[]
   }
   workflowId?: string
+}
+
+/**
+ * Load attachments from DB and build multimodal content array for the AI provider.
+ */
+async function buildGenerateMultimodalContent(
+  textPrompt: string,
+  attachmentIds: string[],
+  userId: string,
+): Promise<MessageContent[]> {
+  if (!attachmentIds || attachmentIds.length === 0) return []
+
+  const placeholders = attachmentIds.map((_, i) => `$${i + 1}`).join(', ')
+  const attachments = await query<ChatAttachmentRow>(
+    `SELECT * FROM chat_attachments WHERE id IN (${placeholders}) AND user_id = $${attachmentIds.length + 1}`,
+    [...attachmentIds, userId]
+  )
+
+  if (attachments.length === 0) return []
+
+  const content: MessageContent[] = []
+  let enrichedText = textPrompt
+
+  for (const att of attachments) {
+    if (att.mime_type.startsWith('image/')) {
+      let dataUrl = att.data_url
+      if (!dataUrl && att.r2_key) {
+        try {
+          const { body, contentType } = await downloadFromR2(att.r2_key)
+          dataUrl = `data:${contentType};base64,${body.toString('base64')}`
+        } catch {
+          continue
+        }
+      }
+      if (dataUrl) {
+        content.push({ type: 'image_url', image_url: { url: dataUrl } })
+      }
+    } else if (att.extracted_text) {
+      enrichedText += `\n\n[Attached file: ${att.filename}]\n${att.extracted_text}`
+    }
+  }
+
+  return [{ type: 'text', text: enrichedText }, ...content]
 }
 
 // ---------------------------------------------------------------------------
@@ -54,6 +100,7 @@ interface PipelineSetup {
   keyRow: ApiKeyRow
   initialUserPrompt: string
   maxTokens: number
+  userContent?: MessageContent[]
 }
 
 /**
@@ -186,6 +233,13 @@ Requirements:
 - Do not add or remove factual content
 - Return ONLY the refined content, no explanations`
   } else {
+    // Load dynamic guidance from database cache
+    const [contentTypeGuidance, toneGuidance, audienceGuidance] = await Promise.all([
+      getGuidance('content_type', input.contentType),
+      getGuidance('tone', input.tone),
+      getGuidance('audience', input.audience),
+    ])
+
     initialUserPrompt = buildUserPrompt({
       contentType: input.contentType,
       topic: input.topic,
@@ -194,12 +248,22 @@ Requirements:
       length: input.length,
       customWordCount: input.customWordCount,
       tolerancePercent: input.tolerancePercent,
+      contentTypeGuidance,
+      toneGuidance,
+      audienceGuidance,
     })
   }
 
   const maxTokens = getMaxTokens(input.length, input.customWordCount, input.tolerancePercent)
 
-  return { input, agentContexts, workflowName, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens }
+  // Build multimodal content if attachments exist
+  let userContent: MessageContent[] | undefined
+  if (input.attachmentIds && input.attachmentIds.length > 0) {
+    userContent = await buildGenerateMultimodalContent(initialUserPrompt, input.attachmentIds, req.user!.userId)
+    if (userContent.length === 0) userContent = undefined
+  }
+
+  return { input, agentContexts, workflowName, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens, userContent }
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +439,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
   const setup = await preparePipeline(req, res)
   if (!setup) return
 
-  const { input, agentContexts, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens } = setup
+  const { input, agentContexts, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens, userContent } = setup
 
   try {
     let finalContent = ''
@@ -518,6 +582,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
         apiKey: keyRow.api_key,
         systemPrompt,
         userPrompt: initialUserPrompt,
+        userContent,
         maxTokens,
       })
 
@@ -565,7 +630,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
   const setup = await preparePipeline(req, res)
   if (!setup) return
 
-  const { input, agentContexts, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens } = setup
+  const { input, agentContexts, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens, userContent } = setup
 
   // Start SSE stream
   res.writeHead(200, {
@@ -760,6 +825,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
           apiKey: keyRow.api_key,
           systemPrompt,
           userPrompt: initialUserPrompt,
+          userContent,
           maxTokens,
         }, {
           onToken: (chunk) => {
@@ -835,8 +901,8 @@ Do not include any explanations, introductions, or commentary outside the code b
 The code should be production-quality, well-structured, and follow best practices for the specified language.`
 
 router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { prompt, language, context, modelId: reqModelId, provider: reqProvider } = req.body as {
-    prompt: string; language: string; context?: string; modelId?: string; provider?: string
+  const { prompt, language, context, modelId: reqModelId, provider: reqProvider, attachmentIds } = req.body as {
+    prompt: string; language: string; context?: string; modelId?: string; provider?: string; attachmentIds?: string[]
   }
 
   // Resolve model: use explicit model if provided, otherwise auto-route
@@ -877,6 +943,13 @@ router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req:
 
   const userPrompt = prompt
 
+  // Build multimodal content if attachments exist
+  let codeUserContent: MessageContent[] | undefined
+  if (attachmentIds && attachmentIds.length > 0) {
+    codeUserContent = await buildGenerateMultimodalContent(userPrompt, attachmentIds, req.user!.userId)
+    if (codeUserContent.length === 0) codeUserContent = undefined
+  }
+
   // Start SSE stream
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -896,6 +969,7 @@ router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req:
         apiKey: apiKey!,
         systemPrompt,
         userPrompt,
+        userContent: codeUserContent,
         maxTokens: 8192,
       }, {
         onToken: (chunk) => {

@@ -1,10 +1,69 @@
+export interface MessageContent {
+  type: 'text' | 'image_url'
+  text?: string
+  image_url?: { url: string }  // base64 data URL
+}
+
 export interface GenerationRequest {
   provider: string
   model: string
   apiKey: string
   systemPrompt: string
   userPrompt: string
+  userContent?: MessageContent[]  // multimodal content (takes precedence over userPrompt)
   maxTokens: number
+}
+
+/**
+ * Build OpenAI-compatible user message content.
+ * Returns a string if text-only, or an array for multimodal.
+ */
+function buildOpenAIUserContent(req: GenerationRequest): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
+  if (!req.userContent || req.userContent.length === 0) return req.userPrompt
+  return req.userContent.map((c) => {
+    if (c.type === 'image_url') return { type: 'image_url', image_url: c.image_url! }
+    return { type: 'text', text: c.text || '' }
+  })
+}
+
+/**
+ * Build Anthropic user message content.
+ * Returns a string if text-only, or an array for multimodal.
+ */
+function buildAnthropicUserContent(req: GenerationRequest): string | Array<Record<string, unknown>> {
+  if (!req.userContent || req.userContent.length === 0) return req.userPrompt
+  return req.userContent.map((c) => {
+    if (c.type === 'image_url' && c.image_url) {
+      // Convert data URL to Anthropic's format: {type: 'image', source: {type: 'base64', media_type, data}}
+      const match = c.image_url.url.match(/^data:([^;]+);base64,(.+)$/)
+      if (match) {
+        return { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } }
+      }
+      // Fallback: URL-based
+      return { type: 'image', source: { type: 'url', url: c.image_url.url } }
+    }
+    return { type: 'text', text: c.text || '' }
+  })
+}
+
+/**
+ * Build Google Gemini user message parts.
+ * Returns text parts and inline_data for images.
+ */
+function buildGoogleUserParts(req: GenerationRequest): Array<Record<string, unknown>> {
+  if (!req.userContent || req.userContent.length === 0) {
+    return [{ text: req.userPrompt }]
+  }
+  return req.userContent.map((c) => {
+    if (c.type === 'image_url' && c.image_url) {
+      const match = c.image_url.url.match(/^data:([^;]+);base64,(.+)$/)
+      if (match) {
+        return { inline_data: { mime_type: match[1], data: match[2] } }
+      }
+      return { text: '[Image could not be processed]' }
+    }
+    return { text: c.text || '' }
+  })
 }
 
 export interface GenerationResponse {
@@ -39,7 +98,7 @@ async function callOpenAI(req: GenerationRequest): Promise<GenerationResponse> {
       max_completion_tokens: req.maxTokens,
       messages: [
         { role: 'system', content: req.systemPrompt },
-        { role: 'user', content: req.userPrompt },
+        { role: 'user', content: buildOpenAIUserContent(req) },
       ],
     }),
   })
@@ -82,7 +141,7 @@ async function callAnthropic(req: GenerationRequest): Promise<GenerationResponse
       model: req.model,
       max_tokens: req.maxTokens,
       system: req.systemPrompt,
-      messages: [{ role: 'user', content: req.userPrompt }],
+      messages: [{ role: 'user', content: buildAnthropicUserContent(req) }],
     }),
   })
 
@@ -126,7 +185,7 @@ async function callXAI(req: GenerationRequest): Promise<GenerationResponse> {
       max_completion_tokens: req.maxTokens,
       messages: [
         { role: 'system', content: req.systemPrompt },
-        { role: 'user', content: req.userPrompt },
+        { role: 'user', content: buildOpenAIUserContent(req) },
       ],
     }),
   })
@@ -165,7 +224,7 @@ async function callGoogle(req: GenerationRequest): Promise<GenerationResponse> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: req.systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: req.userPrompt }] }],
+      contents: [{ role: 'user', parts: buildGoogleUserParts(req) }],
       generationConfig: { maxOutputTokens: req.maxTokens },
     }),
   })
@@ -281,7 +340,7 @@ async function callOpenAICompatibleStream(
       stream_options: { include_usage: true },
       messages: [
         { role: 'system', content: req.systemPrompt },
-        { role: 'user', content: req.userPrompt },
+        { role: 'user', content: buildOpenAIUserContent(req) },
       ],
     }),
     signal: callbacks.signal,
@@ -354,7 +413,7 @@ async function callAnthropicStream(req: GenerationRequest, callbacks: StreamCall
       max_tokens: req.maxTokens,
       stream: true,
       system: req.systemPrompt,
-      messages: [{ role: 'user', content: req.userPrompt }],
+      messages: [{ role: 'user', content: buildAnthropicUserContent(req) }],
     }),
     signal: callbacks.signal,
   })
@@ -409,7 +468,7 @@ async function callGoogleStream(req: GenerationRequest, callbacks: StreamCallbac
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: req.systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: req.userPrompt }] }],
+      contents: [{ role: 'user', parts: buildGoogleUserParts(req) }],
       generationConfig: { maxOutputTokens: req.maxTokens },
     }),
     signal: callbacks.signal,

@@ -23,6 +23,8 @@ import memoryRoutes from './routes/memory.js'
 import pricingRoutes from './routes/pricing.js'
 import chatRoutes from './routes/chat.js'
 import imageRoutes from './routes/images.js'
+import attachmentRoutes from './routes/attachments.js'
+import forgeOptionsRoutes from './routes/forgeOptions.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -112,6 +114,8 @@ app.use('/api/memory', memoryRoutes)
 app.use('/api/pricing', pricingRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/images', generateLimiter, imageRoutes)
+app.use('/api/attachments', attachmentRoutes)
+app.use('/api/forge-options', forgeOptionsRoutes)
 
 // Error handler for API routes only
 app.use('/api', errorHandler)

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Loader from '@/components/ui/Loader'
+import { getTagVariant } from '@/lib/modelTagColors'
 import type { AiProvider, AiModel, ProviderUsageSummary } from '@/types'
 
 const PROVIDERS: { id: AiProvider; name: string }[] = [
@@ -223,18 +224,39 @@ export default function ApiKeysTab() {
               {/* Models — dynamically fetched when connected */}
               {isConnected && (
                 <div>
-                  <p className="text-xs text-[#9ca3af] mb-1.5">Available models</p>
+                  <p className="text-xs text-[#9ca3af] mb-2">Available models</p>
                   {isLoadingModels ? (
                     <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       Loading models...
                     </div>
                   ) : models && models.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="space-y-2">
                       {models.map((model) => (
-                        <Badge key={model.id} variant="purple">
-                          {model.name}
-                        </Badge>
+                        <div
+                          key={model.id}
+                          className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 space-y-1"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-[#f9fafb]">
+                              {model.name}
+                            </span>
+                            {model.tags?.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant={getTagVariant(tag)}
+                                className="text-[10px] px-1.5 py-0"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          {model.description && (
+                            <p className="text-xs text-[#6b7280] leading-relaxed">
+                              {model.description}
+                            </p>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : (

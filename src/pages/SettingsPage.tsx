@@ -1,4 +1,4 @@
-import { Users, Bot, GitBranch, Key, DollarSign } from 'lucide-react'
+import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import TeamTab from '@/components/settings/TeamTab'
@@ -6,11 +6,13 @@ import AgentsTab from '@/components/settings/AgentsTab'
 import WorkflowsTab from '@/components/settings/WorkflowsTab'
 import ApiKeysTab from '@/components/settings/ApiKeysTab'
 import PricingTab from '@/components/settings/PricingTab'
+import ContentOptionsTab from '@/components/settings/ContentOptionsTab'
 
 const TABS = [
   { id: 'team' as const, label: 'Team', icon: Users },
   { id: 'agents' as const, label: 'Agents', icon: Bot },
   { id: 'workflows' as const, label: 'Workflows', icon: GitBranch },
+  { id: 'content-options' as const, label: 'Content Options', icon: SlidersHorizontal },
   { id: 'api-keys' as const, label: 'API Keys', icon: Key },
   { id: 'pricing' as const, label: 'Pricing', icon: DollarSign },
 ]
@@ -55,6 +57,7 @@ export default function SettingsPage() {
           {activeTab === 'team' && <TeamTab />}
           {activeTab === 'agents' && <AgentsTab />}
           {activeTab === 'workflows' && <WorkflowsTab />}
+          {activeTab === 'content-options' && <ContentOptionsTab />}
           {activeTab === 'api-keys' && <ApiKeysTab />}
           {activeTab === 'pricing' && <PricingTab />}
         </div>

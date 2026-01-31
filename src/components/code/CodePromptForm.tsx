@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { useCodeStore } from '@/stores/useCodeStore'
 import { CODE_LANGUAGES } from '@/constants'
 import ModelSelector from '@/components/forge/ModelSelector'
+import FileAttachment from '@/components/ui/FileAttachment'
 import type { CodeLanguage } from '@/types'
 
 export function CodePromptForm() {
@@ -10,8 +11,10 @@ export function CodePromptForm() {
     prompt,
     language,
     isGenerating,
+    attachments,
     setPrompt,
     setLanguage,
+    setAttachments,
     generate,
   } = useCodeStore()
 
@@ -41,6 +44,13 @@ export function CodePromptForm() {
           disabled={isGenerating}
         />
       </div>
+
+      {/* Attachments */}
+      <FileAttachment
+        files={attachments}
+        onFilesChange={setAttachments}
+        compact
+      />
 
       {/* Language */}
       <div>

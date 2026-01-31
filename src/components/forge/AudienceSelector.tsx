@@ -1,11 +1,23 @@
 import { cn } from '@/lib/utils'
-import { AUDIENCES } from '@/constants'
+import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import { useForgeStore } from '@/stores/useForgeStore'
 import type { Audience } from '@/types'
 
 export default function AudienceSelector() {
   const audience = useForgeStore((s) => s.input.audience)
   const setAudience = useForgeStore((s) => s.setAudience)
+  const audiences = useForgeOptionsStore((s) => s.audiences)
+
+  if (audiences.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+          Target Audience
+        </label>
+        <div className="text-sm text-[#6b7280]">Loading audiences...</div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -13,7 +25,7 @@ export default function AudienceSelector() {
         Target Audience
       </label>
       <div className="flex flex-wrap gap-2">
-        {AUDIENCES.map((a) => {
+        {audiences.map((a) => {
           const isSelected = audience === a.id
 
           return (

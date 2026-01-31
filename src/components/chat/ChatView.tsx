@@ -97,7 +97,7 @@ export function ChatView() {
 
           {/* Input */}
           <ChatInput
-            onSend={(content) => sendMessage(content)}
+            onSend={(content, files) => sendMessage(content, undefined, files)}
             onCancel={cancelStream}
             isStreaming={isStreaming}
           />

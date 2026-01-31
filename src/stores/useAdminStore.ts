@@ -6,7 +6,7 @@ import * as workflowService from '@/services/workflowService'
 import * as apiKeyService from '@/services/apiKeyService'
 import * as pricingService from '@/services/pricingService'
 
-type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys' | 'pricing'
+type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys' | 'pricing' | 'content-options'
 
 interface AdminState {
   activeTab: AdminTab

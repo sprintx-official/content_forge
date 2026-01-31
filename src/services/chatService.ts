@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { ChatConversation, ChatMessage } from '@/types'
+import type { ChatConversation, ChatMessage, Attachment } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapConversation(raw: any): ChatConversation {
@@ -15,6 +15,20 @@ function mapConversation(raw: any): ChatConversation {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapAttachment(raw: any): Attachment {
+  return {
+    id: raw.id,
+    filename: raw.filename,
+    mimeType: raw.mimeType ?? raw.mime_type,
+    size: raw.size,
+    url: raw.url ?? raw.data_url ?? `/api/attachments/${raw.id}/file`,
+    extractedText: raw.extractedText ?? raw.extracted_text ?? undefined,
+    width: raw.width ?? undefined,
+    height: raw.height ?? undefined,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapMessage(raw: any): ChatMessage {
   return {
     id: raw.id,
@@ -23,6 +37,7 @@ function mapMessage(raw: any): ChatMessage {
     content: raw.content,
     model: raw.model || undefined,
     provider: raw.provider || undefined,
+    attachments: raw.attachments?.map(mapAttachment) ?? undefined,
     tokenUsage: raw.total_tokens
       ? {
           inputTokens: raw.input_tokens ?? 0,
@@ -68,7 +83,7 @@ export async function deleteConversation(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export interface ChatStreamCallbacks {
-  onUserMessageId?: (id: string) => void
+  onUserMessageId?: (id: string, attachments?: Attachment[]) => void
   onToken?: (chunk: string) => void
   onComplete?: (msg: {
     id: string
@@ -92,6 +107,7 @@ export function sendMessageStream(
   context?: string,
   modelId?: string,
   provider?: string,
+  attachmentIds?: string[],
 ): AbortController {
   const controller = new AbortController()
 
@@ -115,6 +131,7 @@ export function sendMessageStream(
           context,
           ...(modelId && { modelId }),
           ...(provider && { provider }),
+          ...(attachmentIds && attachmentIds.length > 0 && { attachmentIds }),
         }),
         signal: controller.signal,
       })
@@ -163,7 +180,10 @@ export function sendMessageStream(
             const parsed = JSON.parse(eventData)
             switch (eventType) {
               case 'user_message':
-                callbacks.onUserMessageId?.(parsed.id)
+                callbacks.onUserMessageId?.(
+                  parsed.id,
+                  parsed.attachments?.map(mapAttachment),
+                )
                 break
               case 'token':
                 callbacks.onToken?.(parsed.chunk)

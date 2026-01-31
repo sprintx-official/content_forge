@@ -31,15 +31,16 @@ export const registerSchema = z.object({
 
 // Generate schemas
 export const generateInputSchema = z.object({
-  contentType: z.enum(['article', 'blog', 'social', 'press', 'script', 'ad-copy']),
+  contentType: z.string().min(1, 'Content type is required').max(100),
   topic: z.string().min(1, 'Topic is required').max(5000, 'Topic too long'),
-  tone: z.enum(['professional', 'casual', 'persuasive', 'informative', 'inspirational']),
-  audience: z.enum(['general', 'students', 'professionals', 'youth', 'seniors']),
+  tone: z.string().min(1, 'Tone is required').max(100),
+  audience: z.string().min(1, 'Audience is required').max(100),
   length: z.enum(['short', 'medium', 'long', 'custom']),
   customWordCount: z.number().int().min(10).max(10000).optional(),
   tolerancePercent: z.number().int().min(0).max(100).optional(),
   workflowId: z.string().uuid().optional(),
   refineContent: z.string().max(50000, 'Content too long to refine').optional(),
+  attachmentIds: z.array(z.string().max(100)).max(10).optional(),
 })
 
 export const generateSchema = z.object({
@@ -122,6 +123,7 @@ export const codeGenerateSchema = z.object({
   context: z.string().max(50000).optional(),
   modelId: z.string().max(100).optional(),
   provider: z.string().max(50).optional(),
+  attachmentIds: z.array(z.string().max(100)).max(10).optional(),
 })
 
 // Common ID parameter schema

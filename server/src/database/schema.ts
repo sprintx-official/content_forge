@@ -220,6 +220,42 @@ export async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
     CREATE INDEX IF NOT EXISTS idx_generated_images_user_id ON generated_images(user_id);
     CREATE INDEX IF NOT EXISTS idx_generated_images_created_at ON generated_images(created_at DESC);
+
+    -- Attachments (for chat, content, code)
+    CREATE TABLE IF NOT EXISTS chat_attachments (
+      id TEXT PRIMARY KEY,
+      message_id TEXT,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      r2_key TEXT,
+      data_url TEXT,
+      extracted_text TEXT,
+      width INTEGER,
+      height INTEGER,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_attachments_message_id ON chat_attachments(message_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_attachments_user_id ON chat_attachments(user_id);
+
+    -- Forge options (admin-configurable content types, tones, audiences)
+    CREATE TABLE IF NOT EXISTS forge_options (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL CHECK(category IN ('content_type', 'tone', 'audience')),
+      value TEXT NOT NULL,
+      label TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      guidance TEXT NOT NULL DEFAULT '',
+      icon TEXT NOT NULL DEFAULT '',
+      placeholder TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_forge_options_category ON forge_options(category);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_forge_options_category_value ON forge_options(category, value);
   `)
 
   await runMigrations()

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import type { ChatConversation, ChatMessage } from '@/types'
+import type { ChatConversation, ChatMessage, Attachment } from '@/types'
 import * as chatService from '@/services/chatService'
+import { uploadAttachments } from '@/services/attachmentService'
 import { useForgeStore } from '@/stores/useForgeStore'
 
 interface ChatState {
@@ -18,7 +19,7 @@ interface ChatState {
   createConversation: () => Promise<string>
   selectConversation: (id: string) => Promise<void>
   deleteConversation: (id: string) => Promise<void>
-  sendMessage: (content: string, context?: string) => Promise<void>
+  sendMessage: (content: string, context?: string, files?: File[]) => Promise<void>
   cancelStream: () => void
   clearError: () => void
 }
@@ -92,7 +93,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  sendMessage: async (content: string, context?: string) => {
+  sendMessage: async (content: string, context?: string, files?: File[]) => {
     let { activeConversationId } = get()
 
     // Auto-create conversation if none selected
@@ -102,12 +103,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const convId = activeConversationId!
 
+    // Upload files first if any
+    let attachmentIds: string[] | undefined
+    let uploadedAttachments: Attachment[] | undefined
+    if (files && files.length > 0) {
+      try {
+        const uploaded = await uploadAttachments(files)
+        attachmentIds = uploaded.map((a) => a.id)
+        uploadedAttachments = uploaded
+      } catch (err) {
+        set({ error: err instanceof Error ? err.message : 'Failed to upload files' })
+        return
+      }
+    }
+
     // Optimistically add user message to UI
     const tempUserMsg: ChatMessage = {
       id: `temp-${Date.now()}`,
       conversationId: convId,
       role: 'user',
       content,
+      attachments: uploadedAttachments,
       createdAt: new Date().toISOString(),
     }
 
@@ -123,11 +139,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       convId,
       content,
       {
-        onUserMessageId: (id) => {
-          // Replace temp ID with real ID
+        onUserMessageId: (id, serverAttachments) => {
+          // Replace temp ID with real ID and attach server attachments
           set((s) => ({
             messages: s.messages.map((m) =>
-              m.id === tempUserMsg.id ? { ...m, id } : m,
+              m.id === tempUserMsg.id
+                ? { ...m, id, attachments: serverAttachments || m.attachments }
+                : m,
             ),
           }))
         },
@@ -182,6 +200,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       context,
       selectedModel?.modelId,
       selectedModel?.provider,
+      attachmentIds,
     )
 
     set({ abortController: controller })

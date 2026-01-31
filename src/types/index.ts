@@ -1,6 +1,6 @@
-export type ContentType = 'article' | 'blog' | 'social' | 'press' | 'script' | 'ad-copy'
-export type Tone = 'professional' | 'casual' | 'persuasive' | 'informative' | 'inspirational'
-export type Audience = 'general' | 'students' | 'professionals' | 'youth' | 'seniors'
+export type ContentType = string
+export type Tone = string
+export type Audience = string
 export type ContentLength = 'short' | 'medium' | 'long' | 'custom'
 export type ProcessingStageId = 'analyzing' | 'researching' | 'drafting' | 'polishing' | 'complete' | string
 export type ProcessingStatus = 'pending' | 'active' | 'completed'
@@ -44,6 +44,17 @@ export interface ChatConversation {
   updatedAt: string
 }
 
+export interface Attachment {
+  id: string
+  filename: string
+  mimeType: string
+  size: number
+  url: string
+  extractedText?: string
+  width?: number
+  height?: number
+}
+
 export interface ChatMessage {
   id: string
   conversationId: string
@@ -51,6 +62,7 @@ export interface ChatMessage {
   content: string
   model?: string
   provider?: string
+  attachments?: Attachment[]
   tokenUsage?: {
     inputTokens: number
     outputTokens: number
@@ -88,6 +100,8 @@ export interface ForgeInput {
   workflowId?: string
   /** When set, AI will refine this content instead of generating from scratch */
   refineContent?: string
+  /** IDs of uploaded attachments to include with the generation request */
+  attachmentIds?: string[]
 }
 
 export interface ContentMetrics {
@@ -273,10 +287,25 @@ export interface ApiKeyConfig {
   updatedAt: string
 }
 
+export type ModelTag =
+  | 'Best for Writing'
+  | 'Best for Code'
+  | 'Best for Chat'
+  | 'Best for Analysis'
+  | 'Best for Image Generation'
+  | 'Most Capable'
+  | 'Fast & Cheap'
+  | 'Balanced'
+  | 'Long Context'
+  | 'Reasoning'
+  | 'Multimodal'
+
 export interface AiModel {
   id: string
   name: string
   provider: AiProvider
+  description?: string
+  tags?: ModelTag[]
 }
 
 export interface ProviderUsageSummary {
