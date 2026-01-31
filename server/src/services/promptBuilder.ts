@@ -15,6 +15,7 @@ export interface AgentContext {
   agent: AgentRow
   files: AgentFileRow[]
   instructions: string
+  stepType?: string
   feedback?: AgentFeedbackContext
   memories?: AgentMemoryContext[]
 }
@@ -54,7 +55,17 @@ function getCustomMaxTokens(wordCount: number, tolerancePercent: number): number
 }
 
 export function buildSystemPrompt(agentContexts?: AgentContext[]): string {
-  let prompt = `You are ContentForge, an expert content creation assistant. You produce high-quality, well-structured content tailored to the user's specifications. Always write in a natural, human style. Do not include meta-commentary about the writing process — just produce the content directly.`
+  let prompt = `You are ContentForge, an expert content creation assistant. You produce high-quality, well-structured content tailored to the user's specifications. Always write in a natural, human style. Do not include meta-commentary about the writing process — just produce the content directly.
+
+Readability & structure rules (ALWAYS follow these):
+- Use short, clear sentences. Aim for an average of 15-20 words per sentence.
+- Prefer simple, everyday words over complex or academic vocabulary (e.g. "use" not "utilize", "help" not "facilitate", "start" not "commence").
+- Break content into short paragraphs (2-4 sentences each).
+- Use headings and subheadings to organize sections.
+- Use bullet points or numbered lists when presenting multiple items.
+- Vary sentence length to create a natural rhythm — mix short punchy sentences with slightly longer ones.
+- Avoid passive voice when active voice is clearer.
+- Target a Flesch Reading Ease score of 60 or higher (easily understood by a general audience).`
 
   if (agentContexts && agentContexts.length > 0) {
     for (const ctx of agentContexts) {
@@ -97,7 +108,17 @@ export function buildSystemPrompt(agentContexts?: AgentContext[]): string {
  * Build a system prompt for a single agent in a pipeline
  */
 export function buildSingleAgentSystemPrompt(ctx: AgentContext): string {
-  let prompt = `You are ContentForge, an expert content creation assistant. You produce high-quality, well-structured content tailored to the user's specifications. Always write in a natural, human style. Do not include meta-commentary about the writing process — just produce the content directly.`
+  let prompt = `You are ContentForge, an expert content creation assistant. You produce high-quality, well-structured content tailored to the user's specifications. Always write in a natural, human style. Do not include meta-commentary about the writing process — just produce the content directly.
+
+Readability & structure rules (ALWAYS follow these):
+- Use short, clear sentences. Aim for an average of 15-20 words per sentence.
+- Prefer simple, everyday words over complex or academic vocabulary (e.g. "use" not "utilize", "help" not "facilitate", "start" not "commence").
+- Break content into short paragraphs (2-4 sentences each).
+- Use headings and subheadings to organize sections.
+- Use bullet points or numbered lists when presenting multiple items.
+- Vary sentence length to create a natural rhythm — mix short punchy sentences with slightly longer ones.
+- Avoid passive voice when active voice is clearer.
+- Target a Flesch Reading Ease score of 60 or higher (easily understood by a general audience).`
 
   if (ctx.agent.system_prompt) {
     prompt += `\n\nAgent "${ctx.agent.name}" instructions:\n${ctx.agent.system_prompt}`
@@ -150,6 +171,13 @@ Requirements:
 - Target audience: ${input.audience}
 - Length: ${lengthGuide}
 
+Structure & readability:
+- Start with a compelling opening paragraph that hooks the reader.
+- Use clear headings and subheadings to break the content into scannable sections.
+- Keep paragraphs short (2-4 sentences). Use bullet points where helpful.
+- Use simple, direct language. Keep sentences around 15-20 words on average.
+- End with a clear conclusion or call to action.
+
 Write the content directly. Do not include titles like "Title:" or labels — just write the content as it should appear.`
 }
 
@@ -158,4 +186,30 @@ export function getMaxTokens(length: string, customWordCount?: number, tolerance
     return getCustomMaxTokens(customWordCount, tolerancePercent ?? 10)
   }
   return MAX_TOKENS[length] || MAX_TOKENS.medium
+}
+
+export function buildCodeSystemPrompt(language?: string): string {
+  let prompt = `You are an expert programmer. Generate clean, well-commented code based on the user's request.
+Output ONLY code in a single fenced code block with the language specified.
+Do not include any explanations, introductions, or commentary outside the code block unless the user explicitly asks for it.
+The code should be production-quality, well-structured, and follow best practices for the specified language.`
+  if (language && language !== 'other') {
+    prompt += `\nThe user wants code in ${language}.`
+  }
+  return prompt
+}
+
+export function buildImagePromptFromContext(previousOutput: string, topic: string): string {
+  return `Based on the following content, create a detailed image prompt for an AI image generator.
+The image should visually represent the key themes and concepts from the content.
+
+Topic: ${topic}
+
+Content:
+---
+${previousOutput.slice(0, 2000)}
+---
+
+Generate a single, detailed image generation prompt that describes the visual scene, style, composition, colors, and mood.
+Output ONLY the image prompt text, nothing else.`
 }

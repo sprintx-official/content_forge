@@ -9,29 +9,25 @@ interface UseProcessingAnimationReturn {
   progress: number
 }
 
+/**
+ * Reactive processing animation hook.
+ *
+ * When `customStages` are provided AND their statuses are updated externally
+ * (by the Zustand store via SSE events), this hook derives all UI state from
+ * them — no internal timers.
+ *
+ * When `customStages` is null (shouldn't happen with SSE, but safe fallback),
+ * it falls back to the default PROCESSING_STAGES.
+ */
 export function useProcessingAnimation(
   isProcessing: boolean,
   customStages?: ProcessingStage[] | null,
 ): UseProcessingAnimationReturn {
-  const [currentStageIndex, setCurrentStageIndex] = useState(-1)
-  const [stages, setStages] = useState<ProcessingStage[]>(() =>
-    PROCESSING_STAGES.map((s) => ({ ...s, status: 'pending' as const })),
-  )
   const [displayMessage, setDisplayMessage] = useState('')
-  const [progress, setProgress] = useState(0)
-
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const isProcessingRef = useRef(isProcessing)
+  const lastMessageRef = useRef('')
 
-  // Keep the ref in sync
-  isProcessingRef.current = isProcessing
-
-  const clearAllTimers = useCallback(() => {
-    for (const t of timeoutsRef.current) {
-      clearTimeout(t)
-    }
-    timeoutsRef.current = []
+  const clearTyping = useCallback(() => {
     if (typingIntervalRef.current) {
       clearInterval(typingIntervalRef.current)
       typingIntervalRef.current = null
@@ -40,10 +36,11 @@ export function useProcessingAnimation(
 
   const typeMessage = useCallback(
     (message: string) => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current)
-      }
+      // Don't re-type the same message
+      if (message === lastMessageRef.current) return
+      lastMessageRef.current = message
 
+      clearTyping()
       let charIndex = 0
       setDisplayMessage('')
 
@@ -59,104 +56,51 @@ export function useProcessingAnimation(
         }
       }, 30)
     },
-    [],
+    [clearTyping],
   )
 
-  useEffect(() => {
-    // Determine which stages to use
-    const sourceStages = (customStages && customStages.length > 0)
+  // Derive stages from customStages (externally driven) or defaults
+  const stages: ProcessingStage[] =
+    customStages && customStages.length > 0
       ? customStages
-      : PROCESSING_STAGES
+      : PROCESSING_STAGES.map((s) => ({ ...s, status: 'pending' as const }))
 
+  // Find current stage index from stage statuses
+  const activeIndex = stages.findIndex((s) => s.status === 'active')
+  // If none active, check if all completed
+  const lastCompletedIndex = stages.reduce(
+    (acc, s, i) => (s.status === 'completed' ? i : acc),
+    -1,
+  )
+  const currentStageIndex = activeIndex >= 0 ? activeIndex : lastCompletedIndex
+
+  // Compute progress from stage statuses
+  const total = stages.length
+  const completedCount = stages.filter((s) => s.status === 'completed').length
+  const hasActive = activeIndex >= 0
+  const progress = total > 0
+    ? Math.min(100, ((completedCount + (hasActive ? 0.5 : 0)) / total) * 100)
+    : 0
+
+  // When the active stage changes, type its message
+  useEffect(() => {
     if (!isProcessing) {
-      // Reset everything when processing stops
-      clearAllTimers()
-      setCurrentStageIndex(-1)
-      setStages(
-        sourceStages.map((s) => ({ ...s, status: 'pending' as const })),
-      )
+      clearTyping()
       setDisplayMessage('')
-      setProgress(0)
+      lastMessageRef.current = ''
       return
     }
 
-    // Start the processing sequence
-    const STAGE_DURATION = 1500
-    const totalDuration = sourceStages.length * STAGE_DURATION
-    let elapsed = 0
-
-    const freshStages = sourceStages.map((s) => ({
-      ...s,
-      status: 'pending' as const,
-    }))
-    setStages(freshStages)
-
-    sourceStages.forEach((stage, index) => {
-      // Schedule activating this stage
-      const activateTimeout = setTimeout(() => {
-        if (!isProcessingRef.current) return
-
-        setCurrentStageIndex(index)
-        setStages((prev) =>
-          prev.map((s, i) => {
-            if (i === index) return { ...s, status: 'active' as const }
-            if (i < index) return { ...s, status: 'completed' as const }
-            return s
-          }),
-        )
-        typeMessage(stage.message)
-      }, elapsed)
-
-      timeoutsRef.current.push(activateTimeout)
-
-      // Schedule progress updates during this stage
-      const PROGRESS_STEPS = 10
-      const stepDuration = STAGE_DURATION / PROGRESS_STEPS
-      for (let step = 1; step <= PROGRESS_STEPS; step++) {
-        const progressTimeout = setTimeout(() => {
-          if (!isProcessingRef.current) return
-          const currentProgress =
-            ((elapsed + step * stepDuration) / totalDuration) * 100
-          setProgress(Math.min(currentProgress, 100))
-        }, elapsed + step * stepDuration)
-        timeoutsRef.current.push(progressTimeout)
-      }
-
-      // Schedule completing this stage
-      const completeTimeout = setTimeout(() => {
-        if (!isProcessingRef.current) return
-
-        setStages((prev) =>
-          prev.map((s, i) => {
-            if (i === index) return { ...s, status: 'completed' as const }
-            return s
-          }),
-        )
-      }, elapsed + STAGE_DURATION)
-
-      timeoutsRef.current.push(completeTimeout)
-
-      elapsed += STAGE_DURATION
-    })
-
-    // Final completion
-    const finalTimeout = setTimeout(() => {
-      if (!isProcessingRef.current) return
-      setProgress(100)
-    }, elapsed)
-    timeoutsRef.current.push(finalTimeout)
-
-    return () => {
-      clearAllTimers()
+    const activeStage = activeIndex >= 0 ? stages[activeIndex] : null
+    if (activeStage) {
+      typeMessage(activeStage.message)
     }
-  }, [isProcessing, customStages, clearAllTimers, typeMessage])
+  }, [isProcessing, activeIndex, stages, typeMessage, clearTyping])
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      clearAllTimers()
-    }
-  }, [clearAllTimers])
+    return () => clearTyping()
+  }, [clearTyping])
 
   return {
     stages,

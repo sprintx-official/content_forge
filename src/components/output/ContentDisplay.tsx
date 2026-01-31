@@ -20,11 +20,16 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 
 interface ContentDisplayProps {
   content: string
   onEditorReady?: (editor: Editor) => void
+  isCodeMode?: boolean
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
 }
 
 function contentToHTML(content: string): string {
@@ -33,6 +38,14 @@ function contentToHTML(content: string): string {
     .filter(Boolean)
     .map((p) => `<p>${p}</p>`)
     .join('')
+}
+
+function codeToHTML(content: string): string {
+  const escaped = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  return `<pre><code>${escaped}</code></pre>`
 }
 
 interface ToolbarButtonProps {
@@ -64,7 +77,13 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-white/10 mx-1" />
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+interface ToolbarProps {
+  editor: Editor
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
+}
+
+function Toolbar({ editor, isFullscreen, onToggleFullscreen }: ToolbarProps) {
   const iconSize = 'w-4 h-4'
 
   return (
@@ -183,11 +202,35 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <AlignRight className={iconSize} />
       </ToolbarButton>
+
+      {/* Fullscreen toggle */}
+      {onToggleFullscreen && (
+        <>
+          <ToolbarDivider />
+          <ToolbarButton
+            onClick={onToggleFullscreen}
+            isActive={isFullscreen}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className={iconSize} />
+            ) : (
+              <Maximize2 className={iconSize} />
+            )}
+          </ToolbarButton>
+        </>
+      )}
     </div>
   )
 }
 
-export default function ContentDisplay({ content, onEditorReady }: ContentDisplayProps) {
+export default function ContentDisplay({
+  content,
+  onEditorReady,
+  isCodeMode,
+  isFullscreen,
+  onToggleFullscreen,
+}: ContentDisplayProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -195,7 +238,7 @@ export default function ContentDisplay({ content, onEditorReady }: ContentDispla
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Your content will appear here…' }),
     ],
-    content: contentToHTML(content),
+    content: isCodeMode ? codeToHTML(content) : contentToHTML(content),
     editorProps: {
       attributes: {
         class: 'outline-none min-h-[200px] px-6 py-4 md:px-8 md:py-6',
@@ -214,32 +257,51 @@ export default function ContentDisplay({ content, onEditorReady }: ContentDispla
     }
   }, [editor, onEditorReadyCb])
 
-  // Update editor content when the content prop changes externally (e.g. regenerate)
+  // Update editor content when the content prop changes externally (e.g. regenerate, tab switch)
   useEffect(() => {
     if (editor && content) {
-      const newHTML = contentToHTML(content)
+      const newHTML = isCodeMode ? codeToHTML(content) : contentToHTML(content)
       // Only replace if different to avoid cursor jumps
       if (editor.getHTML() !== newHTML) {
         editor.commands.setContent(newHTML)
       }
     }
-  }, [editor, content])
+  }, [editor, content, isCodeMode])
+
+  // Handle Escape key for fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onToggleFullscreen) {
+        onToggleFullscreen()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen, onToggleFullscreen])
 
   return (
     <div
       className={cn(
-        'bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden',
-        'max-h-[60vh] overflow-y-auto',
-        'animate-[fadeIn_0.6s_ease-out_both]',
+        'bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden',
+        isFullscreen
+          ? 'fixed inset-0 z-50 rounded-none flex flex-col'
+          : 'rounded-2xl max-h-[60vh] overflow-y-auto animate-[fadeIn_0.6s_ease-out_both]',
         '[&::-webkit-scrollbar]:w-1.5',
         '[&::-webkit-scrollbar-track]:bg-transparent',
         '[&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full',
         '[&::-webkit-scrollbar-thumb]:hover:bg-white/20',
       )}
     >
-      {editor && <Toolbar editor={editor} />}
+      {editor && (
+        <Toolbar
+          editor={editor}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={onToggleFullscreen}
+        />
+      )}
 
-      <div className="tiptap-editor">
+      <div className={cn('tiptap-editor', isFullscreen && 'flex-1 overflow-y-auto')}>
         <EditorContent editor={editor} />
       </div>
 

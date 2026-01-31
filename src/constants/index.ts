@@ -6,6 +6,9 @@ import type {
   ProcessingStage,
   WritingTip,
   ContentType,
+  ImageSize,
+  ImageStyle,
+  CodeLanguage,
 } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -425,3 +428,38 @@ export const WRITING_TIPS: Record<ContentType, WritingTip[]> = {
     },
   ],
 }
+
+// ---------------------------------------------------------------------------
+// Image Generation
+// ---------------------------------------------------------------------------
+export const IMAGE_SIZES: ImageSize[] = [
+  { width: 1024, height: 1024, label: '1:1 Square' },
+  { width: 1792, height: 1024, label: '16:9 Wide' },
+  { width: 1024, height: 1792, label: '9:16 Tall' },
+]
+
+export const IMAGE_STYLES: { id: ImageStyle; name: string }[] = [
+  { id: 'natural', name: 'Natural' },
+  { id: 'vivid', name: 'Vivid' },
+  { id: 'photographic', name: 'Photographic' },
+  { id: 'digital-art', name: 'Digital Art' },
+  { id: 'anime', name: 'Anime' },
+]
+
+// ---------------------------------------------------------------------------
+// Code Generation
+// ---------------------------------------------------------------------------
+export const CODE_LANGUAGES: { id: CodeLanguage; name: string }[] = [
+  { id: 'javascript', name: 'JavaScript' },
+  { id: 'typescript', name: 'TypeScript' },
+  { id: 'python', name: 'Python' },
+  { id: 'html', name: 'HTML' },
+  { id: 'css', name: 'CSS' },
+  { id: 'json', name: 'JSON' },
+  { id: 'sql', name: 'SQL' },
+  { id: 'bash', name: 'Bash' },
+  { id: 'rust', name: 'Rust' },
+  { id: 'go', name: 'Go' },
+  { id: 'java', name: 'Java' },
+  { id: 'other', name: 'Other' },
+]

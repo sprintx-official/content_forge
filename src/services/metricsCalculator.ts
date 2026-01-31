@@ -30,20 +30,60 @@ function countSyllables(word: string): number {
   return Math.max(1, count);
 }
 
+/**
+ * Strip markdown / HTML markup so readability scores are based on actual prose,
+ * not inflated by formatting characters like ** or # or <tags>.
+ */
+function stripMarkup(raw: string): string {
+  let t = raw;
+  // Remove HTML tags
+  t = t.replace(/<[^>]+>/g, ' ');
+  // Remove markdown headings (# ## ### etc.)
+  t = t.replace(/^#{1,6}\s+/gm, '');
+  // Remove markdown bold/italic markers
+  t = t.replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1');
+  t = t.replace(/_{1,3}([^_]+)_{1,3}/g, '$1');
+  // Remove markdown strikethrough
+  t = t.replace(/~~([^~]+)~~/g, '$1');
+  // Remove markdown links [text](url) → text
+  t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  // Remove markdown images ![alt](url)
+  t = t.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
+  // Remove markdown horizontal rules
+  t = t.replace(/^[-*_]{3,}\s*$/gm, '');
+  // Remove markdown code fences and inline code
+  t = t.replace(/```[\s\S]*?```/g, ' ');
+  t = t.replace(/`([^`]+)`/g, '$1');
+  // Remove markdown blockquote markers
+  t = t.replace(/^>\s*/gm, '');
+  // Remove markdown list markers (-, *, 1.)
+  t = t.replace(/^[\s]*[-*+]\s+/gm, '');
+  t = t.replace(/^[\s]*\d+\.\s+/gm, '');
+  // Collapse multiple spaces/newlines
+  t = t.replace(/\s+/g, ' ').trim();
+  return t;
+}
+
 export function calculateMetrics(text: string): ContentMetrics {
+  // Use raw text for word count (includes all visible content)
   const words = text.split(/\s+/).filter((w) => w.length > 0);
   const wordCount = words.length;
 
-  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  // Use stripped text for readability analysis (prose only, no markup noise)
+  const prose = stripMarkup(text);
+  const proseWords = prose.split(/\s+/).filter((w) => w.length > 0);
+  const proseWordCount = proseWords.length;
+
+  const sentences = prose.split(/[.!?]+/).filter((s) => s.trim().length > 0);
   const sentenceCount = Math.max(1, sentences.length);
 
   let totalSyllables = 0;
-  for (const word of words) {
+  for (const word of proseWords) {
     totalSyllables += countSyllables(word);
   }
 
-  const avgSentenceLength = wordCount / sentenceCount;
-  const avgSyllablesPerWord = wordCount > 0 ? totalSyllables / wordCount : 1;
+  const avgSentenceLength = proseWordCount / sentenceCount;
+  const avgSyllablesPerWord = proseWordCount > 0 ? totalSyllables / proseWordCount : 1;
 
   // Flesch Reading Ease
   const rawReadability =

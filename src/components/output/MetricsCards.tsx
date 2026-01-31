@@ -6,6 +6,8 @@ import type { ContentMetrics, TokenUsage } from '@/types'
 interface MetricsCardsProps {
   metrics: ContentMetrics
   tokenUsage?: TokenUsage
+  targetWordCount?: number
+  tolerancePercent?: number
 }
 
 function ReadabilityCircle({ score }: { score: number }) {
@@ -77,9 +79,18 @@ function MetricCard({ children, label, index }: MetricCardProps) {
   )
 }
 
-export default function MetricsCards({ metrics, tokenUsage }: MetricsCardsProps) {
+export default function MetricsCards({ metrics, tokenUsage, targetWordCount, tolerancePercent = 15 }: MetricsCardsProps) {
   const isAdmin = useAuthStore((s) => s.isAdmin)
   const showAdminCards = isAdmin && tokenUsage
+
+  // Word count goal calculation
+  const hasTarget = !!targetWordCount && targetWordCount > 0
+  const wordPct = hasTarget ? (metrics.wordCount / targetWordCount!) * 100 : 0
+  const tolerance = tolerancePercent / 100
+  const isWithinTolerance = hasTarget
+    ? metrics.wordCount >= targetWordCount! * (1 - tolerance) &&
+      metrics.wordCount <= targetWordCount! * (1 + tolerance)
+    : false
 
   return (
     <div className={cn(
@@ -95,6 +106,22 @@ export default function MetricsCards({ metrics, tokenUsage }: MetricsCardsProps)
         <div className="text-2xl font-bold text-[#f9fafb]">
           {metrics.wordCount.toLocaleString()}
         </div>
+        {hasTarget && (
+          <div className="mt-2">
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${Math.min(100, wordPct)}%`,
+                  backgroundColor: isWithinTolerance ? '#34d399' : wordPct > 100 * (1 + tolerance) || wordPct < 100 * (1 - tolerance) ? '#ef4444' : '#facc15',
+                }}
+              />
+            </div>
+            <div className="text-[10px] text-[#6b7280] mt-1">
+              Target: {targetWordCount!.toLocaleString()}
+            </div>
+          </div>
+        )}
       </MetricCard>
 
       <MetricCard label="min read" index={2}>

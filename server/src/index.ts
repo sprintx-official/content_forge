@@ -21,6 +21,8 @@ import apiKeyRoutes from './routes/apiKeys.js'
 import generateRoutes from './routes/generate.js'
 import memoryRoutes from './routes/memory.js'
 import pricingRoutes from './routes/pricing.js'
+import chatRoutes from './routes/chat.js'
+import imageRoutes from './routes/images.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -108,6 +110,8 @@ app.use('/api/keys', apiKeyRoutes)
 app.use('/api/generate', generateLimiter, generateRoutes)
 app.use('/api/memory', memoryRoutes)
 app.use('/api/pricing', pricingRoutes)
+app.use('/api/chat', chatRoutes)
+app.use('/api/images', generateLimiter, imageRoutes)
 
 // Error handler for API routes only
 app.use('/api', errorHandler)

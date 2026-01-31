@@ -1,12 +1,24 @@
 import { useState } from 'react'
-import { Copy, Check, FileDown, FileCode, Printer, RefreshCw, ArrowLeft } from 'lucide-react'
+import { Copy, Check, FileDown, FileCode, FileText, Printer, Braces, RefreshCw, ArrowLeft, Wand2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getDownloadOptions } from '@/lib/fileParser'
+import type { ParsedFile, DownloadFormat } from '@/types'
 
 interface ExportActionsProps {
   getPlainText: () => string
   getHTML: () => string
   onRegenerate: () => void
   onBack: () => void
+  activeFile?: ParsedFile | null
+  onRefine?: () => void
+}
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  FileDown,
+  FileCode,
+  FileText,
+  Printer,
+  Braces,
 }
 
 export default function ExportActions({
@@ -14,8 +26,14 @@ export default function ExportActions({
   getHTML,
   onRegenerate,
   onBack,
+  activeFile,
+  onRefine,
 }: ExportActionsProps) {
   const [copied, setCopied] = useState(false)
+
+  const extension = activeFile?.extension ?? ''
+  const filename = activeFile?.filename ?? 'content-forge-output'
+  const downloadOptions = getDownloadOptions(extension)
 
   const handleCopy = async () => {
     const text = getPlainText()
@@ -35,20 +53,38 @@ export default function ExportActions({
     }
   }
 
-  const handleDownloadTxt = () => {
-    const blob = new Blob([getPlainText()], { type: 'text/plain;charset=utf-8' })
+  const downloadBlob = (content: string, mimeType: string, ext: string) => {
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'content-forge-output.txt'
+    link.download = `${filename.replace(/\.[^.]+$/, '')}.${ext}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
 
-  const handleDownloadHTML = () => {
-    const htmlContent = `<!DOCTYPE html>
+  const handleDownload = (format: DownloadFormat) => {
+    switch (format) {
+      case 'txt':
+        downloadBlob(getPlainText(), 'text/plain', 'txt')
+        break
+      case 'md':
+        downloadBlob(getPlainText(), 'text/markdown', 'md')
+        break
+      case 'json': {
+        const raw = getPlainText()
+        try {
+          const parsed = JSON.parse(raw)
+          downloadBlob(JSON.stringify(parsed, null, 2), 'application/json', 'json')
+        } catch {
+          downloadBlob(raw, 'application/json', 'json')
+        }
+        break
+      }
+      case 'html': {
+        const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -72,15 +108,13 @@ export default function ExportActions({
 ${getHTML()}
 </body>
 </html>`
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'content-forge-output.html'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+        downloadBlob(htmlContent, 'text/html', 'html')
+        break
+      }
+      case 'pdf':
+        handlePrint()
+        break
+    }
   }
 
   const handlePrint = () => {
@@ -124,6 +158,12 @@ ${getHTML()}
     'hover:bg-white/10 hover:text-white transition-all cursor-pointer',
   )
 
+  const purpleClass = cn(
+    'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium',
+    'border border-[#a855f7] text-[#a855f7] bg-transparent',
+    'hover:bg-[#a855f7]/10 transition-all cursor-pointer',
+  )
+
   const cyanClass = cn(
     'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium',
     'border border-[#00f0ff] text-[#00f0ff] bg-transparent',
@@ -137,7 +177,8 @@ ${getHTML()}
   )
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Copy */}
       <button type="button" onClick={handleCopy} className={outlineClass}>
         {copied ? (
           <>
@@ -152,26 +193,43 @@ ${getHTML()}
         )}
       </button>
 
-      <button type="button" onClick={handleDownloadTxt} className={outlineClass}>
-        <FileDown className="w-4 h-4" />
-        Download TXT
-      </button>
+      {/* Refine */}
+      {onRefine && (
+        <button type="button" onClick={onRefine} className={purpleClass}>
+          <Wand2 className="w-4 h-4" />
+          Refine
+        </button>
+      )}
 
-      <button type="button" onClick={handleDownloadHTML} className={outlineClass}>
-        <FileCode className="w-4 h-4" />
-        Download HTML
-      </button>
+      {/* Divider */}
+      <div className="w-px h-6 bg-white/10 hidden sm:block" />
 
-      <button type="button" onClick={handlePrint} className={outlineClass}>
-        <Printer className="w-4 h-4" />
-        Print/PDF
-      </button>
+      {/* Smart download buttons */}
+      {downloadOptions.map((opt) => {
+        const Icon = ICON_MAP[opt.icon] || FileDown
+        return (
+          <button
+            key={opt.format}
+            type="button"
+            onClick={() => handleDownload(opt.format)}
+            className={outlineClass}
+          >
+            <Icon className="w-4 h-4" />
+            {opt.label}
+          </button>
+        )
+      })}
 
+      {/* Divider */}
+      <div className="w-px h-6 bg-white/10 hidden sm:block" />
+
+      {/* Regenerate */}
       <button type="button" onClick={onRegenerate} className={cyanClass}>
         <RefreshCw className="w-4 h-4" />
         Regenerate
       </button>
 
+      {/* Edit & Retry */}
       <button type="button" onClick={onBack} className={ghostClass}>
         <ArrowLeft className="w-4 h-4" />
         Edit &amp; Retry

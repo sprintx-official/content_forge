@@ -39,6 +39,7 @@ export const generateInputSchema = z.object({
   customWordCount: z.number().int().min(10).max(10000).optional(),
   tolerancePercent: z.number().int().min(0).max(100).optional(),
   workflowId: z.string().uuid().optional(),
+  refineContent: z.string().max(50000, 'Content too long to refine').optional(),
 })
 
 export const generateSchema = z.object({
@@ -62,6 +63,7 @@ export const updateAgentSchema = createAgentSchema.partial()
 export const workflowStepSchema = z.object({
   agentId: z.string().uuid('Invalid agent ID'),
   instructions: z.string().max(2000, 'Instructions too long').optional().default(''),
+  stepType: z.enum(['text', 'image', 'code']).optional().default('text'),
 })
 
 export const createWorkflowSchema = z.object({
@@ -112,6 +114,15 @@ export const createPricingSchema = z.object({
 })
 
 export const updatePricingSchema = createPricingSchema.partial()
+
+// Code generation schema
+export const codeGenerateSchema = z.object({
+  prompt: z.string().min(1, 'Prompt is required').max(10000, 'Prompt too long'),
+  language: z.string().min(1).max(50),
+  context: z.string().max(50000).optional(),
+  modelId: z.string().max(100).optional(),
+  provider: z.string().max(50).optional(),
+})
 
 // Common ID parameter schema
 export const idParamSchema = z.object({

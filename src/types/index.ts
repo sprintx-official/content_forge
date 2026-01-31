@@ -6,6 +6,77 @@ export type ProcessingStageId = 'analyzing' | 'researching' | 'drafting' | 'poli
 export type ProcessingStatus = 'pending' | 'active' | 'completed'
 export type UserRole = 'admin' | 'user'
 
+// ── Forge mode (tab system) ────────────────────────────────
+export type ForgeMode = 'content' | 'chat' | 'image' | 'code'
+export type WorkflowStepType = 'text' | 'image' | 'code'
+
+// ── Image generation types ─────────────────────────────────
+export interface ImageSize {
+  width: number
+  height: number
+  label: string
+}
+export type ImageStyle = 'natural' | 'vivid' | 'anime' | 'photographic' | 'digital-art'
+
+// ── Code generation types ──────────────────────────────────
+export type CodeLanguage =
+  | 'javascript'
+  | 'typescript'
+  | 'python'
+  | 'html'
+  | 'css'
+  | 'json'
+  | 'sql'
+  | 'bash'
+  | 'rust'
+  | 'go'
+  | 'java'
+  | 'other'
+
+// ── Chat types ─────────────────────────────────────────────
+export interface ChatConversation {
+  id: string
+  userId: string
+  title: string
+  lastMessage: string
+  messageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ChatMessage {
+  id: string
+  conversationId: string
+  role: 'user' | 'assistant'
+  content: string
+  model?: string
+  provider?: string
+  tokenUsage?: {
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    costUsd: number
+  }
+  createdAt: string
+}
+
+// ── Generated image types ──────────────────────────────────
+export interface GeneratedImage {
+  id: string
+  userId: string
+  prompt: string
+  revisedPrompt?: string
+  r2Key: string
+  url: string
+  width: number
+  height: number
+  style: string
+  provider: string
+  model: string
+  costUsd: number
+  createdAt: string
+}
+
 export interface ForgeInput {
   contentType: ContentType
   tone: Tone
@@ -15,6 +86,8 @@ export interface ForgeInput {
   tolerancePercent?: number
   topic: string
   workflowId?: string
+  /** When set, AI will refine this content instead of generating from scratch */
+  refineContent?: string
 }
 
 export interface ContentMetrics {
@@ -140,6 +213,7 @@ export interface FeedbackItem {
 export interface WorkflowStep {
   agentId: string
   instructions: string
+  stepType?: WorkflowStepType
 }
 
 export interface Workflow {
@@ -231,4 +305,44 @@ export interface AgentMemoryItem {
   outputText: string
   historyId: string
   createdAt: string
+}
+
+// ── Multi-file parsing types ──────────────────────────────
+
+/** Represents a single parsed file from multi-file agent output */
+export interface ParsedFile {
+  /** Filename including extension, e.g. "article.md" */
+  filename: string
+  /** The file extension without dot, e.g. "md", "txt", "json", "html" */
+  extension: string
+  /** The raw content of this file section */
+  content: string
+}
+
+/** Download format options */
+export type DownloadFormat = 'txt' | 'html' | 'md' | 'json' | 'pdf'
+
+/** Available download actions for a given file type */
+export interface FileDownloadOption {
+  format: DownloadFormat
+  label: string
+  icon: string
+}
+
+// ── Refine / diff types ───────────────────────────────────
+
+/** State for the refine/diff feature */
+export interface RefineState {
+  /** The original content before refinement */
+  originalContent: string
+  /** The new content after refinement */
+  refinedContent: string
+  /** Whether the diff view is currently showing */
+  isShowingDiff: boolean
+  /** Whether a refinement request is in progress */
+  isRefining: boolean
+  /** The tone used for refinement */
+  refineTone: Tone
+  /** The audience used for refinement */
+  refineAudience: Audience
 }

@@ -20,6 +20,15 @@ async function runMigrations(): Promise<void> {
   if (!hasCachedPrice) {
     await exec("ALTER TABLE model_pricing ADD COLUMN cached_input_price_per_million REAL NOT NULL DEFAULT 0.0")
   }
+
+  // Migration: Add step_type column to workflow_steps
+  const stepCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'workflow_steps'`
+  )
+  if (!stepCols.some((c) => c.column_name === 'step_type')) {
+    await exec("ALTER TABLE workflow_steps ADD COLUMN step_type TEXT NOT NULL DEFAULT 'text'")
+  }
 }
 
 export async function initializeSchema(): Promise<void> {
@@ -160,6 +169,57 @@ export async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_agent_memory_created_at ON agent_memory(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_workflow_access_user_id ON workflow_access(user_id);
     CREATE INDEX IF NOT EXISTS idx_workflow_access_workflow_id ON workflow_access(workflow_id);
+
+    -- Chat conversations
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL DEFAULT 'New Chat',
+      last_message TEXT NOT NULL DEFAULT '',
+      message_count INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Chat messages
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+      content TEXT NOT NULL DEFAULT '',
+      model TEXT,
+      provider TEXT,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      total_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_usd REAL NOT NULL DEFAULT 0.0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Generated images
+    CREATE TABLE IF NOT EXISTS generated_images (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      prompt TEXT NOT NULL DEFAULT '',
+      revised_prompt TEXT,
+      r2_key TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL DEFAULT '',
+      width INTEGER NOT NULL DEFAULT 1024,
+      height INTEGER NOT NULL DEFAULT 1024,
+      style TEXT NOT NULL DEFAULT 'natural',
+      provider TEXT NOT NULL DEFAULT 'openai',
+      model TEXT NOT NULL DEFAULT 'dall-e-3',
+      cost_usd REAL NOT NULL DEFAULT 0.0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Indexes for new tables
+    CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_id ON chat_conversations(user_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_conversations_updated_at ON chat_conversations(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
+    CREATE INDEX IF NOT EXISTS idx_generated_images_user_id ON generated_images(user_id);
+    CREATE INDEX IF NOT EXISTS idx_generated_images_created_at ON generated_images(created_at DESC);
   `)
 
   await runMigrations()

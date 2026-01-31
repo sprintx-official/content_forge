@@ -7,47 +7,7 @@ import { NeuralNetwork } from './NeuralNetwork'
 import { AgentNodes } from './AgentNodes'
 import { ProgressSteps } from './ProgressSteps'
 import { StatusMessage } from './StatusMessage'
-import { FileText, Shield, Terminal } from 'lucide-react'
-
-// --- Activity log entries per stage ---
-const STAGE_LOGS: Record<string, string[]> = {
-  analyzing: [
-    '[SYS] Initializing content pipeline...',
-    '[SCAN] Parsing topic parameters...',
-    '[DATA] Loading knowledge base...',
-    '[AI] Analyzing topic structure...',
-    '[SYS] Parameter validation complete',
-  ],
-  researching: [
-    '[NET] Querying reference database...',
-    '[SCAN] Cross-referencing sources...',
-    '[DATA] Extracting key insights...',
-    '[PROC] Building context graph...',
-    '[AI] Research compilation complete',
-  ],
-  drafting: [
-    '[AI] Generating initial draft...',
-    '[PROC] Applying tone parameters...',
-    '[PROC] Structuring content sections...',
-    '[DATA] Embedding key references...',
-    '[AI] Draft generation in progress...',
-  ],
-  polishing: [
-    '[EDIT] Running grammar analysis...',
-    '[EDIT] Optimizing readability score...',
-    '[EDIT] Verifying content structure...',
-    '[PROC] Applying final formatting...',
-    '[SYS] Output compilation complete',
-  ],
-}
-
-const GENERIC_LOGS = [
-  '[SYS] Processing stage initialized...',
-  '[PROC] Running agent pipeline...',
-  '[DATA] Analyzing output quality...',
-  '[AI] Generating results...',
-  '[SYS] Stage processing complete',
-]
+import { FileText, Shield, Terminal, X } from 'lucide-react'
 
 // --- Hex data stream hook ---
 function useHexStream(active: boolean) {
@@ -76,65 +36,18 @@ function useHexStream(active: boolean) {
   return lines
 }
 
-// --- Activity log hook ---
-function useActivityLog(
-  stageId: string | null,
-  stageIndex: number,
-  isProcessing: boolean,
-) {
-  const [entries, setEntries] = useState<{ text: string; time: string }[]>([])
-  const indexRef = useRef(0)
-  const stageIdRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!isProcessing) {
-      setEntries([])
-      indexRef.current = 0
-      stageIdRef.current = null
-      return
-    }
-
-    if (stageId !== stageIdRef.current) {
-      stageIdRef.current = stageId
-      indexRef.current = 0
-    }
-
-    if (!stageId) return
-
-    const logs = STAGE_LOGS[stageId] || GENERIC_LOGS
-    const interval = setInterval(() => {
-      const idx = indexRef.current
-      if (idx < logs.length && logs[idx]) {
-        const now = new Date()
-        const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`
-        setEntries((prev) => [
-          ...prev.slice(-11),
-          { text: logs[idx], time },
-        ])
-        indexRef.current = idx + 1
-      }
-    }, 280)
-
-    return () => clearInterval(interval)
-  }, [stageId, stageIndex, isProcessing])
-
-  return entries
-}
-
 // --- Main ProcessingView ---
 export function ProcessingView() {
   const isProcessing = useForgeStore((state) => state.isProcessing)
   const dynamicStages = useForgeStore((state) => state.dynamicStages)
+  const terminalLogs = useForgeStore((state) => state.terminalLogs)
+  const cancelGeneration = useForgeStore((state) => state.cancelGeneration)
+
   const { stages, currentStageIndex, displayMessage, progress } =
     useProcessingAnimation(isProcessing, dynamicStages)
 
   const activeStage = currentStageIndex >= 0 ? stages[currentStageIndex] : null
   const hexLines = useHexStream(isProcessing)
-  const logEntries = useActivityLog(
-    activeStage?.id ?? null,
-    currentStageIndex,
-    isProcessing,
-  )
   const terminalRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll terminal log (scroll WITHIN the terminal container only, not the page)
@@ -142,7 +55,7 @@ export function ProcessingView() {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight
     }
-  }, [logEntries])
+  }, [terminalLogs])
 
   const statusText = useMemo(() => {
     if (!activeStage) return 'Initializing pipeline...'
@@ -163,9 +76,20 @@ export function ProcessingView() {
               {statusText}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-3 h-3 text-[#34d399]/40" />
-            <span className="text-[9px] font-mono text-white/20">SECURE</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-3 h-3 text-[#34d399]/40" />
+              <span className="text-[9px] font-mono text-white/20">SECURE</span>
+            </div>
+            {/* Cancel button */}
+            <button
+              onClick={cancelGeneration}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono text-red-400/70 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+              title="Cancel generation"
+            >
+              <X className="w-3 h-3" />
+              CANCEL
+            </button>
           </div>
         </div>
       </div>
@@ -279,12 +203,12 @@ export function ProcessingView() {
 
           {/* Terminal body */}
           <div ref={terminalRef} className="h-[140px] overflow-y-auto px-4 py-3 scrollbar-thin scrollbar-thumb-white/10">
-            {logEntries.length === 0 && (
+            {terminalLogs.length === 0 && (
               <div className="text-[11px] font-mono text-white/20">
                 Waiting for pipeline...
               </div>
             )}
-            {logEntries.map((entry, i) => {
+            {terminalLogs.map((entry, i) => {
               if (!entry?.text) return null
               const isSystem = entry.text.startsWith('[SYS]')
               const isAI = entry.text.startsWith('[AI]')
@@ -293,16 +217,18 @@ export function ProcessingView() {
               const isScan = entry.text.startsWith('[SCAN]')
               const isEdit = entry.text.startsWith('[EDIT]')
               const isProc = entry.text.startsWith('[PROC]')
+              const isErr = entry.text.startsWith('[ERR]')
 
               let tagColor = 'text-white/40'
-              if (isSystem) tagColor = 'text-[#facc15]/70'
+              if (isErr) tagColor = 'text-red-400/80'
+              else if (isSystem) tagColor = 'text-[#facc15]/70'
               else if (isAI) tagColor = 'text-[#00f0ff]/80'
               else if (isData || isNet) tagColor = 'text-[#a855f7]/70'
               else if (isScan) tagColor = 'text-[#f97316]/60'
               else if (isEdit) tagColor = 'text-[#34d399]/70'
               else if (isProc) tagColor = 'text-[#60a5fa]/70'
 
-              const isLast = i === logEntries.length - 1
+              const isLast = i === terminalLogs.length - 1
 
               return (
                 <div

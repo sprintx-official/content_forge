@@ -57,6 +57,7 @@ export interface WorkflowStepRow {
   agent_id: string
   instructions: string
   sort_order: number
+  step_type: string
 }
 
 export interface FeedbackRow {
@@ -128,5 +129,45 @@ export interface WorkflowAccessRow {
   id: string
   workflow_id: string
   user_id: string
+  created_at: string
+}
+
+export interface ChatConversationRow {
+  id: string
+  user_id: string
+  title: string
+  last_message: string
+  message_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatMessageRow {
+  id: string
+  conversation_id: string
+  role: string
+  content: string
+  model: string
+  provider: string
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  cost_usd: number
+  created_at: string
+}
+
+export interface GeneratedImageRow {
+  id: string
+  user_id: string
+  prompt: string
+  revised_prompt: string | null
+  r2_key: string
+  url: string
+  width: number
+  height: number
+  style: string
+  provider: string
+  model: string
+  cost_usd: number
   created_at: string
 }

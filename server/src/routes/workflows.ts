@@ -24,6 +24,7 @@ function formatWorkflow(row: WorkflowRow, steps: WorkflowStepRow[], assignedUser
       .map((s) => ({
         agentId: s.agent_id,
         instructions: s.instructions,
+        stepType: s.step_type || 'text',
       })),
     assignedUserIds,
     createdAt: row.created_at,
@@ -159,10 +160,10 @@ router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema),
 
   if (Array.isArray(steps)) {
     for (let i = 0; i < steps.length; i++) {
-      const step = steps[i] as { agentId: string; instructions: string }
+      const step = steps[i] as { agentId: string; instructions: string; stepType?: string }
       await execute(
-        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES ($1, $2, $3, $4, $5)',
-        [crypto.randomUUID(), workflowId, step.agentId, step.instructions || '', i]
+        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order, step_type) VALUES ($1, $2, $3, $4, $5, $6)',
+        [crypto.randomUUID(), workflowId, step.agentId, step.instructions || '', i, step.stepType || 'text']
       )
     }
   }
@@ -204,10 +205,10 @@ router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), va
   if (Array.isArray(steps)) {
     await execute('DELETE FROM workflow_steps WHERE workflow_id = $1', [req.params.id])
     for (let i = 0; i < steps.length; i++) {
-      const step = steps[i] as { agentId: string; instructions: string }
+      const step = steps[i] as { agentId: string; instructions: string; stepType?: string }
       await execute(
-        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order) VALUES ($1, $2, $3, $4, $5)',
-        [crypto.randomUUID(), req.params.id, step.agentId, step.instructions || '', i]
+        'INSERT INTO workflow_steps (id, workflow_id, agent_id, instructions, sort_order, step_type) VALUES ($1, $2, $3, $4, $5, $6)',
+        [crypto.randomUUID(), req.params.id, step.agentId, step.instructions || '', i, step.stepType || 'text']
       )
     }
   }

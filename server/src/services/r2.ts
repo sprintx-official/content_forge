@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { config } from '../config.js'
 
 let client: S3Client | null = null
@@ -42,4 +42,23 @@ export async function deleteFromR2(key: string): Promise<void> {
     Bucket: config.r2.bucketName,
     Key: key,
   }))
+}
+
+export async function downloadFromR2(key: string): Promise<{ body: Buffer; contentType: string }> {
+  const s3 = getClient()
+  const result = await s3.send(new GetObjectCommand({
+    Bucket: config.r2.bucketName,
+    Key: key,
+  }))
+
+  const chunks: Uint8Array[] = []
+  const stream = result.Body as AsyncIterable<Uint8Array>
+  for await (const chunk of stream) {
+    chunks.push(chunk)
+  }
+
+  return {
+    body: Buffer.concat(chunks),
+    contentType: result.ContentType || 'application/octet-stream',
+  }
 }
