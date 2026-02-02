@@ -25,7 +25,7 @@ function inferProvider(modelId: string): string | null {
   if (/^(gpt-|o\d|chatgpt-)/i.test(modelId)) return 'openai'
   if (/^claude-/i.test(modelId)) return 'anthropic'
   if (/^grok-/i.test(modelId)) return 'xai'
-  if (/^(gemini-|veo-)/i.test(modelId)) return 'google'
+  if (/^(gemini-|veo-|imagen-)/i.test(modelId)) return 'google'
   return null
 }
 
@@ -475,10 +475,20 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
             maxTokens: 512,
           })
 
-          const imageApiKey = agentApiKey // use the same key (image gen requires OpenAI key)
+          // Resolve image provider: try auto-route, fallback to current agent provider
+          let imgProvider = agentProvider
+          let imgModel = 'dall-e-3'
+          let imgApiKey = agentApiKey
+          try {
+            const imgRoute = await autoRoute('image')
+            imgProvider = imgRoute.provider
+            imgModel = imgRoute.model
+            imgApiKey = imgRoute.apiKey
+          } catch { /* use fallback */ }
+
           const imageResult = await generateImage({
             prompt: imagePromptResponse.content.trim(),
-            provider: 'openai', model: 'dall-e-3', apiKey: imageApiKey,
+            provider: imgProvider, model: imgModel, apiKey: imgApiKey,
             size: { width: 1024, height: 1024 },
           })
 
@@ -494,7 +504,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
           }
 
           agentOutput = `![Generated Image](${imageUrl})\n\n*${imagePromptResponse.content.trim()}*`
-          agentCost = 0.04 // DALL-E 3 cost for 1024x1024
+          agentCost = 0.04
           agentTokens = {
             inputTokens: imagePromptResponse.inputTokens,
             cachedInputTokens: imagePromptResponse.cachedInputTokens,
@@ -737,9 +747,20 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
             maxTokens: 512,
           })
 
+          // Resolve image provider: try auto-route, fallback to current agent provider
+          let imgProvider = agentProvider
+          let imgModel = 'dall-e-3'
+          let imgApiKey = agentApiKey
+          try {
+            const imgRoute = await autoRoute('image')
+            imgProvider = imgRoute.provider
+            imgModel = imgRoute.model
+            imgApiKey = imgRoute.apiKey
+          } catch { /* use fallback */ }
+
           const imageResult = await generateImage({
             prompt: imagePromptResponse.content.trim(),
-            provider: 'openai', model: 'dall-e-3', apiKey: agentApiKey,
+            provider: imgProvider, model: imgModel, apiKey: imgApiKey,
             size: { width: 1024, height: 1024 },
           })
 

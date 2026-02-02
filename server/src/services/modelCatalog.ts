@@ -509,6 +509,20 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     tags: ['Multimodal', 'Balanced'],
   },
 
+  // ── Google (Imagen — image generation) ─────────────────────────
+  {
+    pattern: 'imagen-3.0-generate-002',
+    description:
+      'Google Imagen 3.0 image generation. Creates high-quality images from text prompts.',
+    tags: ['Best for Image Generation', 'Balanced'],
+  },
+  {
+    pattern: 'imagen-3.0-fast-generate-001',
+    description:
+      'Fast Imagen 3.0 image generation. Quick turnaround for image creation.',
+    tags: ['Best for Image Generation', 'Fast & Cheap'],
+  },
+
   // ── Google (Veo — video generation) ──────────────────────────
   {
     pattern: 'veo-3.1-fast-generate-preview',

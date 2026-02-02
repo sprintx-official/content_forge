@@ -33,9 +33,13 @@ const IMAGE_COST: Record<string, number> = {
   'dall-e-3-1024x1024': 0.04,
   'dall-e-3-1024x1792': 0.08,
   'dall-e-3-1792x1024': 0.08,
+  'imagen-3.0-generate-002': 0.03,
+  'imagen-3.0-fast-generate-001': 0.02,
 }
 
 function estimateCost(model: string, width: number, height: number): number {
+  // Check model-specific flat rate first (e.g., Imagen), then size-specific
+  if (IMAGE_COST[model] !== undefined) return IMAGE_COST[model]
   const key = `${model}-${width}x${height}`
   return IMAGE_COST[key] ?? 0.04
 }

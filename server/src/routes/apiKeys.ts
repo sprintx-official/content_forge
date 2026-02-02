@@ -212,6 +212,13 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
             provider,
           }))
 
+        // Imagen image models use predict (not generateContent),
+        // so they won't appear in the dynamic model list — add them manually.
+        const imagenModels: ProviderModel[] = [
+          { id: 'imagen-3.0-generate-002', name: 'Imagen 3.0', provider },
+          { id: 'imagen-3.0-fast-generate-001', name: 'Imagen 3.0 Fast', provider },
+        ]
+
         // Veo video models use predictLongRunning (not generateContent),
         // so they won't appear in the dynamic model list — add them manually.
         const veoModels: ProviderModel[] = [
@@ -220,7 +227,7 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
           { id: 'veo-3.1-fast-generate-preview', name: 'Veo 3.1 Fast', provider },
         ]
 
-        return [...geminiModels, ...veoModels].sort((a, b) => a.name.localeCompare(b.name))
+        return [...geminiModels, ...imagenModels, ...veoModels].sort((a, b) => a.name.localeCompare(b.name))
       }
 
       default:
