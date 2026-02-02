@@ -1,6 +1,9 @@
 import { exec, query } from './connection.js'
 
 async function runMigrations(): Promise<void> {
+  // Migration: Normalize all existing emails to lowercase
+  await exec("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)")
+
   // Migration: Add model column to agents
   const agentCols = await query<{ column_name: string }>(
     `SELECT column_name FROM information_schema.columns

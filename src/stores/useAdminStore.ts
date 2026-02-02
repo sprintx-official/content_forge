@@ -75,13 +75,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   addMember: async (name, email, password, role) => {
-    try {
-      const member = await teamService.createMember(name, email, password, role)
-      await get().loadTeam()
-      return member
-    } catch {
-      return null
-    }
+    const member = await teamService.createMember(name, email, password, role)
+    await get().loadTeam()
+    return member
   },
 
   changeRole: async (userId, newRole) => {

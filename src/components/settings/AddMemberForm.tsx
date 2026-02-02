@@ -27,13 +27,14 @@ export default function AddMemberForm() {
     }
 
     setSaving(true)
-    const result = await addMember(name.trim(), email.trim(), password, role)
-    setSaving(false)
-
-    if (!result) {
-      setError('A user with this email already exists.')
+    try {
+      await addMember(name.trim(), email.trim().toLowerCase(), password, role)
+    } catch (err) {
+      setSaving(false)
+      setError(err instanceof Error ? err.message : 'Failed to create member.')
       return
     }
+    setSaving(false)
 
     setName('')
     setEmail('')

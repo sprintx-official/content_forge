@@ -41,8 +41,9 @@ router.get('/admin-count', authenticate, requireAdmin, async (_req: Authenticate
 // POST /api/team
 router.post('/', authenticate, requireAdmin, validateBody(createUserSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, email, password, role } = req.body
+  const normalizedEmail = email.trim().toLowerCase()
 
-  const existing = await queryOne('SELECT id FROM users WHERE email = $1', [email])
+  const existing = await queryOne('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail])
   if (existing) {
     res.status(409).json({ error: 'A user with this email already exists' })
     return
@@ -54,7 +55,7 @@ router.post('/', authenticate, requireAdmin, validateBody(createUserSchema), asy
 
   await execute(
     'INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-    [id, name.trim(), email.trim(), hash, role || 'user', now]
+    [id, name.trim(), normalizedEmail, hash, role || 'user', now]
   )
 
   const user = (await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [id]))!

@@ -18,7 +18,7 @@ export default function LoginForm() {
     setError('')
     setLoading(true)
 
-    const success = await login(email, password)
+    const success = await login(email.trim().toLowerCase(), password)
 
     if (success) {
       navigate('/forge')

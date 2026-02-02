@@ -72,9 +72,10 @@ function clearLoginAttempts(email: string): void {
 router.post('/login', validateBody(loginSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body
+    const normalizedEmail = email.trim().toLowerCase()
 
     // Check if account is locked
-    const lockStatus = checkAccountLocked(email)
+    const lockStatus = checkAccountLocked(normalizedEmail)
     if (lockStatus.locked) {
       const remainingMinutes = Math.ceil((lockStatus.remainingMs || 0) / 60000)
       res.status(429).json({
@@ -83,9 +84,9 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
       return
     }
 
-    const user = await queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email])
+    const user = await queryOne<UserRow>('SELECT * FROM users WHERE LOWER(email) = $1', [normalizedEmail])
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-      const result = recordFailedAttempt(email)
+      const result = recordFailedAttempt(normalizedEmail)
       if (result.locked) {
         res.status(429).json({
           error: 'Too many failed attempts. Account locked for 15 minutes.'
@@ -100,7 +101,7 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
     }
 
     // Successful login - clear any failed attempts
-    clearLoginAttempts(email)
+    clearLoginAttempts(normalizedEmail)
 
     const token = signToken(user)
     const refreshToken = signRefreshToken(user)
