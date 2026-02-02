@@ -269,3 +269,19 @@ ${previousOutput.slice(0, 2000)}
 Generate a single, detailed image generation prompt that describes the visual scene, style, composition, colors, and mood.
 Output ONLY the image prompt text, nothing else.`
 }
+
+export function buildVideoPromptFromContext(previousOutput: string, topic: string): string {
+  return `Based on the following content, create a detailed video generation prompt for Google Veo.
+The video should visually represent the key themes and concepts from the content.
+
+Topic: ${topic}
+
+Content:
+---
+${previousOutput.slice(0, 2000)}
+---
+
+Generate a single, detailed video generation prompt that describes the visual scene, camera movement, lighting, mood, action, and composition.
+The video will be 8 seconds long. Focus on a single compelling scene.
+Output ONLY the video prompt text, nothing else.`
+}

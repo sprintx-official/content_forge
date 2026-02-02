@@ -23,6 +23,9 @@ const TASK_PREFERENCES: Record<string, { provider: string; model: string }[]> = 
   image: [
     { provider: 'openai', model: 'dall-e-3' },
   ],
+  video: [
+    { provider: 'google', model: 'veo-3.0-generate-001' },
+  ],
   code: [
     { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
     { provider: 'openai', model: 'gpt-4o' },

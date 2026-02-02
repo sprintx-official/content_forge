@@ -46,6 +46,13 @@ export interface PipelineCompleteEvent {
   createdAt: string
 }
 
+export interface AgentProgressEvent {
+  agentIndex: number
+  tokens?: number
+  message?: string
+  elapsedMs?: number
+}
+
 export interface StreamErrorEvent {
   message: string
 }
@@ -53,6 +60,7 @@ export interface StreamErrorEvent {
 export interface StreamEventCallbacks {
   onAgentStart?: (event: AgentStartEvent) => void
   onAgentComplete?: (event: AgentCompleteEvent) => void
+  onAgentProgress?: (event: AgentProgressEvent) => void
   onToken?: (event: TokenEvent) => void
   onPipelineComplete?: (event: PipelineCompleteEvent) => void
   onError?: (event: StreamErrorEvent) => void
@@ -139,6 +147,9 @@ export function generateContentStream(
                 break
               case 'agent:complete':
                 callbacks.onAgentComplete?.(parsed as AgentCompleteEvent)
+                break
+              case 'agent:progress':
+                callbacks.onAgentProgress?.(parsed as AgentProgressEvent)
                 break
               case 'token':
                 callbacks.onToken?.(parsed as TokenEvent)

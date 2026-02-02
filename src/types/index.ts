@@ -7,8 +7,8 @@ export type ProcessingStatus = 'pending' | 'active' | 'completed'
 export type UserRole = 'admin' | 'user'
 
 // ── Forge mode (tab system) ────────────────────────────────
-export type ForgeMode = 'content' | 'chat' | 'image' | 'code'
-export type WorkflowStepType = 'text' | 'image' | 'code'
+export type ForgeMode = 'content' | 'chat' | 'image' | 'video' | 'code'
+export type WorkflowStepType = 'text' | 'image' | 'code' | 'video'
 
 // ── Image generation types ─────────────────────────────────
 export interface ImageSize {
@@ -83,6 +83,21 @@ export interface GeneratedImage {
   width: number
   height: number
   style: string
+  provider: string
+  model: string
+  costUsd: number
+  createdAt: string
+}
+
+// ── Generated video types ──────────────────────────────────
+export interface GeneratedVideo {
+  id: string
+  userId: string
+  prompt: string
+  r2Key: string
+  url: string
+  aspectRatio: string
+  durationSeconds: number
   provider: string
   model: string
   costUsd: number
@@ -293,6 +308,7 @@ export type ModelTag =
   | 'Best for Chat'
   | 'Best for Analysis'
   | 'Best for Image Generation'
+  | 'Best for Video Generation'
   | 'Most Capable'
   | 'Fast & Cheap'
   | 'Balanced'

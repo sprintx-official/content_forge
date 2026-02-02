@@ -13,6 +13,7 @@ export type ModelTag =
   | 'Best for Chat'
   | 'Best for Analysis'
   | 'Best for Image Generation'
+  | 'Best for Video Generation'
   | 'Most Capable'
   | 'Fast & Cheap'
   | 'Balanced'
@@ -506,6 +507,26 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     description:
       'Google\'s Gemini AI model family. Multimodal with strong general capabilities.',
     tags: ['Multimodal', 'Balanced'],
+  },
+
+  // ── Google (Veo — video generation) ──────────────────────────
+  {
+    pattern: 'veo-3.1-fast-generate-preview',
+    description:
+      'Fast Veo 3.1 video generation. Quick turnaround for short video clips.',
+    tags: ['Best for Video Generation', 'Fast & Cheap'],
+  },
+  {
+    pattern: 'veo-3.1-generate-preview',
+    description:
+      'High-quality Veo 3.1 video generation. Creates detailed video from text prompts.',
+    tags: ['Best for Video Generation', 'Most Capable'],
+  },
+  {
+    pattern: 'veo-3.0-generate-001',
+    description:
+      'Google Veo 3.0 video generation. Produces high-quality video from text descriptions.',
+    tags: ['Best for Video Generation', 'Balanced'],
   },
 ]
 

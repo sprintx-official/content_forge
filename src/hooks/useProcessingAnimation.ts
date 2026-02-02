@@ -22,6 +22,7 @@ interface UseProcessingAnimationReturn {
 export function useProcessingAnimation(
   isProcessing: boolean,
   customStages?: ProcessingStage[] | null,
+  agentTokenCount?: number,
 ): UseProcessingAnimationReturn {
   const [displayMessage, setDisplayMessage] = useState('')
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -74,12 +75,15 @@ export function useProcessingAnimation(
   )
   const currentStageIndex = activeIndex >= 0 ? activeIndex : lastCompletedIndex
 
-  // Compute progress from stage statuses
+  // Compute progress from stage statuses with smooth sub-stage advancement
   const total = stages.length
   const completedCount = stages.filter((s) => s.status === 'completed').length
   const hasActive = activeIndex >= 0
+  // Use token count to estimate sub-progress within the active stage (asymptotic curve)
+  const tokens = agentTokenCount ?? 0
+  const subProgress = hasActive ? Math.min(0.9, 1 - 1 / (1 + tokens / 80)) : 0
   const progress = total > 0
-    ? Math.min(100, ((completedCount + (hasActive ? 0.5 : 0)) / total) * 100)
+    ? Math.min(100, ((completedCount + subProgress) / total) * 100)
     : 0
 
   // When the active stage changes, type its message

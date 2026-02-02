@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
@@ -32,11 +33,35 @@ interface ContentDisplayProps {
   onToggleFullscreen?: () => void
 }
 
+const VideoNode = Node.create({
+  name: 'video',
+  group: 'block',
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      controls: { default: true },
+      width: { default: '100%' },
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'video' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['video', mergeAttributes(HTMLAttributes)]
+  },
+})
+
 function contentToHTML(content: string): string {
   return content
     .split('\n\n')
     .filter(Boolean)
-    .map((p) => `<p>${p}</p>`)
+    .map((p) => {
+      const trimmed = p.trim()
+      // Preserve video tags as-is (don't wrap in <p>)
+      if (trimmed.startsWith('<video')) return trimmed
+      return `<p>${p}</p>`
+    })
     .join('')
 }
 
@@ -235,6 +260,7 @@ export default function ContentDisplay({
     extensions: [
       StarterKit,
       Underline,
+      VideoNode,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Your content will appear here…' }),
     ],
@@ -404,6 +430,14 @@ export default function ContentDisplay({
         .tiptap-editor .tiptap pre code {
           background: none;
           padding: 0;
+        }
+
+        .tiptap-editor .tiptap video {
+          width: 100%;
+          max-width: 640px;
+          border-radius: 0.75rem;
+          margin-bottom: 1rem;
+          background: rgba(0, 0, 0, 0.3);
         }
 
         .tiptap-editor .tiptap p.is-editor-empty:first-child::before {

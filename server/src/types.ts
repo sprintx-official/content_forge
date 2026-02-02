@@ -201,3 +201,17 @@ export interface GeneratedImageRow {
   cost_usd: number
   created_at: string
 }
+
+export interface GeneratedVideoRow {
+  id: string
+  user_id: string
+  prompt: string
+  r2_key: string
+  url: string
+  aspect_ratio: string
+  duration_seconds: number
+  provider: string
+  model: string
+  cost_usd: number
+  created_at: string
+}

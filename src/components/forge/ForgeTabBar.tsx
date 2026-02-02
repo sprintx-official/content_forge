@@ -1,4 +1,4 @@
-import { PenTool, MessageSquare, Image, Code2 } from 'lucide-react'
+import { PenTool, MessageSquare, Image, Video, Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ForgeMode } from '@/types'
 
@@ -11,6 +11,7 @@ const TABS: { id: ForgeMode; label: string; icon: typeof PenTool }[] = [
   { id: 'content', label: 'Content', icon: PenTool },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'image', label: 'Image', icon: Image },
+  { id: 'video', label: 'Video', icon: Video },
   { id: 'code', label: 'Code', icon: Code2 },
 ]
 

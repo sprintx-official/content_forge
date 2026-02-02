@@ -23,6 +23,7 @@ import memoryRoutes from './routes/memory.js'
 import pricingRoutes from './routes/pricing.js'
 import chatRoutes from './routes/chat.js'
 import imageRoutes from './routes/images.js'
+import videoRoutes from './routes/videos.js'
 import attachmentRoutes from './routes/attachments.js'
 import forgeOptionsRoutes from './routes/forgeOptions.js'
 
@@ -114,6 +115,7 @@ app.use('/api/memory', memoryRoutes)
 app.use('/api/pricing', pricingRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/images', generateLimiter, imageRoutes)
+app.use('/api/videos', generateLimiter, videoRoutes)
 app.use('/api/attachments', attachmentRoutes)
 app.use('/api/forge-options', forgeOptionsRoutes)
 

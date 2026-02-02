@@ -11,6 +11,7 @@ import { ForgeTabBar } from '@/components/forge/ForgeTabBar'
 import { ChatView } from '@/components/chat/ChatView'
 import { ImageView } from '@/components/image/ImageView'
 import { CodeView } from '@/components/code/CodeView'
+import { VideoView } from '@/components/video/VideoView'
 import type { ContentType, ForgeMode } from '@/types'
 
 export default function ForgePage() {
@@ -20,7 +21,7 @@ export default function ForgePage() {
   // Tab state from URL (default: content)
   const modeParam = searchParams.get('mode') as ForgeMode | null
   const [activeTab, setActiveTab] = useState<ForgeMode>(
-    modeParam && ['content', 'chat', 'image', 'code'].includes(modeParam)
+    modeParam && ['content', 'chat', 'image', 'video', 'code'].includes(modeParam)
       ? modeParam
       : 'content',
   )
@@ -150,6 +151,9 @@ export default function ForgePage() {
 
       {/* Image tab */}
       {activeTab === 'image' && <ImageView />}
+
+      {/* Video tab */}
+      {activeTab === 'video' && <VideoView />}
 
       {/* Code tab */}
       {activeTab === 'code' && <CodeView />}

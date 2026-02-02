@@ -42,9 +42,10 @@ export function ProcessingView() {
   const dynamicStages = useForgeStore((state) => state.dynamicStages)
   const terminalLogs = useForgeStore((state) => state.terminalLogs)
   const cancelGeneration = useForgeStore((state) => state.cancelGeneration)
+  const agentTokenCount = useForgeStore((state) => state.agentTokenCount)
 
   const { stages, currentStageIndex, displayMessage, progress } =
-    useProcessingAnimation(isProcessing, dynamicStages)
+    useProcessingAnimation(isProcessing, dynamicStages, agentTokenCount)
 
   const activeStage = currentStageIndex >= 0 ? stages[currentStageIndex] : null
   const hexLines = useHexStream(isProcessing)

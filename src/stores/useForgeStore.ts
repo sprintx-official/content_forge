@@ -45,6 +45,7 @@ interface ForgeState {
   streamingContent: string
   terminalLogs: TerminalLogEntry[]
   abortController: AbortController | null
+  agentTokenCount: number
 
   // Multi-file state
   parsedFiles: ParsedFile[]
@@ -109,6 +110,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
   streamingContent: '',
   terminalLogs: [],
   abortController: null,
+  agentTokenCount: 0,
 
   // Multi-file state
   parsedFiles: [],
@@ -290,6 +292,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
       streamingContent: '',
       terminalLogs: [{ text: '[SYS] Initializing content pipeline...', time: makeTimestamp() }],
       abortController: null,
+      agentTokenCount: 0,
     })
 
     // Upload attachments if any
@@ -331,6 +334,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
           set({
             dynamicStages: updatedStages,
             processingStage: updatedStages[event.agentIndex]?.id as ProcessingStageId,
+            agentTokenCount: 0,
             terminalLogs: [
               ...get().terminalLogs,
               {
@@ -339,6 +343,35 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
               },
             ].slice(-30),
           })
+        },
+
+        onAgentProgress: (event) => {
+          const logs = get().terminalLogs
+          const updates: Partial<ForgeState> = {}
+
+          if (event.tokens !== undefined) {
+            updates.agentTokenCount = event.tokens
+            // Update terminal with token progress (throttled — only update every 50 tokens to avoid spam)
+            if (event.tokens % 50 === 0) {
+              updates.terminalLogs = [
+                ...logs,
+                {
+                  text: `[DATA] Processing... ${event.tokens} tokens generated`,
+                  time: makeTimestamp(),
+                },
+              ].slice(-30)
+            }
+          }
+
+          // Show video/media generation progress messages
+          if (event.message) {
+            updates.terminalLogs = [
+              ...(updates.terminalLogs || logs),
+              { text: `[VIDEO] ${event.message}`, time: makeTimestamp() },
+            ].slice(-30)
+          }
+
+          set(updates as ForgeState)
         },
 
         onAgentComplete: (event) => {
@@ -365,6 +398,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
         onToken: (event) => {
           set((s) => ({
             streamingContent: s.streamingContent + event.chunk,
+            agentTokenCount: s.agentTokenCount + 1,
             terminalLogs:
               // Only log token start once
               s.streamingContent.length === 0
@@ -442,6 +476,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
       processingStage: null,
       streamingContent: '',
       abortController: null,
+      agentTokenCount: 0,
       error: null,
     })
   },
@@ -464,6 +499,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
       streamingContent: '',
       terminalLogs: [],
       abortController: null,
+      agentTokenCount: 0,
       attachments: [],
     })
   },

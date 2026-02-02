@@ -64,7 +64,7 @@ export const updateAgentSchema = createAgentSchema.partial()
 export const workflowStepSchema = z.object({
   agentId: z.string().uuid('Invalid agent ID'),
   instructions: z.string().max(2000, 'Instructions too long').optional().default(''),
-  stepType: z.enum(['text', 'image', 'code']).optional().default('text'),
+  stepType: z.enum(['text', 'image', 'code', 'video']).optional().default('text'),
 })
 
 export const createWorkflowSchema = z.object({

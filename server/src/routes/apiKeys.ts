@@ -197,7 +197,7 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
             supportedGenerationMethods?: string[]
           }[]
         }
-        return (data.models || [])
+        const geminiModels = (data.models || [])
           .filter((m) => {
             // Only models that support content generation
             if (!m.supportedGenerationMethods?.includes('generateContent')) return false
@@ -211,7 +211,16 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
             name: m.displayName || m.name.replace('models/', ''),
             provider,
           }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+
+        // Veo video models use predictLongRunning (not generateContent),
+        // so they won't appear in the dynamic model list — add them manually.
+        const veoModels: ProviderModel[] = [
+          { id: 'veo-3.0-generate-001', name: 'Veo 3.0', provider },
+          { id: 'veo-3.1-generate-preview', name: 'Veo 3.1 Preview', provider },
+          { id: 'veo-3.1-fast-generate-preview', name: 'Veo 3.1 Fast', provider },
+        ]
+
+        return [...geminiModels, ...veoModels].sort((a, b) => a.name.localeCompare(b.name))
       }
 
       default:

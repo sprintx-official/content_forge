@@ -4,8 +4,9 @@ import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateBody, generateSchema, codeGenerateSchema } from '../validation/index.js'
 import { callProvider, callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
-import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, type AgentContext } from '../services/promptBuilder.js'
+import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, buildVideoPromptFromContext, type AgentContext } from '../services/promptBuilder.js'
 import { generateImage } from '../services/imageProvider.js'
+import { generateVideo } from '../services/videoProvider.js'
 import { uploadToR2 } from '../services/r2.js'
 import { calculateCost } from '../services/costCalculator.js'
 import { calculateMetrics } from '../services/metricsCalculator.js'
@@ -24,7 +25,7 @@ function inferProvider(modelId: string): string | null {
   if (/^(gpt-|o\d|chatgpt-)/i.test(modelId)) return 'openai'
   if (/^claude-/i.test(modelId)) return 'anthropic'
   if (/^grok-/i.test(modelId)) return 'xai'
-  if (/^gemini-/i.test(modelId)) return 'google'
+  if (/^(gemini-|veo-)/i.test(modelId)) return 'google'
   return null
 }
 
@@ -504,6 +505,53 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
           totalInputTokens += agentTokens.inputTokens
           totalCachedInputTokens += agentTokens.cachedInputTokens
           totalOutputTokens += agentTokens.outputTokens
+        } else if (stepType === 'video') {
+          // Video step: generate prompt then video via Veo API
+          const videoPromptResponse = await callProvider({
+            provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
+            systemPrompt: 'You are an expert at writing video generation prompts for Google Veo. Output ONLY the prompt text. Describe the scene, camera movement, lighting, mood, and action.',
+            userPrompt: buildVideoPromptFromContext(currentInput, input.topic),
+            maxTokens: 512,
+          })
+
+          const googleKeyRow = await queryOne<ApiKeyRow>(
+            'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', ['google']
+          )
+          if (!googleKeyRow) throw new ProviderError('google', 422, 'Google API key required for video generation')
+
+          const videoResult = await generateVideo({
+            prompt: videoPromptResponse.content.trim(),
+            model: 'veo-3.0-generate-001',
+            apiKey: googleKeyRow.api_key,
+          })
+
+          const videoId = crypto.randomUUID()
+          let videoUrl: string
+          try {
+            const r2Key = `videos/pipeline/${videoId}.mp4`
+            await uploadToR2(r2Key, videoResult.videoData, videoResult.contentType)
+            videoUrl = `/api/videos/${videoId}/file`
+            await execute(
+              `INSERT INTO generated_videos (id, user_id, prompt, r2_key, url, provider, model, cost_usd, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+              [videoId, req.user!.userId, videoPromptResponse.content.trim(), r2Key, videoUrl, 'google', 'veo-3.0-generate-001', 0.0, new Date().toISOString()]
+            )
+          } catch {
+            throw new ProviderError('google', 500, 'Video was generated but could not be stored. R2 storage is required for video files.')
+          }
+
+          agentOutput = `<video controls width="100%" src="${videoUrl}"></video>\n\n*${videoPromptResponse.content.trim()}*`
+          agentCost = 0.0
+          agentTokens = {
+            inputTokens: videoPromptResponse.inputTokens,
+            cachedInputTokens: videoPromptResponse.cachedInputTokens,
+            outputTokens: videoPromptResponse.outputTokens,
+            totalTokens: videoPromptResponse.totalTokens,
+          }
+          totalCostUsd += agentCost
+          totalInputTokens += agentTokens.inputTokens
+          totalCachedInputTokens += agentTokens.cachedInputTokens
+          totalOutputTokens += agentTokens.outputTokens
         } else if (stepType === 'code') {
           // Code step: use code-specific system prompt
           const codeSystemPrompt = buildCodeSystemPrompt()
@@ -678,6 +726,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
         let agentOutput: string
         let agentCost = 0
         let agentTokens = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, totalTokens: 0 }
+        let agentStreamedTokens = 0
 
         if (stepType === 'image') {
           // Image step: generate prompt then image (non-streaming)
@@ -714,59 +763,120 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
           }
           // Send image output as a single token event
           sendSSE(res, 'token', { chunk: agentOutput })
+        } else if (stepType === 'video') {
+          // Video step: generate prompt then video via Veo API
+          sendSSE(res, 'agent:progress', { agentIndex: i, message: 'Crafting video prompt...' })
+
+          const videoPromptResponse = await callProvider({
+            provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
+            systemPrompt: 'You are an expert at writing video generation prompts for Google Veo. Output ONLY the prompt text. Describe the scene, camera movement, lighting, mood, and action.',
+            userPrompt: buildVideoPromptFromContext(currentInput, input.topic),
+            maxTokens: 512,
+          })
+
+          // Get Google API key for Veo
+          const googleKeyRow = await queryOne<ApiKeyRow>(
+            'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', ['google']
+          )
+          if (!googleKeyRow) throw new ProviderError('google', 422, 'Google API key required for video generation')
+
+          sendSSE(res, 'agent:progress', { agentIndex: i, message: 'Generating video with Veo...' })
+
+          const videoResult = await generateVideo({
+            prompt: videoPromptResponse.content.trim(),
+            model: 'veo-3.0-generate-001',
+            apiKey: googleKeyRow.api_key,
+            aspectRatio: '16:9',
+            durationSeconds: 8,
+            onProgress: (message, elapsedMs) => {
+              sendSSE(res, 'agent:progress', { agentIndex: i, message, elapsedMs })
+            },
+          })
+
+          // Upload to R2
+          const videoId = crypto.randomUUID()
+          let videoUrl: string
+          try {
+            const r2Key = `videos/pipeline/${videoId}.mp4`
+            await uploadToR2(r2Key, videoResult.videoData, videoResult.contentType)
+            videoUrl = `/api/videos/${videoId}/file`
+
+            await execute(
+              `INSERT INTO generated_videos (id, user_id, prompt, r2_key, url, provider, model, cost_usd, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+              [videoId, req.user!.userId, videoPromptResponse.content.trim(), r2Key, videoUrl, 'google', 'veo-3.0-generate-001', 0.0, new Date().toISOString()]
+            )
+          } catch (uploadErr) {
+            console.error('Video upload to R2 failed:', uploadErr)
+            throw new ProviderError('google', 500, 'Video was generated but could not be stored. R2 storage is required for video files.')
+          }
+
+          agentOutput = `<video controls width="100%" src="${videoUrl}"></video>\n\n*${videoPromptResponse.content.trim()}*`
+          agentCost = 0.0
+          agentTokens = {
+            inputTokens: videoPromptResponse.inputTokens,
+            cachedInputTokens: videoPromptResponse.cachedInputTokens,
+            outputTokens: videoPromptResponse.outputTokens,
+            totalTokens: videoPromptResponse.totalTokens,
+          }
+          sendSSE(res, 'token', { chunk: agentOutput })
         } else if (stepType === 'code') {
           // Code step: use code-specific system prompt
           const codeSystemPrompt = buildCodeSystemPrompt()
           const agentUserPrompt = buildAgentUserPrompt(i, currentInput, ctx, input, isLastAgent)
 
-          if (isLastAgent) {
-            const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-              callProviderStream({
-                provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
-                systemPrompt: codeSystemPrompt, userPrompt: agentUserPrompt, maxTokens: 8192,
-              }, {
-                onToken: (chunk) => { sendSSE(res, 'token', { chunk }) },
-                onDone: (response) => resolve(response),
-                signal: abortController.signal,
-              }).catch(reject)
-            })
-            agentOutput = agentResponse.content
-            agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
-          } else {
-            const agentResponse = await callProvider({
+          // Always stream — last agent sends tokens to client, others send progress ticks
+          const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
+            callProviderStream({
               provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
               systemPrompt: codeSystemPrompt, userPrompt: agentUserPrompt, maxTokens: 8192,
-            })
-            agentOutput = agentResponse.content
-            agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
-          }
+            }, {
+              onToken: (chunk) => {
+                agentStreamedTokens++
+                if (isLastAgent) {
+                  sendSSE(res, 'token', { chunk })
+                } else {
+                  // Send progress ticks so the frontend stays alive (throttled)
+                  if (agentStreamedTokens % 10 === 0) {
+                    sendSSE(res, 'agent:progress', { agentIndex: i, tokens: agentStreamedTokens })
+                  }
+                }
+              },
+              onDone: (response) => resolve(response),
+              signal: abortController.signal,
+            }).catch(reject)
+          })
+          agentOutput = agentResponse.content
+          agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
           agentCost = await calculateCost(agentProvider, agentModelId, agentTokens.inputTokens, agentTokens.outputTokens, agentTokens.cachedInputTokens)
         } else {
           // Text step: original behavior
           const agentSystemPrompt = buildSingleAgentSystemPrompt(ctx)
           const agentUserPrompt = buildAgentUserPrompt(i, currentInput, ctx, input, isLastAgent)
 
-          if (isLastAgent) {
-            const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-              callProviderStream({
-                provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
-                systemPrompt: agentSystemPrompt, userPrompt: agentUserPrompt, maxTokens,
-              }, {
-                onToken: (chunk) => { sendSSE(res, 'token', { chunk }) },
-                onDone: (response) => resolve(response),
-                signal: abortController.signal,
-              }).catch(reject)
-            })
-            agentOutput = agentResponse.content
-            agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
-          } else {
-            const agentResponse = await callProvider({
+          // Always stream — last agent sends tokens to client, others send progress ticks
+          const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
+            callProviderStream({
               provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
               systemPrompt: agentSystemPrompt, userPrompt: agentUserPrompt, maxTokens,
-            })
-            agentOutput = agentResponse.content
-            agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
-          }
+            }, {
+              onToken: (chunk) => {
+                agentStreamedTokens++
+                if (isLastAgent) {
+                  sendSSE(res, 'token', { chunk })
+                } else {
+                  // Send progress ticks so the frontend stays alive (throttled)
+                  if (agentStreamedTokens % 10 === 0) {
+                    sendSSE(res, 'agent:progress', { agentIndex: i, tokens: agentStreamedTokens })
+                  }
+                }
+              },
+              onDone: (response) => resolve(response),
+              signal: abortController.signal,
+            }).catch(reject)
+          })
+          agentOutput = agentResponse.content
+          agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
           agentCost = await calculateCost(agentProvider, agentModelId, agentTokens.inputTokens, agentTokens.outputTokens, agentTokens.cachedInputTokens)
         }
 

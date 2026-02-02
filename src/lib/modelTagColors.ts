@@ -8,6 +8,7 @@ const TAG_VARIANT_MAP: Record<ModelTag, BadgeVariant> = {
   'Best for Chat': 'blue',
   'Best for Analysis': 'teal',
   'Best for Image Generation': 'pink',
+  'Best for Video Generation': 'rose',
   'Most Capable': 'amber',
   'Fast & Cheap': 'green',
   'Balanced': 'outline',

@@ -216,6 +216,21 @@ export async function initializeSchema(): Promise<void> {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Generated videos
+    CREATE TABLE IF NOT EXISTS generated_videos (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      prompt TEXT NOT NULL DEFAULT '',
+      r2_key TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL DEFAULT '',
+      aspect_ratio TEXT NOT NULL DEFAULT '16:9',
+      duration_seconds INTEGER NOT NULL DEFAULT 8,
+      provider TEXT NOT NULL DEFAULT 'google',
+      model TEXT NOT NULL DEFAULT 'veo-3.0-generate-001',
+      cost_usd REAL NOT NULL DEFAULT 0.0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- Indexes for new tables
     CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_id ON chat_conversations(user_id);
     CREATE INDEX IF NOT EXISTS idx_chat_conversations_updated_at ON chat_conversations(updated_at DESC);
@@ -223,6 +238,8 @@ export async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
     CREATE INDEX IF NOT EXISTS idx_generated_images_user_id ON generated_images(user_id);
     CREATE INDEX IF NOT EXISTS idx_generated_images_created_at ON generated_images(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_generated_videos_user_id ON generated_videos(user_id);
+    CREATE INDEX IF NOT EXISTS idx_generated_videos_created_at ON generated_videos(created_at DESC);
 
     -- Attachments (for chat, content, code)
     CREATE TABLE IF NOT EXISTS chat_attachments (
