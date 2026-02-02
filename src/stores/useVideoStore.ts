@@ -19,6 +19,8 @@ interface VideoState {
   videos: GeneratedVideo[]
   isGenerating: boolean
   isLoadingVideos: boolean
+  isExtending: boolean
+  extendingVideoId: string | null
   prompt: string
   selectedAspectRatio: VideoAspectRatio
   selectedDuration: number
@@ -29,6 +31,7 @@ interface VideoState {
   setAspectRatio: (ratio: VideoAspectRatio) => void
   setDuration: (seconds: number) => void
   generate: () => Promise<void>
+  extendVideo: (sourceVideoId: string, prompt: string) => Promise<void>
   loadVideos: () => Promise<void>
   deleteVideo: (id: string) => Promise<void>
   clearError: () => void
@@ -38,6 +41,8 @@ export const useVideoStore = create<VideoState>((set, get) => ({
   videos: [],
   isGenerating: false,
   isLoadingVideos: false,
+  isExtending: false,
+  extendingVideoId: null,
   prompt: '',
   selectedAspectRatio: '16:9',
   selectedDuration: 8,
@@ -73,6 +78,30 @@ export const useVideoStore = create<VideoState>((set, get) => ({
         isGenerating: false,
         progress: null,
         error: err instanceof Error ? err.message : 'Video generation failed',
+      })
+    }
+  },
+
+  extendVideo: async (sourceVideoId, prompt) => {
+    if (!prompt.trim()) return
+    set({ isExtending: true, extendingVideoId: sourceVideoId, error: null, progress: 'Extending video...' })
+    try {
+      const video = await videoService.extendVideo({
+        sourceVideoId,
+        prompt: prompt.trim(),
+      })
+      set((s) => ({
+        videos: [video, ...s.videos],
+        isExtending: false,
+        extendingVideoId: null,
+        progress: null,
+      }))
+    } catch (err) {
+      set({
+        isExtending: false,
+        extendingVideoId: null,
+        progress: null,
+        error: err instanceof Error ? err.message : 'Video extension failed',
       })
     }
   },

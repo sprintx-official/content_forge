@@ -214,4 +214,6 @@ export interface GeneratedVideoRow {
   model: string
   cost_usd: number
   created_at: string
+  source_video_id: string | null
+  clip_index: number
 }

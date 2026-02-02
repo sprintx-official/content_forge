@@ -32,6 +32,18 @@ async function runMigrations(): Promise<void> {
   if (!stepCols.some((c) => c.column_name === 'step_type')) {
     await exec("ALTER TABLE workflow_steps ADD COLUMN step_type TEXT NOT NULL DEFAULT 'text'")
   }
+
+  // Migration: Add scene extension columns to generated_videos
+  const videoCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'generated_videos'`
+  )
+  if (!videoCols.some((c) => c.column_name === 'source_video_id')) {
+    await exec("ALTER TABLE generated_videos ADD COLUMN source_video_id TEXT DEFAULT NULL")
+  }
+  if (!videoCols.some((c) => c.column_name === 'clip_index')) {
+    await exec("ALTER TABLE generated_videos ADD COLUMN clip_index INTEGER NOT NULL DEFAULT 0")
+  }
 }
 
 export async function initializeSchema(): Promise<void> {

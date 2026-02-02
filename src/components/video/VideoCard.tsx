@@ -1,13 +1,14 @@
-import { Download, Trash2 } from 'lucide-react'
+import { Download, Trash2, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GeneratedVideo } from '@/types'
 
 interface VideoCardProps {
   video: GeneratedVideo
   onDelete: (id: string) => void
+  onExtend: (video: GeneratedVideo) => void
 }
 
-export function VideoCard({ video, onDelete }: VideoCardProps) {
+export function VideoCard({ video, onDelete, onExtend }: VideoCardProps) {
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation()
     const res = await fetch(video.url)
@@ -47,6 +48,13 @@ export function VideoCard({ video, onDelete }: VideoCardProps) {
               <Download className="w-4 h-4 text-white" />
             </button>
             <button
+              onClick={(e) => { e.stopPropagation(); onExtend(video) }}
+              className="p-2 rounded-lg bg-[#00f0ff]/20 hover:bg-[#00f0ff]/30 transition-colors"
+              title="Extend scene"
+            >
+              <Link2 className="w-4 h-4 text-[#00f0ff]" />
+            </button>
+            <button
               onClick={(e) => { e.stopPropagation(); onDelete(video.id) }}
               className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition-colors"
               title="Delete"
@@ -66,6 +74,15 @@ export function VideoCard({ video, onDelete }: VideoCardProps) {
           <span>{video.durationSeconds}s</span>
           <span>&middot;</span>
           <span>{video.model}</span>
+          {video.sourceVideoId && (
+            <>
+              <span>&middot;</span>
+              <span className="inline-flex items-center gap-0.5 text-[#00f0ff]/50" title="Extended clip">
+                <Link2 className="w-3 h-3" />
+                clip {video.clipIndex}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

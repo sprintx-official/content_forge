@@ -15,6 +15,8 @@ function mapVideo(raw: any): GeneratedVideo {
     model: raw.model,
     costUsd: raw.cost_usd ?? raw.costUsd ?? 0,
     createdAt: raw.created_at ?? raw.createdAt,
+    sourceVideoId: raw.source_video_id ?? raw.sourceVideoId ?? null,
+    clipIndex: raw.clip_index ?? raw.clipIndex ?? 0,
   }
 }
 
@@ -40,6 +42,18 @@ export async function getVideos(): Promise<GeneratedVideo[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await api.get<{ data: any[] }>('/api/videos')
   return res.data.map(mapVideo)
+}
+
+export async function extendVideo(request: {
+  sourceVideoId: string
+  prompt: string
+}): Promise<GeneratedVideo> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = await api.post<any>('/api/videos/extend', {
+    sourceVideoId: request.sourceVideoId,
+    prompt: request.prompt,
+  })
+  return mapVideo(raw)
 }
 
 export async function deleteVideo(id: string): Promise<void> {

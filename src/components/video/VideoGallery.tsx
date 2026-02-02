@@ -7,9 +7,10 @@ interface VideoGalleryProps {
   isLoading: boolean
   isGenerating: boolean
   onDelete: (id: string) => void
+  onExtend: (video: GeneratedVideo) => void
 }
 
-export function VideoGallery({ videos, isLoading, isGenerating, onDelete }: VideoGalleryProps) {
+export function VideoGallery({ videos, isLoading, isGenerating, onDelete, onExtend }: VideoGalleryProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -46,7 +47,7 @@ export function VideoGallery({ videos, isLoading, isGenerating, onDelete }: Vide
       )}
 
       {videos.map((v) => (
-        <VideoCard key={v.id} video={v} onDelete={onDelete} />
+        <VideoCard key={v.id} video={v} onDelete={onDelete} onExtend={onExtend} />
       ))}
     </div>
   )

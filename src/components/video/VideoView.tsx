@@ -1,18 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useVideoStore } from '@/stores/useVideoStore'
 import { VideoPromptForm } from './VideoPromptForm'
 import { VideoGallery } from './VideoGallery'
+import { VideoExtendDialog } from './VideoExtendDialog'
+import type { GeneratedVideo } from '@/types'
 
 export function VideoView() {
   const {
     videos,
     isGenerating,
     isLoadingVideos,
+    isExtending,
     error,
     loadVideos,
     deleteVideo,
+    extendVideo,
     clearError,
   } = useVideoStore()
+
+  const [extendingVideo, setExtendingVideo] = useState<GeneratedVideo | null>(null)
 
   useEffect(() => {
     loadVideos()
@@ -52,9 +58,22 @@ export function VideoView() {
             isLoading={isLoadingVideos}
             isGenerating={isGenerating}
             onDelete={deleteVideo}
+            onExtend={(video) => setExtendingVideo(video)}
           />
         </div>
       </div>
+
+      {/* Extend dialog */}
+      {extendingVideo && (
+        <VideoExtendDialog
+          video={extendingVideo}
+          isExtending={isExtending}
+          onExtend={(sourceVideoId, prompt) => {
+            extendVideo(sourceVideoId, prompt).then(() => setExtendingVideo(null))
+          }}
+          onClose={() => setExtendingVideo(null)}
+        />
+      )}
     </div>
   )
 }

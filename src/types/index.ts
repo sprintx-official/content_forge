@@ -102,6 +102,8 @@ export interface GeneratedVideo {
   model: string
   costUsd: number
   createdAt: string
+  sourceVideoId: string | null
+  clipIndex: number
 }
 
 export interface ForgeInput {

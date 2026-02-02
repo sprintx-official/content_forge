@@ -9,19 +9,26 @@ export interface VideoGenerationRequest {
   onProgress?: (message: string, elapsedMs: number) => void
 }
 
+export interface VideoExtensionRequest {
+  prompt: string
+  model: string
+  apiKey: string
+  sourceVideoData: Buffer
+  onProgress?: (message: string, elapsedMs: number) => void
+}
+
 export interface VideoGenerationResponse {
   videoData: Buffer
   contentType: string
 }
 
+const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 const POLL_INTERVAL_MS = 5_000
 const MAX_POLLS = 120 // 10 minutes max
 
 export async function generateVideo(req: VideoGenerationRequest): Promise<VideoGenerationResponse> {
-  const baseUrl = 'https://generativelanguage.googleapis.com/v1beta'
-
   // Step 1: Initiate long-running video generation
-  const initRes = await fetch(`${baseUrl}/models/${req.model}:predictLongRunning`, {
+  const initRes = await fetch(`${BASE_URL}/models/${req.model}:predictLongRunning`, {
     method: 'POST',
     headers: {
       'x-goog-api-key': req.apiKey,
@@ -49,17 +56,71 @@ export async function generateVideo(req: VideoGenerationRequest): Promise<VideoG
     throw new ProviderError('google', 500, 'Veo API did not return an operation name')
   }
 
-  // Step 2: Poll for completion
+  return pollAndDownload(operationName, req.apiKey, req.onProgress)
+}
+
+export async function extendVideo(req: VideoExtensionRequest): Promise<VideoGenerationResponse> {
+  const videoBase64 = req.sourceVideoData.toString('base64')
+
+  // Step 1: Initiate long-running video extension
+  const initRes = await fetch(`${BASE_URL}/models/${req.model}:predictLongRunning`, {
+    method: 'POST',
+    headers: {
+      'x-goog-api-key': req.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      instances: [{
+        prompt: req.prompt,
+        video: {
+          inlineData: {
+            mimeType: 'video/mp4',
+            data: videoBase64,
+          },
+        },
+      }],
+      parameters: {
+        numberOfVideos: 1,
+        resolution: '720p',
+      },
+    }),
+  })
+
+  if (!initRes.ok) {
+    const body = await initRes.json().catch(() => ({ error: { message: 'Request failed' } }))
+    const msg = body.error?.message || `Veo API returned ${initRes.status}`
+    throw new ProviderError('google', initRes.status, msg)
+  }
+
+  const initData = await initRes.json() as { name: string }
+  const operationName = initData.name
+
+  if (!operationName) {
+    throw new ProviderError('google', 500, 'Veo API did not return an operation name')
+  }
+
+  return pollAndDownload(operationName, req.apiKey, req.onProgress)
+}
+
+// ---------------------------------------------------------------------------
+// Shared polling + download helper
+// ---------------------------------------------------------------------------
+
+async function pollAndDownload(
+  operationName: string,
+  apiKey: string,
+  onProgress?: (message: string, elapsedMs: number) => void,
+): Promise<VideoGenerationResponse> {
   const startTime = Date.now()
 
   for (let poll = 0; poll < MAX_POLLS; poll++) {
     await sleep(POLL_INTERVAL_MS)
 
     const elapsed = Date.now() - startTime
-    req.onProgress?.(`Video generating... ${Math.round(elapsed / 1000)}s elapsed`, elapsed)
+    onProgress?.(`Video generating... ${Math.round(elapsed / 1000)}s elapsed`, elapsed)
 
-    const pollRes = await fetch(`${baseUrl}/${operationName}`, {
-      headers: { 'x-goog-api-key': req.apiKey },
+    const pollRes = await fetch(`${BASE_URL}/${operationName}`, {
+      headers: { 'x-goog-api-key': apiKey },
     })
 
     if (!pollRes.ok) {
@@ -83,7 +144,7 @@ export async function generateVideo(req: VideoGenerationRequest): Promise<VideoG
 
     if (!pollData.done) continue
 
-    // Step 3: Download the video from the temporary URI
+    // Download the video from the temporary URI
     const videoUri = pollData.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri
     if (!videoUri) {
       throw new ProviderError('google', 500, 'Video generation completed but no video URI returned')
@@ -91,8 +152,8 @@ export async function generateVideo(req: VideoGenerationRequest): Promise<VideoG
 
     // The Veo file URI requires the API key as a query param for downloads
     const downloadUrl = videoUri.includes('?')
-      ? `${videoUri}&key=${req.apiKey}`
-      : `${videoUri}?key=${req.apiKey}`
+      ? `${videoUri}&key=${apiKey}`
+      : `${videoUri}?key=${apiKey}`
 
     console.log(`[Veo] Downloading video from: ${videoUri.split('?')[0]}...`)
 
