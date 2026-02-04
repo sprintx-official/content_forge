@@ -13,8 +13,9 @@ export async function deleteApiKey(provider: AiProvider): Promise<void> {
   await api.delete(`/api/keys/${provider}`)
 }
 
-export async function getAvailableModels(): Promise<AiModel[]> {
-  return api.get<AiModel[]>('/api/keys/models')
+export async function getAvailableModels(refresh = false): Promise<AiModel[]> {
+  const url = refresh ? '/api/keys/models?refresh=true' : '/api/keys/models'
+  return api.get<AiModel[]>(url)
 }
 
 export async function getProviderModels(provider: AiProvider): Promise<AiModel[]> {

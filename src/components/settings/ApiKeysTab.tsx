@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Check, Sparkles, AlertCircle, Loader2, BarChart3 } from 'lucide-react'
+import { Trash2, Check, Sparkles, AlertCircle, Loader2, BarChart3, RefreshCw } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { getProviderModels } from '@/services/apiKeyService'
 import { getUsageStats } from '@/services/usageService'
@@ -89,6 +89,18 @@ export default function ApiKeysTab() {
       }))
     } finally {
       setSaving(null)
+    }
+  }
+
+  const handleRefreshModels = async (provider: AiProvider) => {
+    setLoadingModels((prev) => ({ ...prev, [provider]: true }))
+    try {
+      const models = await getProviderModels(provider)
+      setProviderModels((prev) => ({ ...prev, [provider]: models }))
+    } catch {
+      // silent fail
+    } finally {
+      setLoadingModels((prev) => ({ ...prev, [provider]: false }))
     }
   }
 
@@ -224,7 +236,18 @@ export default function ApiKeysTab() {
               {/* Models — dynamically fetched when connected */}
               {isConnected && (
                 <div>
-                  <p className="text-xs text-[#9ca3af] mb-2">Available models</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-[#9ca3af]">Available models</p>
+                    <button
+                      type="button"
+                      onClick={() => handleRefreshModels(provider.id)}
+                      disabled={isLoadingModels}
+                      className="flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#22d3ee] transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  </div>
                   {isLoadingModels ? (
                     <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

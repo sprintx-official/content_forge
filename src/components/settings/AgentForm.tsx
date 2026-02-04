@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, X } from 'lucide-react'
+import { Save, X, RefreshCw } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,10 +28,23 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
   const [availableModels, setAvailableModels] = useState<AiModel[]>([])
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [refreshingModels, setRefreshingModels] = useState(false)
 
   useEffect(() => {
     getAvailableModels().then(setAvailableModels).catch(() => {})
   }, [])
+
+  const handleRefreshModels = async () => {
+    setRefreshingModels(true)
+    try {
+      const models = await getAvailableModels(true)
+      setAvailableModels(models)
+    } catch {
+      // silent fail — models stay as-is
+    } finally {
+      setRefreshingModels(false)
+    }
+  }
 
   useEffect(() => {
     if (agent) {
@@ -122,18 +135,31 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
         />
       </div>
 
-      <Select
-        label="AI Model"
-        value={model}
-        onChange={setModel}
-        placeholder={availableModels.length === 0 ? 'No models available — configure API keys first' : 'Select an AI model'}
-        options={availableModels.map((m) => ({
-          value: m.id,
-          label: m.tags?.length
-            ? `${m.name} (${m.provider}) — ${m.tags[0]}`
-            : `${m.name} (${m.provider})`,
-        }))}
-      />
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-[#d1d5db]">AI Model</label>
+          <button
+            type="button"
+            onClick={handleRefreshModels}
+            disabled={refreshingModels}
+            className="flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#22d3ee] transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3 w-3 ${refreshingModels ? 'animate-spin' : ''}`} />
+            {refreshingModels ? 'Refreshing...' : 'Refresh models'}
+          </button>
+        </div>
+        <Select
+          value={model}
+          onChange={setModel}
+          placeholder={availableModels.length === 0 ? 'No models available — configure API keys first' : 'Select an AI model'}
+          options={availableModels.map((m) => ({
+            value: m.id,
+            label: m.tags?.length
+              ? `${m.name} (${m.provider}) — ${m.tags[0]}`
+              : `${m.name} (${m.provider})`,
+          }))}
+        />
+      </div>
 
       <Textarea
         label="System Prompt"

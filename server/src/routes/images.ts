@@ -8,6 +8,7 @@ import { generateImage } from '../services/imageProvider.js'
 import { ProviderError } from '../services/aiProvider.js'
 import { uploadToR2, deleteFromR2, downloadFromR2, isR2Configured } from '../services/r2.js'
 import { autoRoute } from '../services/autoRouter.js'
+import { getApiKey } from '../services/apiKeyStore.js'
 import type { AuthenticatedRequest, ApiKeyRow, GeneratedImageRow } from '../types.js'
 
 const router = Router()
@@ -61,9 +62,7 @@ router.post('/generate', authenticate, validateBody(generateImageSchema), async 
 
   if (modelId && reqProvider && modelId !== 'auto' && reqProvider !== 'auto') {
     // User selected a specific model — look up API key for that provider
-    const keyRow = await queryOne<ApiKeyRow>(
-      'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [reqProvider]
-    )
+    const keyRow = await getApiKey(reqProvider)
     if (!keyRow) {
       res.status(422).json({ error: `No active API key for ${reqProvider}. Configure one in Settings.` })
       return

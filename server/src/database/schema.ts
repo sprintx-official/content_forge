@@ -1,4 +1,5 @@
 import { exec, query } from './connection.js'
+import { migrateUnencryptedKeys } from '../services/apiKeyStore.js'
 
 async function runMigrations(): Promise<void> {
   // Migration: Normalize all existing emails to lowercase
@@ -291,4 +292,10 @@ export async function initializeSchema(): Promise<void> {
   `)
 
   await runMigrations()
+
+  // Encrypt any existing plain-text API keys
+  const migrated = await migrateUnencryptedKeys()
+  if (migrated > 0) {
+    console.log(`Encrypted ${migrated} plain-text API key(s) in database.`)
+  }
 }

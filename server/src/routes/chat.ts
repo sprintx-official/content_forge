@@ -7,6 +7,7 @@ import { sendMessageSchema, createConversationSchema } from '../validation/chatS
 import { callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
 import { calculateCost } from '../services/costCalculator.js'
 import { autoRoute } from '../services/autoRouter.js'
+import { getApiKey } from '../services/apiKeyStore.js'
 import { isR2Configured, downloadFromR2 } from '../services/r2.js'
 import type { AuthenticatedRequest, ChatConversationRow, ChatMessageRow, ApiKeyRow, ChatAttachmentRow } from '../types.js'
 
@@ -21,10 +22,7 @@ const CHAT_SYSTEM_PROMPT = 'You are a helpful AI assistant. Be concise and direc
 async function resolveModel(reqModelId?: string, reqProvider?: string): Promise<{ modelId: string; provider: string; apiKey: string }> {
   // Use explicit model if provided
   if (reqModelId && reqProvider && reqModelId !== 'auto' && reqProvider !== 'auto') {
-    const keyRow = await queryOne<ApiKeyRow>(
-      'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1',
-      [reqProvider],
-    )
+    const keyRow = await getApiKey(reqProvider)
     if (!keyRow) {
       throw new ProviderError(reqProvider, 422, `No active API key for ${reqProvider}. Configure one in Settings.`)
     }

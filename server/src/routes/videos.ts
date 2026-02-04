@@ -8,6 +8,7 @@ import { generateVideo, extendVideo } from '../services/videoProvider.js'
 import { ProviderError } from '../services/aiProvider.js'
 import { uploadToR2, deleteFromR2, downloadFromR2, isR2Configured } from '../services/r2.js'
 import { autoRoute } from '../services/autoRouter.js'
+import { getApiKey } from '../services/apiKeyStore.js'
 import type { AuthenticatedRequest, ApiKeyRow, GeneratedVideoRow } from '../types.js'
 
 const router = Router()
@@ -55,9 +56,7 @@ router.post('/generate', authenticate, validateBody(generateVideoSchema), async 
   let apiKey: string
 
   if (modelId && reqProvider && modelId !== 'auto' && reqProvider !== 'auto') {
-    const keyRow = await queryOne<ApiKeyRow>(
-      'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [reqProvider]
-    )
+    const keyRow = await getApiKey(reqProvider)
     if (!keyRow) {
       res.status(422).json({ error: `No active API key for ${reqProvider}. Configure one in Settings.` })
       return
@@ -170,10 +169,7 @@ router.post('/extend', authenticate, validateBody(extendVideoSchema), async (req
   }
 
   // 3. Resolve API key (use same provider as source video)
-  const keyRow = await queryOne<ApiKeyRow>(
-    'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1',
-    [sourceVideo.provider]
-  )
+  const keyRow = await getApiKey(sourceVideo.provider)
   if (!keyRow) {
     res.status(422).json({ error: `No active API key for ${sourceVideo.provider}. Configure one in Settings.` })
     return

@@ -1,4 +1,4 @@
-import { query } from '../database/connection.js'
+import { getActiveKeyPairs } from './apiKeyStore.js'
 
 export interface AutoRouteResult {
   provider: string
@@ -43,9 +43,7 @@ const TASK_PREFERENCES: Record<string, { provider: string; model: string }[]> = 
  * 4. Fallback: any active provider.
  */
 export async function autoRoute(taskType: string): Promise<AutoRouteResult> {
-  const activeKeys = await query<{ provider: string; api_key: string }>(
-    'SELECT provider, api_key FROM api_keys WHERE is_active = 1'
-  )
+  const activeKeys = await getActiveKeyPairs()
 
   if (activeKeys.length === 0) {
     throw new Error('No AI model available. Configure an API key in Settings.')

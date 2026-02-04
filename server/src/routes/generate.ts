@@ -12,6 +12,7 @@ import { calculateCost } from '../services/costCalculator.js'
 import { calculateMetrics } from '../services/metricsCalculator.js'
 import { getTips } from '../services/tipsProvider.js'
 import { autoRoute } from '../services/autoRouter.js'
+import { getApiKey } from '../services/apiKeyStore.js'
 import { isR2Configured, downloadFromR2 } from '../services/r2.js'
 import { getGuidance } from '../services/forgeOptionsCache.js'
 import type { AuthenticatedRequest, ApiKeyRow, AgentRow, AgentFileRow, WorkflowStepRow, FeedbackRow, AgentMemoryRow, WorkflowAccessRow, ChatAttachmentRow } from '../types.js'
@@ -208,9 +209,7 @@ async function preparePipeline(req: AuthenticatedRequest, res: Response): Promis
     return null
   }
 
-  const keyRow = await queryOne<ApiKeyRow>(
-    'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [provider]
-  )
+  const keyRow = await getApiKey(provider)
   if (!keyRow) {
     res.status(422).json({ error: `No active API key configured for ${provider}. Add one in Settings.` })
     return null
@@ -312,9 +311,7 @@ async function resolveAgentProvider(
   let agentApiKey = fallbackApiKey
 
   if (agentProvider !== fallbackProvider) {
-    const agentKeyRow = await queryOne<ApiKeyRow>(
-      'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [agentProvider]
-    )
+    const agentKeyRow = await getApiKey(agentProvider)
     if (!agentKeyRow) {
       throw new ProviderError(agentProvider, 422, `No active API key configured for ${agentProvider} (needed by agent "${ctx.agent.name}"). Add one in Settings.`)
     }
@@ -524,9 +521,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
             maxTokens: 512,
           })
 
-          const googleKeyRow = await queryOne<ApiKeyRow>(
-            'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', ['google']
-          )
+          const googleKeyRow = await getApiKey('google')
           if (!googleKeyRow) throw new ProviderError('google', 422, 'Google API key required for video generation')
 
           const videoResult = await generateVideo({
@@ -796,9 +791,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
           })
 
           // Get Google API key for Veo
-          const googleKeyRow = await queryOne<ApiKeyRow>(
-            'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', ['google']
-          )
+          const googleKeyRow = await getApiKey('google')
           if (!googleKeyRow) throw new ProviderError('google', 422, 'Google API key required for video generation')
 
           sendSSE(res, 'agent:progress', { agentIndex: i, message: 'Generating video with Veo...' })
@@ -1042,9 +1035,7 @@ router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req:
   let apiKey: string
 
   if (reqModelId && reqProvider && reqModelId !== 'auto' && reqProvider !== 'auto') {
-    const keyRow = await queryOne<ApiKeyRow>(
-      'SELECT * FROM api_keys WHERE provider = $1 AND is_active = 1', [reqProvider]
-    )
+    const keyRow = await getApiKey(reqProvider)
     if (!keyRow) {
       res.status(422).json({ error: `No active API key for ${reqProvider}. Configure one in Settings.` })
       return
