@@ -30,6 +30,23 @@ function inferProvider(modelId: string): string | null {
   return null
 }
 
+/**
+ * Validate that an OpenAI model supports the chat completions API.
+ * Non-chat models (text-davinci, instruct, etc.) are not supported.
+ */
+function isValidChatModel(modelId: string): boolean {
+  // OpenAI chat model validation
+  if (/^(gpt-|o\d|chatgpt-)/i.test(modelId)) {
+    // Exclude known non-chat models
+    if (/davinci|curie|babbage|ada|instruct|embedding|whisper|dall-e|tts|moderation/i.test(modelId)) {
+      return false
+    }
+    return true
+  }
+  // All other providers use chat-like APIs by default
+  return true
+}
+
 interface GenerateBody {
   input: {
     contentType: string
@@ -203,6 +220,14 @@ async function preparePipeline(req: AuthenticatedRequest, res: Response): Promis
     return null
   }
 
+  // Validate that the model supports chat completions
+  if (!isValidChatModel(resolvedModelId)) {
+    res.status(422).json({
+      error: `The model "${resolvedModelId}" is not supported. This appears to be a completion-only model (e.g., text-davinci, instruct) which is incompatible with the chat API. Please select a chat model (e.g., gpt-4o, gpt-4o-mini, gpt-3.5-turbo) in your workflow agent settings or use the "Auto" model selector.`
+    })
+    return null
+  }
+
   const provider = inferProvider(resolvedModelId)
   if (!provider) {
     res.status(422).json({ error: `Cannot determine provider for model "${resolvedModelId}". Please configure the agent model correctly.` })
@@ -307,6 +332,16 @@ async function resolveAgentProvider(
   fallbackApiKey: string,
 ): Promise<{ agentModelId: string; agentProvider: string; agentApiKey: string }> {
   const agentModelId: string = ctx.agent.model?.trim() || fallbackModelId
+
+  // Validate chat model compatibility
+  if (!isValidChatModel(agentModelId)) {
+    throw new ProviderError(
+      'openai',
+      422,
+      `Agent "${ctx.agent.name}" uses an unsupported model "${agentModelId}". This appears to be a completion-only model (e.g., text-davinci, instruct) which is incompatible with the chat API. Please update the agent to use a chat model (e.g., gpt-4o, gpt-4o-mini, gpt-3.5-turbo) or use "Auto" model selection.`
+    )
+  }
+
   const agentProvider: string = inferProvider(agentModelId) || fallbackProvider
   let agentApiKey = fallbackApiKey
 

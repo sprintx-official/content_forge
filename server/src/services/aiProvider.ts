@@ -86,7 +86,24 @@ export class ProviderError extends Error {
   }
 }
 
+/**
+ * Validate that an OpenAI model supports the chat completions API.
+ * Non-chat models (text-davinci, instruct, etc.) are not supported.
+ */
+function validateOpenAIChatModel(modelId: string): void {
+  // Check for known non-chat model patterns
+  if (/davinci|curie|babbage|ada|instruct|embedding|whisper|dall-e|tts|moderation/i.test(modelId)) {
+    throw new ProviderError(
+      'openai',
+      422,
+      `The model "${modelId}" is not supported. This appears to be a completion-only model which is incompatible with the chat API. Please select a chat model like gpt-4o, gpt-4o-mini, or gpt-3.5-turbo, or use "Auto" model selection.`
+    )
+  }
+}
+
 async function callOpenAI(req: GenerationRequest): Promise<GenerationResponse> {
+  // Validate chat model before making API call
+  validateOpenAIChatModel(req.model)
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -327,6 +344,11 @@ async function callOpenAICompatibleStream(
   req: GenerationRequest,
   callbacks: StreamCallbacks,
 ): Promise<void> {
+  // Validate chat model for OpenAI before making API call
+  if (providerName === 'openai') {
+    validateOpenAIChatModel(req.model)
+  }
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
