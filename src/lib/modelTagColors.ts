@@ -4,8 +4,7 @@ type BadgeVariant = 'default' | 'purple' | 'pink' | 'green' | 'outline' | 'amber
 
 const TAG_VARIANT_MAP: Record<ModelTag, BadgeVariant> = {
   'Best for Writing': 'purple',
-  'Best for Code': 'default',
-  'Best for Chat': 'blue',
+'Best for Chat': 'blue',
   'Best for Analysis': 'teal',
   'Best for Image Generation': 'pink',
   'Best for Video Generation': 'rose',

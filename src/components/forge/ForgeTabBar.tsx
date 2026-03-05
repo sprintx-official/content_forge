@@ -1,4 +1,4 @@
-import { PenTool, MessageSquare, Image, Video, Code2 } from 'lucide-react'
+import { PenTool, MessageSquare, Image, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ForgeMode } from '@/types'
 
@@ -12,7 +12,6 @@ const TABS: { id: ForgeMode; label: string; icon: typeof PenTool }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'image', label: 'Image', icon: Image },
   { id: 'video', label: 'Video', icon: Video },
-  { id: 'code', label: 'Code', icon: Code2 },
 ]
 
 export function ForgeTabBar({ activeTab, onTabChange }: ForgeTabBarProps) {

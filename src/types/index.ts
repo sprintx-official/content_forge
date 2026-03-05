@@ -7,8 +7,8 @@ export type ProcessingStatus = 'pending' | 'active' | 'completed'
 export type UserRole = 'admin' | 'user'
 
 // ── Forge mode (tab system) ────────────────────────────────
-export type ForgeMode = 'content' | 'chat' | 'image' | 'video' | 'code'
-export type WorkflowStepType = 'text' | 'image' | 'code' | 'video'
+export type ForgeMode = 'content' | 'chat' | 'image' | 'video'
+export type WorkflowStepType = 'text' | 'image' | 'video'
 
 // ── Image generation types ─────────────────────────────────
 export interface ImageSize {
@@ -17,21 +17,6 @@ export interface ImageSize {
   label: string
 }
 export type ImageStyle = 'natural' | 'vivid' | 'anime' | 'photographic' | 'digital-art'
-
-// ── Code generation types ──────────────────────────────────
-export type CodeLanguage =
-  | 'javascript'
-  | 'typescript'
-  | 'python'
-  | 'html'
-  | 'css'
-  | 'json'
-  | 'sql'
-  | 'bash'
-  | 'rust'
-  | 'go'
-  | 'java'
-  | 'other'
 
 // ── Chat types ─────────────────────────────────────────────
 export interface ChatConversation {
@@ -306,7 +291,6 @@ export interface ApiKeyConfig {
 
 export type ModelTag =
   | 'Best for Writing'
-  | 'Best for Code'
   | 'Best for Chat'
   | 'Best for Analysis'
   | 'Best for Image Generation'

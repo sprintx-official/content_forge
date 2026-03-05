@@ -5,7 +5,6 @@ import type {
   ContentType,
   ImageSize,
   ImageStyle,
-  CodeLanguage,
 } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -311,20 +310,3 @@ export const IMAGE_STYLES: { id: ImageStyle; name: string }[] = [
   { id: 'anime', name: 'Anime' },
 ]
 
-// ---------------------------------------------------------------------------
-// Code Generation
-// ---------------------------------------------------------------------------
-export const CODE_LANGUAGES: { id: CodeLanguage; name: string }[] = [
-  { id: 'javascript', name: 'JavaScript' },
-  { id: 'typescript', name: 'TypeScript' },
-  { id: 'python', name: 'Python' },
-  { id: 'html', name: 'HTML' },
-  { id: 'css', name: 'CSS' },
-  { id: 'json', name: 'JSON' },
-  { id: 'sql', name: 'SQL' },
-  { id: 'bash', name: 'Bash' },
-  { id: 'rust', name: 'Rust' },
-  { id: 'go', name: 'Go' },
-  { id: 'java', name: 'Java' },
-  { id: 'other', name: 'Other' },
-]

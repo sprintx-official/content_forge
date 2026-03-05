@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown, Trash2, PenTool, ImageIcon, Code2, Video } from 'lucide-react'
+import { ArrowUp, ArrowDown, Trash2, PenTool, ImageIcon, Video } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,6 @@ const STEP_TYPES: { id: WorkflowStepType; label: string; icon: typeof PenTool; d
   { id: 'text', label: 'Text', icon: PenTool, description: 'Generate text content' },
   { id: 'image', label: 'Image', icon: ImageIcon, description: 'Generate an image from context' },
   { id: 'video', label: 'Video', icon: Video, description: 'Generate a video from context' },
-  { id: 'code', label: 'Code', icon: Code2, description: 'Generate code' },
 ]
 
 interface WorkflowStepEditorProps {
@@ -104,9 +103,7 @@ export default function WorkflowStepEditor({
                 ? 'Image will be generated from previous output'
                 : currentType === 'video'
                   ? 'Video will be generated from previous output'
-                  : currentType === 'code'
-                    ? 'Describe the code to generate'
-                    : 'Describe what this step does'
+                  : 'Describe what this step does'
             }
           />
         </div>
