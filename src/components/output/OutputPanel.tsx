@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import { Sparkles, FileText, Share2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Sparkles, FileText, Share2, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +13,8 @@ import RefinePanel from '@/components/output/RefinePanel'
 import DiffView from '@/components/output/DiffView'
 import MiniChatPanel from '@/components/output/MiniChatPanel'
 import SocialPostsPanel from '@/components/output/SocialPostsPanel'
+import PublishPanel from '@/components/output/PublishPanel'
+import { useAdminStore } from '@/stores/useAdminStore'
 import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import type { Editor } from '@tiptap/react'
 
@@ -41,7 +43,13 @@ export default function OutputPanel() {
   const applyRefinement = useForgeStore((s) => s.applyRefinement)
   const rejectRefinement = useForgeStore((s) => s.rejectRefinement)
 
-  const [outputTab, setOutputTab] = useState<'article' | 'social'>('article')
+  const [outputTab, setOutputTab] = useState<'article' | 'social' | 'publish'>('article')
+  const agents = useAdminStore((s) => s.agents)
+  const loadAgents = useAdminStore((s) => s.loadAgents)
+
+  useEffect(() => {
+    if (agents.length === 0) loadAgents()
+  }, [agents.length, loadAgents])
   const editorRef = useRef<Editor | null>(null)
 
   const handleEditorReady = useCallback((editor: Editor) => {
@@ -105,39 +113,33 @@ export default function OutputPanel() {
       </div>
 
       {/* Output sub-tabs */}
-      {output.socialPosts && output.socialPosts.length > 0 && (
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] w-fit">
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] w-fit">
+        {([
+          { id: 'article' as const, label: 'Article', Icon: FileText },
+          ...(output.socialPosts?.length ? [{ id: 'social' as const, label: 'Social Posts', Icon: Share2 }] : []),
+          { id: 'publish' as const, label: 'Publish', Icon: Globe },
+        ]).map(({ id, label, Icon }) => (
           <button
+            key={id}
             type="button"
-            onClick={() => setOutputTab('article')}
+            onClick={() => setOutputTab(id)}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-              outputTab === 'article'
+              outputTab === id
                 ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
                 : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
             )}
           >
-            <FileText className={cn('w-4 h-4', outputTab === 'article' ? 'text-[#00f0ff]' : 'text-white/30')} />
-            Article
-          </button>
-          <button
-            type="button"
-            onClick={() => setOutputTab('social')}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-              outputTab === 'social'
-                ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
-                : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
+            <Icon className={cn('w-4 h-4', outputTab === id ? 'text-[#00f0ff]' : 'text-white/30')} />
+            {label}
+            {id === 'social' && output.socialPosts && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#a855f7]/20 text-[#a855f7]">
+                {output.socialPosts.length}
+              </span>
             )}
-          >
-            <Share2 className={cn('w-4 h-4', outputTab === 'social' ? 'text-[#00f0ff]' : 'text-white/30')} />
-            Social Posts
-            <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#a855f7]/20 text-[#a855f7]">
-              {output.socialPosts.length}
-            </span>
           </button>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Article tab content */}
       {outputTab === 'article' && (
@@ -209,6 +211,15 @@ export default function OutputPanel() {
       {/* Social posts tab content */}
       {outputTab === 'social' && output.socialPosts && (
         <SocialPostsPanel posts={output.socialPosts} />
+      )}
+
+      {/* Publish tab content */}
+      {outputTab === 'publish' && (
+        <PublishPanel
+          title={activeContent.split('\n')[0]?.replace(/^#+ /, '') || 'Untitled'}
+          content={activeContent}
+          agents={agents}
+        />
       )}
 
       {/* Export / actions */}

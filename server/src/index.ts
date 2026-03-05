@@ -26,6 +26,7 @@ import imageRoutes from './routes/images.js'
 import videoRoutes from './routes/videos.js'
 import attachmentRoutes from './routes/attachments.js'
 import forgeOptionsRoutes from './routes/forgeOptions.js'
+import cmsRoutes from './routes/cms.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -118,6 +119,8 @@ app.use('/api/images', generateLimiter, imageRoutes)
 app.use('/api/videos', generateLimiter, videoRoutes)
 app.use('/api/attachments', attachmentRoutes)
 app.use('/api/forge-options', forgeOptionsRoutes)
+app.use('/api/cms', cmsRoutes)
+app.use('/api', cmsRoutes) // Also mount external endpoints at /api/external/live-stories
 
 // Error handler for API routes only
 app.use('/api', errorHandler)

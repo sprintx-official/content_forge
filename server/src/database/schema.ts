@@ -289,6 +289,16 @@ export async function initializeSchema(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_forge_options_category ON forge_options(category);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_forge_options_category_value ON forge_options(category, value);
+
+    -- Agent settings (key-value per agent, for CMS config, pipeline settings, etc.)
+    CREATE TABLE IF NOT EXISTS agent_settings (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL DEFAULT '',
+      UNIQUE(agent_id, key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_settings_agent_id ON agent_settings(agent_id);
   `)
 
   await runMigrations()
