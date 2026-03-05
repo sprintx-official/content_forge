@@ -299,6 +299,245 @@ export async function initializeSchema(): Promise<void> {
       UNIQUE(agent_id, key)
     );
     CREATE INDEX IF NOT EXISTS idx_agent_settings_agent_id ON agent_settings(agent_id);
+
+    -- RSS Feeds (global feed library)
+    CREATE TABLE IF NOT EXISTS feeds (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL UNIQUE,
+      site_url TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      tier TEXT NOT NULL DEFAULT 'standard' CHECK(tier IN ('priority', 'standard', 'low')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'error')),
+      last_fetched_at TIMESTAMP,
+      last_error TEXT,
+      error_count INTEGER NOT NULL DEFAULT 0,
+      article_count INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_feeds_status ON feeds(status);
+
+    -- Agent feed subscriptions (many-to-many)
+    CREATE TABLE IF NOT EXISTS agent_feeds (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(agent_id, feed_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_feeds_agent_id ON agent_feeds(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_feeds_feed_id ON agent_feeds(feed_id);
+
+    -- Articles (scraped from feeds)
+    CREATE TABLE IF NOT EXISTS articles (
+      id TEXT PRIMARY KEY,
+      feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+      guid TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL DEFAULT '',
+      summary TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL DEFAULT '',
+      author TEXT NOT NULL DEFAULT '',
+      published_at TIMESTAMP,
+      language TEXT NOT NULL DEFAULT 'en',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(feed_id, guid)
+    );
+    CREATE INDEX IF NOT EXISTS idx_articles_feed_id ON articles(feed_id);
+    CREATE INDEX IF NOT EXISTS idx_articles_published_at ON articles(published_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at DESC);
+
+    -- Agent article screenings (relevance cache per agent)
+    CREATE TABLE IF NOT EXISTS agent_article_screenings (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      article_id TEXT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+      is_relevant INTEGER NOT NULL DEFAULT 0,
+      screened_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(agent_id, article_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_screenings_agent_article ON agent_article_screenings(agent_id, article_id);
+
+    -- Coverage posts (auto-generated from pipeline)
+    CREATE TABLE IF NOT EXISTS coverage_posts (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      title TEXT NOT NULL DEFAULT '',
+      slug TEXT NOT NULL DEFAULT '',
+      summary TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT '',
+      urgency TEXT NOT NULL DEFAULT 'routine' CHECK(urgency IN ('critical', 'high', 'developing', 'routine')),
+      story_stage TEXT NOT NULL DEFAULT 'developing',
+      confidence INTEGER NOT NULL DEFAULT 3,
+      fingerprint TEXT NOT NULL DEFAULT '',
+      key_facts TEXT NOT NULL DEFAULT '[]',
+      image_prompt TEXT NOT NULL DEFAULT '',
+      image_original TEXT,
+      image_square TEXT,
+      image_landscape TEXT,
+      image_vertical TEXT,
+      image_headline TEXT NOT NULL DEFAULT '',
+      cms_slug TEXT,
+      cms_url TEXT,
+      status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'published', 'rejected')),
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_coverage_posts_agent_id ON coverage_posts(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_coverage_posts_status ON coverage_posts(status);
+    CREATE INDEX IF NOT EXISTS idx_coverage_posts_created_at ON coverage_posts(created_at DESC);
+
+    -- Coverage social posts (platform-specific content per coverage post)
+    CREATE TABLE IF NOT EXISTS coverage_social_posts (
+      id TEXT PRIMARY KEY,
+      coverage_post_id TEXT NOT NULL REFERENCES coverage_posts(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      edited_content TEXT,
+      hashtags TEXT NOT NULL DEFAULT '[]',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_coverage_social_posts_post_id ON coverage_social_posts(coverage_post_id);
+
+    -- Coverage source articles (links posts to source articles)
+    CREATE TABLE IF NOT EXISTS coverage_source_articles (
+      id TEXT PRIMARY KEY,
+      coverage_post_id TEXT NOT NULL REFERENCES coverage_posts(id) ON DELETE CASCADE,
+      article_id TEXT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+      UNIQUE(coverage_post_id, article_id)
+    );
+
+    -- Pipeline runs (execution history)
+    CREATE TABLE IF NOT EXISTS pipeline_runs (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completed_at TIMESTAMP,
+      current_step TEXT NOT NULL DEFAULT 'queued',
+      articles_found INTEGER NOT NULL DEFAULT 0,
+      articles_relevant INTEGER NOT NULL DEFAULT 0,
+      clusters_found INTEGER NOT NULL DEFAULT 0,
+      posts_generated INTEGER NOT NULL DEFAULT 0,
+      error TEXT,
+      duration_ms INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_pipeline_runs_agent_id ON pipeline_runs(agent_id);
+    CREATE INDEX IF NOT EXISTS idx_pipeline_runs_started_at ON pipeline_runs(started_at DESC);
+
+    -- Social accounts (OAuth connections)
+    CREATE TABLE IF NOT EXISTS social_accounts (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      platform_user_id TEXT NOT NULL DEFAULT '',
+      platform_username TEXT NOT NULL DEFAULT '',
+      access_token TEXT NOT NULL DEFAULT '',
+      refresh_token TEXT NOT NULL DEFAULT '',
+      expires_at TIMESTAMP,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_social_accounts_agent_id ON social_accounts(agent_id);
+
+    -- Publishing queue (social media scheduling)
+    CREATE TABLE IF NOT EXISTS publishing_queue (
+      id TEXT PRIMARY KEY,
+      coverage_post_id TEXT NOT NULL REFERENCES coverage_posts(id) ON DELETE CASCADE,
+      social_post_id TEXT REFERENCES coverage_social_posts(id),
+      social_account_id TEXT NOT NULL REFERENCES social_accounts(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'published', 'failed', 'cancelled')),
+      scheduled_at TIMESTAMP,
+      published_at TIMESTAMP,
+      error TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_publishing_queue_status ON publishing_queue(status);
+
+    -- Agent guidelines (editorial rules per agent)
+    CREATE TABLE IF NOT EXISTS agent_guidelines (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      guideline_type TEXT NOT NULL DEFAULT 'narrative',
+      content TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(agent_id, guideline_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_guidelines_agent_id ON agent_guidelines(agent_id);
+
+    -- Webhooks (Slack, Teams, custom)
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'custom' CHECK(type IN ('slack', 'teams', 'custom')),
+      events TEXT NOT NULL DEFAULT '[]',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Email preferences (per user)
+    CREATE TABLE IF NOT EXISTS email_preferences (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      digest_frequency TEXT NOT NULL DEFAULT 'daily' CHECK(digest_frequency IN ('daily', 'weekly', 'none')),
+      breaking_news INTEGER NOT NULL DEFAULT 1,
+      timezone TEXT NOT NULL DEFAULT 'UTC',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id)
+    );
+
+    -- Push subscriptions
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL UNIQUE,
+      keys_json TEXT NOT NULL DEFAULT '{}',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+
+    -- Brand monitoring queries
+    CREATE TABLE IF NOT EXISTS brand_queries (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+      query TEXT NOT NULL,
+      frequency TEXT NOT NULL DEFAULT 'daily' CHECK(frequency IN ('daily', 'weekly')),
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Brand monitoring results
+    CREATE TABLE IF NOT EXISTS brand_results (
+      id TEXT PRIMARY KEY,
+      query_id TEXT NOT NULL REFERENCES brand_queries(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      response TEXT NOT NULL DEFAULT '',
+      sentiment TEXT,
+      entities TEXT NOT NULL DEFAULT '[]',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_brand_results_query_id ON brand_results(query_id);
+
+    -- Gold standard examples (editor-approved posts for few-shot learning)
+    CREATE TABLE IF NOT EXISTS gold_standard_examples (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      coverage_post_id TEXT NOT NULL REFERENCES coverage_posts(id) ON DELETE CASCADE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Editor diffs (tracks what editors change for learning loop)
+    CREATE TABLE IF NOT EXISTS editor_diffs (
+      id TEXT PRIMARY KEY,
+      coverage_post_id TEXT NOT NULL REFERENCES coverage_posts(id) ON DELETE CASCADE,
+      field TEXT NOT NULL,
+      original_value TEXT NOT NULL DEFAULT '',
+      edited_value TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 
   await runMigrations()
