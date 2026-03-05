@@ -4,7 +4,7 @@ import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateBody, generateSchema, codeGenerateSchema } from '../validation/index.js'
 import { callProvider, callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
-import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, buildVideoPromptFromContext, type AgentContext } from '../services/promptBuilder.js'
+import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, buildVideoPromptFromContext, buildSocialPostsPrompt, type AgentContext } from '../services/promptBuilder.js'
 import { generateImage } from '../services/imageProvider.js'
 import { generateVideo } from '../services/videoProvider.js'
 import { uploadToR2 } from '../services/r2.js'
@@ -402,6 +402,39 @@ async function saveResults(
   const metrics = calculateMetrics(finalContent)
   const tips = getTips(input.contentType)
 
+  // Generate social posts from content (non-blocking — skip on failure)
+  let socialPosts: unknown[] | undefined
+  if (!input.refineContent) {
+    try {
+      const socialResponse = await callProvider({
+        provider,
+        model: resolvedModelId,
+        apiKey: setup.keyRow.api_key,
+        systemPrompt: 'You are a social media expert. Output ONLY valid JSON, no markdown fences.',
+        userPrompt: buildSocialPostsPrompt(finalContent, input.topic, input.tone),
+        maxTokens: 2048,
+      })
+
+      const CHAR_LIMITS: Record<string, number> = { x: 280, facebook: 500, linkedin: 700, instagram: 400, threads: 500 }
+      const raw = JSON.parse(socialResponse.content.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      socialPosts = Object.entries(raw).map(([platform, data]: [string, any]) => ({
+        platform,
+        content: String(data.content || '').slice(0, CHAR_LIMITS[platform] || 500),
+        hashtags: Array.isArray(data.hashtags) ? data.hashtags.map(String) : [],
+        charLimit: CHAR_LIMITS[platform] || 500,
+      }))
+
+      // Track social post generation tokens
+      totalInputTokens += socialResponse.inputTokens
+      totalCachedInputTokens += socialResponse.cachedInputTokens
+      totalOutputTokens += socialResponse.outputTokens
+      const socialCost = await calculateCost(provider, resolvedModelId, socialResponse.inputTokens, socialResponse.outputTokens, socialResponse.cachedInputTokens)
+      totalCostUsd += socialCost
+    } catch (err) {
+      console.error('Social post generation failed (non-critical):', err)
+    }
+  }
+
   const output: Record<string, unknown> = {
     content: finalContent,
     metrics,
@@ -417,6 +450,7 @@ async function saveResults(
       model: resolvedModelId,
     },
     ...(agentPipeline.length > 0 && { agentPipeline }),
+    ...(socialPosts && socialPosts.length > 0 && { socialPosts }),
   }
 
   const historyId = crypto.randomUUID()

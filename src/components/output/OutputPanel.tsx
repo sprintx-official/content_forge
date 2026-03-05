@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react'
-import { Sparkles } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+import { Sparkles, FileText, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,7 @@ import ExportActions from '@/components/output/ExportActions'
 import RefinePanel from '@/components/output/RefinePanel'
 import DiffView from '@/components/output/DiffView'
 import MiniChatPanel from '@/components/output/MiniChatPanel'
+import SocialPostsPanel from '@/components/output/SocialPostsPanel'
 import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 import type { Editor } from '@tiptap/react'
 
@@ -40,6 +41,7 @@ export default function OutputPanel() {
   const applyRefinement = useForgeStore((s) => s.applyRefinement)
   const rejectRefinement = useForgeStore((s) => s.rejectRefinement)
 
+  const [outputTab, setOutputTab] = useState<'article' | 'social'>('article')
   const editorRef = useRef<Editor | null>(null)
 
   const handleEditorReady = useCallback((editor: Editor) => {
@@ -102,67 +104,112 @@ export default function OutputPanel() {
         </div>
       </div>
 
-      {/* Refine panel (shown when refine is active but not yet showing diff) */}
-      {refineState && !refineState.isShowingDiff && (
-        <RefinePanel
-          currentTone={input.tone}
-          currentAudience={input.audience}
-          refineTone={refineState.refineTone}
-          refineAudience={refineState.refineAudience}
-          isRefining={refineState.isRefining}
-          onToneChange={setRefineTone}
-          onAudienceChange={setRefineAudience}
-          onApply={executeRefine}
-          onCancel={cancelRefine}
-        />
+      {/* Output sub-tabs */}
+      {output.socialPosts && output.socialPosts.length > 0 && (
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] w-fit">
+          <button
+            type="button"
+            onClick={() => setOutputTab('article')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+              outputTab === 'article'
+                ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
+                : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
+            )}
+          >
+            <FileText className={cn('w-4 h-4', outputTab === 'article' ? 'text-[#00f0ff]' : 'text-white/30')} />
+            Article
+          </button>
+          <button
+            type="button"
+            onClick={() => setOutputTab('social')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+              outputTab === 'social'
+                ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
+                : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
+            )}
+          >
+            <Share2 className={cn('w-4 h-4', outputTab === 'social' ? 'text-[#00f0ff]' : 'text-white/30')} />
+            Social Posts
+            <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#a855f7]/20 text-[#a855f7]">
+              {output.socialPosts.length}
+            </span>
+          </button>
+        </div>
       )}
 
-      {/* Diff view (shown after refinement completes) */}
-      {refineState?.isShowingDiff ? (
-        <DiffView
-          original={refineState.originalContent}
-          refined={refineState.refinedContent}
-          onAccept={applyRefinement}
-          onReject={rejectRefinement}
-        />
-      ) : (
+      {/* Article tab content */}
+      {outputTab === 'article' && (
         <>
-          {/* File tab bar (multi-file) */}
-          <FileTabBar
-            files={parsedFiles}
-            activeIndex={activeFileIndex}
-            onTabChange={setActiveFileIndex}
+          {/* Refine panel (shown when refine is active but not yet showing diff) */}
+          {refineState && !refineState.isShowingDiff && (
+            <RefinePanel
+              currentTone={input.tone}
+              currentAudience={input.audience}
+              refineTone={refineState.refineTone}
+              refineAudience={refineState.refineAudience}
+              isRefining={refineState.isRefining}
+              onToneChange={setRefineTone}
+              onAudienceChange={setRefineAudience}
+              onApply={executeRefine}
+              onCancel={cancelRefine}
+            />
+          )}
+
+          {/* Diff view (shown after refinement completes) */}
+          {refineState?.isShowingDiff ? (
+            <DiffView
+              original={refineState.originalContent}
+              refined={refineState.refinedContent}
+              onAccept={applyRefinement}
+              onReject={rejectRefinement}
+            />
+          ) : (
+            <>
+              {/* File tab bar (multi-file) */}
+              <FileTabBar
+                files={parsedFiles}
+                activeIndex={activeFileIndex}
+                onTabChange={setActiveFileIndex}
+              />
+
+              {/* Generated content */}
+              <ContentDisplay
+                content={activeContent}
+                onEditorReady={handleEditorReady}
+                isCodeMode={isCodeMode}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={toggleFullscreen}
+              />
+            </>
+          )}
+
+          {/* Metrics */}
+          <MetricsCards
+            metrics={output.metrics}
+            tokenUsage={output.tokenUsage}
+            targetWordCount={targetWordCount}
+            tolerancePercent={tolerancePercent}
           />
 
-          {/* Generated content */}
-          <ContentDisplay
-            content={activeContent}
-            onEditorReady={handleEditorReady}
-            isCodeMode={isCodeMode}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={toggleFullscreen}
-          />
+          {/* Writing tips */}
+          <WritingTips tips={output.tips} contentType={input.contentType} />
+
+          {/* Agent pipeline preview */}
+          {output.agentPipeline && output.agentPipeline.length > 0 && (
+            <AgentPipelinePreview pipeline={output.agentPipeline} />
+          )}
+
+          {/* Mini chat panel */}
+          <MiniChatPanel contentContext={activeContent} />
         </>
       )}
 
-      {/* Metrics */}
-      <MetricsCards
-        metrics={output.metrics}
-        tokenUsage={output.tokenUsage}
-        targetWordCount={targetWordCount}
-        tolerancePercent={tolerancePercent}
-      />
-
-      {/* Writing tips */}
-      <WritingTips tips={output.tips} contentType={input.contentType} />
-
-      {/* Agent pipeline preview */}
-      {output.agentPipeline && output.agentPipeline.length > 0 && (
-        <AgentPipelinePreview pipeline={output.agentPipeline} />
+      {/* Social posts tab content */}
+      {outputTab === 'social' && output.socialPosts && (
+        <SocialPostsPanel posts={output.socialPosts} />
       )}
-
-      {/* Mini chat panel */}
-      <MiniChatPanel contentContext={activeContent} />
 
       {/* Export / actions */}
       <ExportActions
@@ -171,7 +218,7 @@ export default function OutputPanel() {
         onRegenerate={generate}
         onBack={reset}
         activeFile={activeFile}
-        onRefine={startRefine}
+        onRefine={outputTab === 'article' ? startRefine : undefined}
       />
 
       <style>{`

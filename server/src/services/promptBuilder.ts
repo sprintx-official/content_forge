@@ -244,6 +244,34 @@ export function getMaxTokens(length: string, customWordCount?: number, tolerance
   return MAX_TOKENS[length] || MAX_TOKENS.medium
 }
 
+export function buildSocialPostsPrompt(content: string, topic: string, tone: string): string {
+  return `You are a social media expert. Based on the article content below, generate social media posts for 5 platforms.
+
+Topic: ${topic}
+Tone: ${tone}
+
+Article content:
+---
+${content.slice(0, 3000)}
+---
+
+Generate a JSON object with exactly this structure (no markdown fences, ONLY valid JSON):
+{
+  "x": { "content": "tweet text here (max 280 chars, punchy and engaging)", "hashtags": ["tag1", "tag2", "tag3"] },
+  "facebook": { "content": "facebook post (max 500 chars, conversational with context)", "hashtags": ["tag1", "tag2"] },
+  "linkedin": { "content": "linkedin post (max 700 chars, professional and insightful)", "hashtags": ["tag1", "tag2", "tag3"] },
+  "instagram": { "content": "instagram caption (max 400 chars, engaging with emoji)", "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"] },
+  "threads": { "content": "threads post (max 500 chars, casual and conversational)", "hashtags": ["tag1", "tag2"] }
+}
+
+Rules:
+- Each post must be unique and tailored to the platform's style
+- Do NOT include hashtags in the content text — put them in the hashtags array only
+- X/Twitter must be under 280 characters
+- Keep hashtags relevant, lowercase, no # symbol
+- Output ONLY the JSON object, nothing else`
+}
+
 export function buildCodeSystemPrompt(language?: string): string {
   let prompt = `You are an expert programmer. Generate clean, well-commented code based on the user's request.
 Output ONLY code in a single fenced code block with the language specified.

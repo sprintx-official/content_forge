@@ -18,6 +18,16 @@ export interface ImageSize {
 }
 export type ImageStyle = 'natural' | 'vivid' | 'anime' | 'photographic' | 'digital-art'
 
+// ── Social post types ─────────────────────────────────────
+export type SocialPlatform = 'x' | 'facebook' | 'linkedin' | 'instagram' | 'threads'
+
+export interface SocialPost {
+  platform: SocialPlatform
+  content: string
+  hashtags: string[]
+  charLimit: number
+}
+
 // ── Chat types ─────────────────────────────────────────────
 export interface ChatConversation {
   id: string
@@ -170,6 +180,7 @@ export interface ForgeOutput {
   generatedAt: string
   tokenUsage?: TokenUsage
   agentPipeline?: AgentPipelineStep[]
+  socialPosts?: SocialPost[]
 }
 
 export interface User {
