@@ -186,12 +186,30 @@ export default function NewsroomPage() {
           <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-20">
+        <div className="text-center py-16">
           <Newspaper className="w-12 h-12 text-white/20 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white/60 mb-2">No Coverage Posts Yet</h3>
-          <p className="text-sm text-white/40 max-w-md mx-auto">
-            Set up RSS feeds and enable the pipeline on an agent to start generating coverage automatically.
+          <p className="text-sm text-white/40 max-w-md mx-auto mb-6">
+            Set up an agent with RSS feeds and enable the pipeline to start generating coverage automatically.
           </p>
+          <div className="max-w-sm mx-auto space-y-3 text-left">
+            {[
+              { step: '1', text: 'Go to Settings → Agents → Edit an agent' },
+              { step: '2', text: 'Open the Pipeline & Feeds tab' },
+              { step: '3', text: 'Add RSS feed URLs and enable the pipeline' },
+            ].map(({ step, text }) => (
+              <div key={step} className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#00f0ff]/10 text-[#00f0ff] text-xs flex items-center justify-center shrink-0">{step}</span>
+                <span className="text-sm text-white/50">{text}</span>
+              </div>
+            ))}
+          </div>
+          <a
+            href="/settings"
+            className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-lg bg-[#00f0ff]/10 text-[#00f0ff] text-sm font-medium hover:bg-[#00f0ff]/20 transition-colors"
+          >
+            Go to Agent Setup
+          </a>
         </div>
       ) : (
         <div className="space-y-4">

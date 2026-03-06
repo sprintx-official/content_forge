@@ -1,4 +1,4 @@
-import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Share2, Eye, Image } from 'lucide-react'
+import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import TeamTab from '@/components/settings/TeamTab'
@@ -9,9 +9,7 @@ import PricingTab from '@/components/settings/PricingTab'
 import ContentOptionsTab from '@/components/settings/ContentOptionsTab'
 import NotificationsTab from '@/components/settings/NotificationsTab'
 import WebhooksTab from '@/components/settings/WebhooksTab'
-import SocialAccountsTab from '@/components/settings/SocialAccountsTab'
 import BrandMonitorTab from '@/components/settings/BrandMonitorTab'
-import ImageTemplatesTab from '@/components/settings/ImageTemplatesTab'
 
 const TABS = [
   { id: 'team' as const, label: 'Team', icon: Users },
@@ -22,9 +20,7 @@ const TABS = [
   { id: 'pricing' as const, label: 'Pricing', icon: DollarSign },
   { id: 'notifications' as const, label: 'Notifications', icon: Bell },
   { id: 'webhooks' as const, label: 'Webhooks', icon: Webhook },
-  { id: 'social-accounts' as const, label: 'Social', icon: Share2 },
   { id: 'brand-monitor' as const, label: 'Brand Monitor', icon: Eye },
-  { id: 'image-templates' as const, label: 'Templates', icon: Image },
 ]
 
 export default function SettingsPage() {
@@ -72,9 +68,7 @@ export default function SettingsPage() {
           {activeTab === 'pricing' && <PricingTab />}
           {activeTab === 'notifications' && <NotificationsTab />}
           {activeTab === 'webhooks' && <WebhooksTab />}
-          {activeTab === 'social-accounts' && <SocialAccountsTab />}
           {activeTab === 'brand-monitor' && <BrandMonitorTab />}
-          {activeTab === 'image-templates' && <ImageTemplatesTab />}
         </div>
       </div>
     </div>

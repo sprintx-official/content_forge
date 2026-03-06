@@ -4,6 +4,7 @@ import { AlertCircle, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
 import InputPanel from '@/components/forge/InputPanel'
+import SetupStatusPanel from '@/components/forge/SetupStatusPanel'
 import { ProcessingView } from '@/components/processing/ProcessingView'
 import OutputPanel from '@/components/output/OutputPanel'
 import { FeedbackButton, FeedbackModal } from '@/components/forge/FeedbackModal'
@@ -87,6 +88,7 @@ export default function ForgePage() {
                   Configure your content and let our AI agents do the work
                 </p>
               </div>
+              <SetupStatusPanel />
               <InputPanel />
             </div>
           </div>

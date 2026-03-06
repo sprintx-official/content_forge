@@ -10,9 +10,7 @@ import {
   GitBranch,
   Key,
   Bell,
-  Share2,
   Eye,
-  Image,
   Plus,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -48,9 +46,7 @@ export default function CommandPalette() {
       { id: 'workflows', label: 'Manage Workflows', icon: GitBranch, action: () => { navigate('/settings'); setActiveTab('workflows') }, admin: true, keywords: ['pipeline', 'steps'] },
       { id: 'api-keys', label: 'API Keys', icon: Key, action: () => { navigate('/settings'); setActiveTab('api-keys') }, admin: true, keywords: ['openai', 'google', 'anthropic'] },
       { id: 'notifications', label: 'Notification Settings', icon: Bell, action: () => { navigate('/settings'); setActiveTab('notifications') }, admin: true, keywords: ['email', 'push', 'digest'] },
-      { id: 'social', label: 'Social Accounts', icon: Share2, action: () => { navigate('/settings'); setActiveTab('social-accounts') }, admin: true, keywords: ['twitter', 'facebook', 'instagram'] },
       { id: 'brand', label: 'Brand Monitor', icon: Eye, action: () => { navigate('/settings'); setActiveTab('brand-monitor') }, admin: true, keywords: ['monitor', 'sentiment', 'llm'] },
-      { id: 'templates', label: 'Image Templates', icon: Image, action: () => { navigate('/settings'); setActiveTab('image-templates') }, admin: true, keywords: ['composite', 'overlay'] },
       { id: 'new-content', label: 'New Content', icon: Plus, action: () => navigate('/forge'), keywords: ['create', 'write', 'generate'] },
     ]
 
