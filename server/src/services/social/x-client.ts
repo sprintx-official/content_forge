@@ -1,15 +1,76 @@
+import crypto from 'crypto'
 import type { SocialAccount, SocialClient, PublishRequest, PublishResult } from './types.js'
+
+interface XOAuth1Credentials {
+  apiKey: string
+  apiSecret: string
+  accessToken: string
+  accessTokenSecret: string
+}
+
+function parseCredentials(account: SocialAccount): XOAuth1Credentials | null {
+  try {
+    const parsed = JSON.parse(account.access_token)
+    if (parsed.apiKey && parsed.apiSecret && parsed.accessToken && parsed.accessTokenSecret) {
+      return parsed as XOAuth1Credentials
+    }
+  } catch { /* not JSON — legacy Bearer token */ }
+  return null
+}
+
+function percentEncode(str: string): string {
+  return encodeURIComponent(str).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+}
+
+function generateOAuth1Header(
+  method: string,
+  url: string,
+  creds: XOAuth1Credentials,
+  extraParams: Record<string, string> = {},
+): string {
+  const oauthParams: Record<string, string> = {
+    oauth_consumer_key: creds.apiKey,
+    oauth_nonce: crypto.randomBytes(16).toString('hex'),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: String(Math.floor(Date.now() / 1000)),
+    oauth_token: creds.accessToken,
+    oauth_version: '1.0',
+  }
+
+  // Combine oauth params + extra params for signature base
+  const allParams = { ...oauthParams, ...extraParams }
+  const sortedParams = Object.keys(allParams)
+    .sort()
+    .map(k => `${percentEncode(k)}=${percentEncode(allParams[k])}`)
+    .join('&')
+
+  const baseString = `${method.toUpperCase()}&${percentEncode(url)}&${percentEncode(sortedParams)}`
+  const signingKey = `${percentEncode(creds.apiSecret)}&${percentEncode(creds.accessTokenSecret)}`
+  const signature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64')
+
+  oauthParams.oauth_signature = signature
+
+  const headerParts = Object.keys(oauthParams)
+    .sort()
+    .map(k => `${percentEncode(k)}="${percentEncode(oauthParams[k])}"`)
+    .join(', ')
+
+  return `OAuth ${headerParts}`
+}
 
 export const xClient: SocialClient = {
   async publish(account: SocialAccount, request: PublishRequest): Promise<PublishResult> {
     try {
-      // Use X API v2 for posting
+      const creds = parseCredentials(account)
+
       const tweetData: Record<string, unknown> = { text: request.content }
 
       // Upload media if image provided
       if (request.imageUrl) {
         try {
-          const mediaId = await uploadMediaV1(account.access_token, request.imageUrl)
+          const mediaId = creds
+            ? await uploadMediaV1OAuth1(creds, request.imageUrl)
+            : await uploadMediaV1Bearer(account.access_token, request.imageUrl)
           if (mediaId) {
             tweetData.media = { media_ids: [mediaId] }
           }
@@ -18,14 +79,29 @@ export const xClient: SocialClient = {
         }
       }
 
-      const res = await fetch('https://api.x.com/2/tweets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${account.access_token}`,
-        },
-        body: JSON.stringify(tweetData),
-      })
+      let res: Response
+      if (creds) {
+        // OAuth 1.0a — sign the request
+        const authHeader = generateOAuth1Header('POST', 'https://api.x.com/2/tweets', creds)
+        res = await fetch('https://api.x.com/2/tweets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader,
+          },
+          body: JSON.stringify(tweetData),
+        })
+      } else {
+        // Legacy Bearer token (OAuth 2.0)
+        res = await fetch('https://api.x.com/2/tweets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${account.access_token}`,
+          },
+          body: JSON.stringify(tweetData),
+        })
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -40,6 +116,13 @@ export const xClient: SocialClient = {
   },
 
   async refreshAccessToken(account: SocialAccount) {
+    // OAuth 1.0a tokens don't expire, so no refresh needed
+    const creds = parseCredentials(account)
+    if (creds) {
+      return { accessToken: account.access_token }
+    }
+
+    // OAuth 2.0 refresh flow
     const clientId = process.env.X_CLIENT_ID
     const clientSecret = process.env.X_CLIENT_SECRET
     if (!clientId || !clientSecret || !account.refresh_token) {
@@ -69,13 +152,37 @@ export const xClient: SocialClient = {
   },
 }
 
-async function uploadMediaV1(accessToken: string, imageUrl: string): Promise<string | null> {
-  // Fetch the image
+async function uploadMediaV1OAuth1(creds: XOAuth1Credentials, imageUrl: string): Promise<string | null> {
+  const imgRes = await fetch(imageUrl)
+  if (!imgRes.ok) return null
+  const buffer = Buffer.from(await imgRes.arrayBuffer())
+  const mediaData = buffer.toString('base64')
+
+  // Simple media upload (non-chunked, for images < 5MB)
+  const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json'
+  const params = { media_data: mediaData }
+  const authHeader = generateOAuth1Header('POST', uploadUrl, creds, params)
+
+  const body = new URLSearchParams(params)
+  const res = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  })
+
+  if (!res.ok) return null
+  const data = await res.json() as { media_id_string: string }
+  return data.media_id_string
+}
+
+async function uploadMediaV1Bearer(accessToken: string, imageUrl: string): Promise<string | null> {
   const imgRes = await fetch(imageUrl)
   if (!imgRes.ok) return null
   const buffer = Buffer.from(await imgRes.arrayBuffer())
 
-  // X v1.1 media upload (chunked init → append → finalize)
   const initRes = await fetch('https://upload.twitter.com/1.1/media/upload.json', {
     method: 'POST',
     headers: {
