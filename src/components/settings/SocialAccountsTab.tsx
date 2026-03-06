@@ -30,10 +30,10 @@ export default function SocialAccountsTab() {
     try {
       const [accts, agentData] = await Promise.all([
         api.get<{ accounts: SocialAccount[] }>('/api/social-accounts'),
-        api.get<{ agents: { id: string; name: string }[] }>('/api/agents'),
+        api.get<{ id: string; name: string }[]>('/api/agents'),
       ])
       setAccounts(accts.accounts)
-      setAgents(agentData.agents)
+      setAgents(agentData)
     } catch {
       setMessage('Failed to load')
     } finally {

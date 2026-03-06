@@ -48,12 +48,12 @@ export default function ImageTemplatesTab() {
 
   useEffect(() => {
     Promise.all([
-      api.get<{ agents: { id: string; name: string }[] }>('/api/agents'),
+      api.get<{ id: string; name: string }[]>('/api/agents'),
       api.get<{ presets: TemplatePreset[] }>('/api/image-templates/presets'),
-    ]).then(([a, p]) => {
-      setAgents(a.agents)
+    ]).then(([agents, p]) => {
+      setAgents(agents)
       setPresets(p.presets)
-      if (a.agents.length > 0) setSelectedAgent(a.agents[0].id)
+      if (agents.length > 0) setSelectedAgent(agents[0].id)
     }).finally(() => setLoading(false))
   }, [])
 
