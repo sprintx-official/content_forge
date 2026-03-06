@@ -1,6 +1,6 @@
-import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Eye } from 'lucide-react'
+import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Eye, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAdminStore } from '@/stores/useAdminStore'
+import { useAdminStore, type AdminTab } from '@/stores/useAdminStore'
 import TeamTab from '@/components/settings/TeamTab'
 import AgentsTab from '@/components/settings/AgentsTab'
 import WorkflowsTab from '@/components/settings/WorkflowsTab'
@@ -11,55 +11,105 @@ import NotificationsTab from '@/components/settings/NotificationsTab'
 import WebhooksTab from '@/components/settings/WebhooksTab'
 import BrandMonitorTab from '@/components/settings/BrandMonitorTab'
 
-const TABS = [
-  { id: 'team' as const, label: 'Team', icon: Users },
-  { id: 'agents' as const, label: 'Agents', icon: Bot },
-  { id: 'workflows' as const, label: 'Workflows', icon: GitBranch },
-  { id: 'content-options' as const, label: 'Content Options', icon: SlidersHorizontal },
-  { id: 'api-keys' as const, label: 'API Keys', icon: Key },
-  { id: 'pricing' as const, label: 'Pricing', icon: DollarSign },
-  { id: 'notifications' as const, label: 'Notifications', icon: Bell },
-  { id: 'webhooks' as const, label: 'Webhooks', icon: Webhook },
-  { id: 'brand-monitor' as const, label: 'Brand Monitor', icon: Eye },
+type NavItem = { id: AdminTab; label: string; icon: LucideIcon }
+
+const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'General',
+    items: [
+      { id: 'team', label: 'Team', icon: Users },
+      { id: 'agents', label: 'Agents', icon: Bot },
+      { id: 'workflows', label: 'Workflows', icon: GitBranch },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { id: 'content-options', label: 'Content Options', icon: SlidersHorizontal },
+      { id: 'api-keys', label: 'API Keys', icon: Key },
+      { id: 'pricing', label: 'Pricing', icon: DollarSign },
+    ],
+  },
+  {
+    label: 'Integrations',
+    items: [
+      { id: 'notifications', label: 'Notifications', icon: Bell },
+      { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+      { id: 'brand-monitor', label: 'Brand Monitor', icon: Eye },
+    ],
+  },
 ]
+
+const FLAT_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
 
 export default function SettingsPage() {
   const { activeTab, setActiveTab } = useAdminStore()
 
   return (
     <div>
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent mb-2">
-            Settings
-          </h1>
-          <p className="text-[#9ca3af]">
-            Manage your team, configure agents, and build workflows.
-          </p>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-white/90">Settings</h1>
+        <p className="text-sm text-white/40 mt-1">
+          Manage your team, configure agents, and build workflows.
+        </p>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-1 mb-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1.5 overflow-x-auto max-w-full">
-          {TABS.map(({ id, label, icon: Icon }) => (
+      {/* Mobile: horizontal scrollable nav */}
+      <div className="md:hidden mb-6 -mx-2 px-2 overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
+          {FLAT_ITEMS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors',
                 activeTab === id
-                  ? 'bg-[#00f0ff]/10 text-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.1)]'
-                  : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5',
+                  ? 'bg-white/[0.06] text-[#00f0ff]'
+                  : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0" />
               {label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Tab Content */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8">
+      {/* Desktop: sidebar + content layout */}
+      <div className="flex gap-8">
+        {/* Sidebar nav — hidden on mobile */}
+        <nav className="hidden md:block w-52 shrink-0">
+          <div className="sticky top-6 flex flex-col gap-6">
+            {NAV_SECTIONS.map((section) => (
+              <div key={section.label}>
+                <span className="block text-[11px] font-medium uppercase tracking-wider text-white/30 mb-2 px-3">
+                  {section.label}
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  {section.items.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => setActiveTab(id)}
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-r-lg px-3 py-2 text-sm transition-colors text-left w-full',
+                        activeTab === id
+                          ? 'bg-white/[0.06] text-white border-l-2 border-[#00f0ff]'
+                          : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04] border-l-2 border-transparent',
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </nav>
+
+        {/* Content area — no border/bg wrapper */}
+        <div className="flex-1 min-w-0">
           {activeTab === 'team' && <TeamTab />}
           {activeTab === 'agents' && <AgentsTab />}
           {activeTab === 'workflows' && <WorkflowsTab />}

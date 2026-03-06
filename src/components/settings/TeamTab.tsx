@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Shield, User as UserIcon } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -77,17 +77,18 @@ export default function TeamTab() {
               <div
                 key={member.id}
                 className={cn(
-                  'flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4',
-                  isSelf && 'border-[#00f0ff]/20',
+                  'flex items-center justify-between gap-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 hover:bg-white/[0.05] transition-colors',
+                  isSelf && 'border-white/[0.15]',
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                    {member.role === 'admin' ? (
-                      <Shield className="h-5 w-5 text-[#00f0ff]" />
-                    ) : (
-                      <UserIcon className="h-5 w-5 text-[#9ca3af]" />
-                    )}
+                  <div className={cn(
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+                    member.role === 'admin'
+                      ? 'bg-[#a855f7]/20 text-[#a855f7]'
+                      : 'bg-white/[0.08] text-white/50',
+                  )}>
+                    {member.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -119,9 +120,10 @@ export default function TeamTab() {
                         {member.role === 'admin' ? 'Demote' : 'Promote'}
                       </Button>
                       <Button
-                        variant="danger"
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleRemove(member.id)}
+                        className="text-white/30 hover:text-red-400 hover:bg-red-500/10"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

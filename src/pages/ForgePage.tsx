@@ -80,12 +80,12 @@ export default function ForgePage() {
             }`}
           >
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <h1 className="text-4xl md:text-5xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent mb-3">
+              <div className="mb-6">
+                <h1 className="text-2xl font-semibold text-white/90 mb-1">
                   Content Forge
                 </h1>
-                <p className="text-[#9ca3af] text-lg">
-                  Configure your content and let our AI agents do the work
+                <p className="text-sm text-white/40">
+                  Configure your content and let AI agents do the work
                 </p>
               </div>
               <SetupStatusPanel />

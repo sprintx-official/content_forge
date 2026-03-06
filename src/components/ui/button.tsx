@@ -4,15 +4,15 @@ import { cn } from '@/lib/utils'
 const buttonVariants = {
   variant: {
     default:
-      'bg-[#00f0ff] text-[#0a0e1a] font-semibold shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] hover:bg-[#33f3ff] active:bg-[#00d4e0]',
+      'bg-[#00f0ff] text-[#0a0e1a] font-semibold hover:bg-[#33f3ff] active:bg-[#00d4e0]',
     secondary:
-      'bg-[#a855f7] text-white font-semibold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] hover:bg-[#b96ef8] active:bg-[#9333ea]',
+      'bg-[#a855f7] text-white font-semibold hover:bg-[#b96ef8] active:bg-[#9333ea]',
     outline:
-      'border border-white/20 bg-transparent text-[#f9fafb] hover:border-[#00f0ff]/60 hover:shadow-[0_0_15px_rgba(0,240,255,0.2)] hover:text-[#00f0ff]',
+      'border border-white/[0.12] bg-transparent text-white/70 hover:border-white/25 hover:bg-white/[0.04] hover:text-white/90',
     ghost:
       'bg-transparent text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5',
     danger:
-      'bg-red-600 text-white font-semibold hover:bg-red-500 active:bg-red-700 shadow-[0_0_15px_rgba(239,68,68,0.2)]',
+      'bg-red-600 text-white font-semibold hover:bg-red-500 active:bg-red-700',
   },
   size: {
     sm: 'h-8 px-3 text-xs rounded-lg gap-1.5',

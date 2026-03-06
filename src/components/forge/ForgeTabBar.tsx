@@ -28,19 +28,19 @@ export function ForgeTabBar({ activeTab, onTabChange }: ForgeTabBarProps) {
               className={cn(
                 'relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
+                  ? 'bg-white/[0.08] text-white'
                   : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
               )}
             >
               <Icon
                 className={cn(
                   'w-4 h-4 transition-colors duration-200',
-                  isActive ? 'text-[#00f0ff]' : 'text-white/30',
+                  isActive ? 'text-white/80' : 'text-white/30',
                 )}
               />
               <span>{tab.label}</span>
               {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-gradient-to-r from-[#00f0ff] to-[#a855f7]" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-white/60" />
               )}
             </button>
           )

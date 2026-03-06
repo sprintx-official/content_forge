@@ -47,12 +47,11 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 px-4 border-b border-white/[0.06]">
         <Link to="/forge" onClick={resetForge} className="flex items-center gap-2.5 group min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00f0ff] to-[#a855f7] flex items-center justify-center shrink-0">
-            <Zap className="h-4.5 w-4.5 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center shrink-0">
+            <Zap className="h-4 w-4 text-white/70" />
           </div>
           {!collapsed && (
-            <span className="text-base font-bold bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent truncate"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <span className="text-sm font-semibold text-white/90 truncate">
               ContentForge
             </span>
           )}
@@ -90,15 +89,15 @@ export default function Sidebar() {
               'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 group',
               collapsed && 'justify-center px-0',
               isActive(to)
-                ? 'bg-[#00f0ff]/[0.08] text-[#00f0ff]'
+                ? 'bg-white/[0.06] text-white'
                 : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
             )}
             title={collapsed ? label : undefined}
           >
-            <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive(to) && 'drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]')} />
+            <Icon className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && <span>{label}</span>}
             {isActive(to) && (
-              <div className="absolute left-0 w-[3px] h-5 rounded-r-full bg-[#00f0ff]" />
+              <div className="absolute left-0 w-[2px] h-4 rounded-r-full bg-white/60" />
             )}
           </Link>
         ))}
@@ -115,12 +114,12 @@ export default function Sidebar() {
                 'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150',
                 collapsed && 'justify-center px-0',
                 isActive('/settings')
-                  ? 'bg-[#00f0ff]/[0.08] text-[#00f0ff]'
+                  ? 'bg-white/[0.06] text-white'
                   : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
               )}
               title={collapsed ? 'Settings' : undefined}
             >
-              <Settings className={cn('h-[18px] w-[18px] shrink-0', isActive('/settings') && 'drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]')} />
+              <Settings className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span>Settings</span>}
             </Link>
           </>
@@ -131,7 +130,7 @@ export default function Sidebar() {
       <div className="border-t border-white/[0.06] p-3 space-y-2">
         {/* User */}
         <div className={cn('flex items-center gap-2.5 rounded-lg px-2.5 py-2', collapsed && 'justify-center px-0')}>
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#a855f7] to-[#00f0ff] flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+          <div className="w-7 h-7 rounded-full bg-white/[0.08] flex items-center justify-center text-[11px] font-medium text-white/60 shrink-0">
             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
           {!collapsed && (

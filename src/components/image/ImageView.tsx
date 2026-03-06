@@ -20,11 +20,11 @@ export function ImageView() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="text-center mb-6">
-        <h1 className="text-4xl md:text-5xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent mb-3">
-          AI Image Generator
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-white/90 mb-1">
+          Image Generator
         </h1>
-        <p className="text-[#9ca3af] text-lg">
+        <p className="text-sm text-white/40">
           Create images with AI powered by DALL-E
         </p>
       </div>

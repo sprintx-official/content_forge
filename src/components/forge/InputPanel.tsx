@@ -20,7 +20,7 @@ export default function InputPanel() {
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8">
-      <h2 className="text-2xl font-bold font-['Space_Grotesk'] text-white mb-6">
+      <h2 className="text-lg font-medium text-white/70 mb-6">
         Configure Your Content
       </h2>
 
