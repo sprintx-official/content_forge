@@ -3,8 +3,13 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
-import { compositeFromTemplate } from '../services/imageCompositor.js'
 import { createDefaultTemplate, createNewsOverlayTemplate, type ImageTemplate } from '../services/templateTypes.js'
+
+// Lazy-load compositor — canvas may not be available
+let compositeFromTemplate: typeof import('../services/imageCompositor.js').compositeFromTemplate | null = null
+import('../services/imageCompositor.js')
+  .then(m => { compositeFromTemplate = m.compositeFromTemplate })
+  .catch(() => { console.warn('[ImageTemplates] canvas not available — preview disabled') })
 import type { AuthenticatedRequest } from '../types.js'
 
 const router = Router()
@@ -119,6 +124,11 @@ router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Res
     return
   }
 
+  if (!compositeFromTemplate) {
+    res.status(503).json({ error: 'Image compositing not available (canvas not installed)' })
+    return
+  }
+
   let backgroundBuffer: Buffer | null = null
   if (backgroundUrl) {
     try {
@@ -131,17 +141,22 @@ router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Res
 
   // Fallback: create a dark gradient background
   if (!backgroundBuffer) {
-    const { createCanvas: cc } = await import('canvas')
-    const w = format === 'landscape' ? 1200 : 1080
-    const h = format === 'landscape' ? 627 : 1080
-    const c = cc(w, h)
-    const cx = c.getContext('2d')
-    const grad = cx.createLinearGradient(0, 0, w, h)
-    grad.addColorStop(0, '#1a1a2e')
-    grad.addColorStop(1, '#16213e')
-    cx.fillStyle = grad
-    cx.fillRect(0, 0, w, h)
-    backgroundBuffer = c.toBuffer('image/png')
+    try {
+      const { createCanvas: cc } = await import('canvas')
+      const w = format === 'landscape' ? 1200 : 1080
+      const h = format === 'landscape' ? 627 : 1080
+      const c = cc(w, h)
+      const cx = c.getContext('2d')
+      const grad = cx.createLinearGradient(0, 0, w, h)
+      grad.addColorStop(0, '#1a1a2e')
+      grad.addColorStop(1, '#16213e')
+      cx.fillStyle = grad
+      cx.fillRect(0, 0, w, h)
+      backgroundBuffer = c.toBuffer('image/png')
+    } catch {
+      res.status(503).json({ error: 'Canvas not available for fallback background' })
+      return
+    }
   }
 
   const composited = await compositeFromTemplate(

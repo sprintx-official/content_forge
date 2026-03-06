@@ -3,8 +3,13 @@ import { query, queryOne, execute } from '../../database/connection.js'
 import { geminiGenerate, geminiGenerateImage, extractJson } from './geminiClient.js'
 import { buildGeneratePrompt, SETTING_DEFAULTS, getAgentModel } from './prompts.js'
 import { getAgentSetting } from '../../services/cmsClient.js'
-import { compositeAllFormats } from '../../services/imageCompositor.js'
 import { createDefaultTemplate, type ImageTemplate } from '../../services/templateTypes.js'
+
+// Lazy-load compositor — canvas native module may not be available in all environments
+let compositeAllFormats: typeof import('../../services/imageCompositor.js').compositeAllFormats | null = null
+import('../../services/imageCompositor.js')
+  .then(m => { compositeAllFormats = m.compositeAllFormats })
+  .catch(() => { console.warn('[Generate] canvas not available — image compositing disabled') })
 import type { TopicCluster } from './cluster.js'
 import type { ResearchBriefData } from './research.js'
 
@@ -122,8 +127,8 @@ export async function generateCoveragePost(
       geminiGenerateImage(imageModel, generated.image_prompt, '16:9', imageSystemPrompt),
     ])
 
-    // Apply image template compositing if headline is available
-    if (generated.image_headline && (squareBuf || landscapeBuf)) {
+    // Apply image template compositing if headline is available and compositor loaded
+    if (compositeAllFormats && generated.image_headline && (squareBuf || landscapeBuf)) {
       try {
         // Load agent's custom template or use default
         const templateRow = await queryOne<{ value: string }>(
