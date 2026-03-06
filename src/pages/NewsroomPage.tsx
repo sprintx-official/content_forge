@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Newspaper, Radio, RefreshCw, Clock, AlertTriangle, TrendingUp, Rss, Search } from 'lucide-react'
+import { Newspaper, Radio, RefreshCw, Clock, AlertTriangle, TrendingUp, Rss, Search, ExternalLink, Upload, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,8 @@ interface CoveragePost {
   confidence: number
   image_landscape: string | null
   image_headline: string
+  cms_url: string | null
+  cms_slug: string | null
   source_count: number
   created_at: string
 }
@@ -52,6 +54,8 @@ export default function NewsroomPage() {
   const [search, setSearch] = useState('')
   const [urgencyFilter, setUrgencyFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [publishing, setPublishing] = useState<string | null>(null)
+  const [message, setMessage] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -75,6 +79,24 @@ export default function NewsroomPage() {
   }, [search, urgencyFilter, statusFilter])
 
   useEffect(() => { loadData() }, [loadData])
+
+  const publishToCms = async (postId: string, status: 'draft' | 'published' = 'published') => {
+    setPublishing(postId)
+    try {
+      const result = await api.post<{ success: boolean; url?: string; error?: string }>(`/api/coverage/${postId}/publish-cms`, { status })
+      if (result.success) {
+        setMessage(result.url ? `Published: ${result.url}` : 'Published to CMS')
+        await loadData()
+      } else {
+        setMessage(result.error || 'Publish failed')
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Publish failed')
+    } finally {
+      setPublishing(null)
+      setTimeout(() => setMessage(''), 5000)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -151,6 +173,13 @@ export default function NewsroomPage() {
         </select>
       </div>
 
+      {/* Message */}
+      {message && (
+        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+          {message}
+        </div>
+      )}
+
       {/* Posts grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -215,6 +244,40 @@ export default function NewsroomPage() {
                         <AlertTriangle className="w-3 h-3" />
                         Confidence: {post.confidence}/5
                       </span>
+                    )}
+                  </div>
+
+                  {/* CMS Actions */}
+                  <div className="flex items-center gap-2 mt-2">
+                    {post.cms_url ? (
+                      <a
+                        href={post.cms_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
+                      >
+                        <Check className="w-3 h-3" />
+                        Published to CMS
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => publishToCms(post.id, 'published')}
+                          disabled={publishing === post.id}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] disabled:opacity-50 transition-colors"
+                        >
+                          <Upload className="w-3 h-3" />
+                          {publishing === post.id ? 'Publishing...' : 'Publish to CMS'}
+                        </button>
+                        <button
+                          onClick={() => publishToCms(post.id, 'draft')}
+                          disabled={publishing === post.id}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-white/40 disabled:opacity-50 transition-colors"
+                        >
+                          Send as Draft
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

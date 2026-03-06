@@ -2,6 +2,14 @@ import { Router, type Response } from 'express'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/admin.js'
+import {
+  publishToCms,
+  plainTextToHtml,
+  mapCategoryToCmsSlug,
+  generateTags,
+  getAgentSetting,
+  linkArticleToDevelopingStory,
+} from '../services/cmsClient.js'
 import type { AuthenticatedRequest } from '../types.js'
 
 const router = Router()
@@ -159,6 +167,79 @@ router.get('/stats/summary', authenticate, async (req: AuthenticatedRequest, res
   `)
 
   res.json(stats || {})
+})
+
+// ---------------------------------------------------------------------------
+// POST /api/coverage/:id/publish-cms — Publish a coverage post to CMS
+// ---------------------------------------------------------------------------
+router.post('/:id/publish-cms', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const id = String(req.params.id)
+  const { status: publishStatus } = req.body as { status?: 'draft' | 'published' }
+
+  const post = await queryOne<{
+    id: string; agent_id: string; title: string; slug: string; summary: string;
+    category: string; urgency: string; key_facts: string;
+    image_landscape: string | null; image_square: string | null; cms_url: string | null
+  }>(
+    'SELECT id, agent_id, title, slug, summary, category, urgency, key_facts, image_landscape, image_square, cms_url FROM coverage_posts WHERE id = $1',
+    [id],
+  )
+
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' })
+    return
+  }
+
+  if (post.cms_url) {
+    res.status(400).json({ error: 'Already published to CMS', url: post.cms_url })
+    return
+  }
+
+  const cmsEnabled = await getAgentSetting(post.agent_id, 'cms_enabled')
+  if (cmsEnabled !== 'true') {
+    res.status(400).json({ error: 'CMS is not enabled for this agent. Configure CMS settings first.' })
+    return
+  }
+
+  const cmsCategory = (await getAgentSetting(post.agent_id, 'cms_category')) || 'general'
+  const cmsPublishStatus = publishStatus || ((await getAgentSetting(post.agent_id, 'cms_publish_status')) as 'draft' | 'published') || 'draft'
+  const categorySlug = mapCategoryToCmsSlug(post.category || null, cmsCategory)
+  const htmlContent = plainTextToHtml(post.summary)
+  const tags = generateTags(post.category || null, post.key_facts)
+  const excerpt = post.summary.replace(/\n/g, ' ').slice(0, 200)
+  const postSlug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
+
+  const result = await publishToCms(post.agent_id, {
+    title: post.title,
+    slug: postSlug,
+    content: htmlContent,
+    categorySlug,
+    status: cmsPublishStatus,
+    excerpt,
+    tags,
+    featuredImageUrl: post.image_landscape || post.image_square || undefined,
+    seoTitle: post.title,
+    seoDescription: excerpt,
+    isBreaking: post.urgency === 'critical',
+    externalId: post.id,
+  })
+
+  if (result.success) {
+    await execute(
+      `UPDATE coverage_posts SET cms_slug = $1, cms_url = $2, status = 'published', updated_at = NOW() WHERE id = $3`,
+      [result.slug ?? null, result.url ?? null, id],
+    )
+
+    // Link to developing story if applicable
+    const storyId = await getAgentSetting(post.agent_id, 'cms_story_id')
+    if (storyId && result.slug) {
+      await linkArticleToDevelopingStory(post.agent_id, storyId, result.slug, post.title, post.summary, post.urgency, post.image_landscape || post.image_square || undefined)
+    }
+
+    res.json({ success: true, url: result.url, slug: result.slug })
+  } else {
+    res.status(502).json({ success: false, error: result.error })
+  }
 })
 
 export default router

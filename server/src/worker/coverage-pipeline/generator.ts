@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../../database/connection.js'
 import { geminiGenerate, geminiGenerateImage, extractJson } from './geminiClient.js'
 import { buildGeneratePrompt, SETTING_DEFAULTS, getAgentModel } from './prompts.js'
-import { getAgentSetting } from '../../services/cmsClient.js'
+import { getAgentSetting, publishToCms, plainTextToHtml, mapCategoryToCmsSlug, generateTags, linkArticleToDevelopingStory } from '../../services/cmsClient.js'
 import { createDefaultTemplate, type ImageTemplate } from '../../services/templateTypes.js'
 
 // Lazy-load compositor — canvas native module may not be available in all environments
@@ -216,6 +216,54 @@ export async function generateCoveragePost(
   }
 
   console.log(`  [Generate] Created post "${generated.title}" (id: ${postId})`)
+
+  // Auto-publish to CMS if enabled
+  try {
+    const cmsEnabled = await getAgentSetting(agentId, 'cms_enabled')
+    if (cmsEnabled === 'true') {
+      const cmsCategory = (await getAgentSetting(agentId, 'cms_category')) || 'general'
+      const cmsPublishStatus = ((await getAgentSetting(agentId, 'cms_publish_status')) as 'draft' | 'published') || 'draft'
+      const categorySlug = mapCategoryToCmsSlug(generated.category ?? null, cmsCategory)
+      const htmlContent = plainTextToHtml(generated.summary)
+      const tags = generateTags(generated.category ?? null, JSON.stringify(cluster.key_facts))
+      const excerpt = generated.summary.replace(/\n/g, ' ').slice(0, 200)
+      const postSlug = generated.slug || generated.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
+
+      const cmsResult = await publishToCms(agentId, {
+        title: generated.title,
+        slug: postSlug,
+        content: htmlContent,
+        categorySlug,
+        status: cmsPublishStatus,
+        excerpt,
+        tags,
+        featuredImageUrl: imageLandscape || imageSquare || undefined,
+        seoTitle: generated.title,
+        seoDescription: excerpt,
+        isBreaking: cluster.urgency === 'critical',
+        externalId: postId,
+      })
+
+      if (cmsResult.success) {
+        await execute(
+          `UPDATE coverage_posts SET cms_slug = $1, cms_url = $2, status = 'published', updated_at = NOW() WHERE id = $3`,
+          [cmsResult.slug ?? null, cmsResult.url ?? null, postId],
+        )
+        console.log(`  [Generate] Published to CMS: ${cmsResult.url || cmsResult.slug}`)
+
+        // Link to developing story if applicable
+        const storyId = await getAgentSetting(agentId, 'cms_story_id')
+        if (storyId && cmsResult.slug) {
+          await linkArticleToDevelopingStory(agentId, storyId, cmsResult.slug, generated.title, generated.summary, cluster.urgency ?? 'routine', imageLandscape || imageSquare || undefined)
+        }
+      } else {
+        console.warn(`  [Generate] CMS publish failed: ${cmsResult.error}`)
+      }
+    }
+  } catch (err) {
+    console.error('  [Generate] CMS auto-publish error:', err)
+  }
+
   return postId
 }
 
