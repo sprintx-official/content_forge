@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   Settings,
+  Newspaper,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useForgeStore } from '@/stores/useForgeStore'
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils'
 
 const navLinks = [
   { to: '/forge', label: 'Forge', icon: Hammer },
+  { to: '/newsroom', label: 'Newsroom', icon: Newspaper },
   { to: '/history', label: 'History', icon: Clock },
 ]
 
@@ -81,6 +83,10 @@ export default function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
+              <kbd className="text-xs text-[#9ca3af] bg-white/5 border border-white/10 rounded px-1.5 py-0.5 cursor-pointer hover:bg-white/10"
+                   onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}>
+                ⌘K
+              </kbd>
               <span className="text-sm text-[#9ca3af]">
                 {user?.name}
               </span>

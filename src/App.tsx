@@ -11,6 +11,8 @@ const ForgePage = lazy(() => import('@/pages/ForgePage'))
 const HistoryPage = lazy(() => import('@/pages/HistoryPage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const NewsroomPage = lazy(() => import('@/pages/NewsroomPage'))
+const CommandPalette = lazy(() => import('@/components/CommandPalette'))
 
 function LoadingFallback() {
   return (
@@ -54,6 +56,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Layout>
+        {isAuthenticated && (
+          <Suspense fallback={null}>
+            <CommandPalette />
+          </Suspense>
+        )}
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Public routes - redirect to dashboard if already logged in */}
@@ -76,6 +83,14 @@ export default function App() {
               element={
                 <AuthGuard>
                   <HistoryPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/newsroom"
+              element={
+                <AuthGuard>
+                  <NewsroomPage />
                 </AuthGuard>
               }
             />

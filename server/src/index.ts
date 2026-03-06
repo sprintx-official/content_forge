@@ -27,6 +27,15 @@ import videoRoutes from './routes/videos.js'
 import attachmentRoutes from './routes/attachments.js'
 import forgeOptionsRoutes from './routes/forgeOptions.js'
 import cmsRoutes from './routes/cms.js'
+import feedRoutes from './routes/feeds.js'
+import pipelineRoutes from './routes/pipeline.js'
+import coverageRoutes from './routes/coverage.js'
+import articleRoutes from './routes/articles.js'
+import socialAccountRoutes from './routes/socialAccounts.js'
+import webhookRoutes from './routes/webhooks.js'
+import notificationRoutes from './routes/notifications.js'
+import brandMonitorRoutes from './routes/brandMonitor.js'
+import imageTemplateRoutes from './routes/imageTemplates.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -121,6 +130,15 @@ app.use('/api/attachments', attachmentRoutes)
 app.use('/api/forge-options', forgeOptionsRoutes)
 app.use('/api/cms', cmsRoutes)
 app.use('/api', cmsRoutes) // Also mount external endpoints at /api/external/live-stories
+app.use('/api/feeds', feedRoutes)
+app.use('/api/pipeline', pipelineRoutes)
+app.use('/api/coverage', coverageRoutes)
+app.use('/api/articles', articleRoutes)
+app.use('/api/social-accounts', socialAccountRoutes)
+app.use('/api/webhooks', webhookRoutes)
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/brand-monitor', brandMonitorRoutes)
+app.use('/api/image-templates', imageTemplateRoutes)
 
 // Error handler for API routes only
 app.use('/api', errorHandler)
@@ -200,6 +218,17 @@ async function startServer() {
   app.listen(config.port, () => {
     console.log(`ContentForge server running on http://localhost:${config.port}`)
   })
+
+  // Start background worker (RSS feeds + coverage pipeline) — non-blocking
+  if (process.env.DISABLE_WORKER !== 'true') {
+    import('./worker/index.js').then(({ startWorker }) => {
+      startWorker().catch((err: unknown) => {
+        console.error('Worker startup failed (non-fatal):', err)
+      })
+    }).catch((err) => {
+      console.error('Failed to load worker module (non-fatal):', err)
+    })
+  }
 }
 
 startServer().catch((err) => {

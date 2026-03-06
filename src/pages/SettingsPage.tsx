@@ -1,4 +1,4 @@
-import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal } from 'lucide-react'
+import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Share2, Eye, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from '@/stores/useAdminStore'
 import TeamTab from '@/components/settings/TeamTab'
@@ -7,6 +7,11 @@ import WorkflowsTab from '@/components/settings/WorkflowsTab'
 import ApiKeysTab from '@/components/settings/ApiKeysTab'
 import PricingTab from '@/components/settings/PricingTab'
 import ContentOptionsTab from '@/components/settings/ContentOptionsTab'
+import NotificationsTab from '@/components/settings/NotificationsTab'
+import WebhooksTab from '@/components/settings/WebhooksTab'
+import SocialAccountsTab from '@/components/settings/SocialAccountsTab'
+import BrandMonitorTab from '@/components/settings/BrandMonitorTab'
+import ImageTemplatesTab from '@/components/settings/ImageTemplatesTab'
 
 const TABS = [
   { id: 'team' as const, label: 'Team', icon: Users },
@@ -15,6 +20,11 @@ const TABS = [
   { id: 'content-options' as const, label: 'Content Options', icon: SlidersHorizontal },
   { id: 'api-keys' as const, label: 'API Keys', icon: Key },
   { id: 'pricing' as const, label: 'Pricing', icon: DollarSign },
+  { id: 'notifications' as const, label: 'Notifications', icon: Bell },
+  { id: 'webhooks' as const, label: 'Webhooks', icon: Webhook },
+  { id: 'social-accounts' as const, label: 'Social', icon: Share2 },
+  { id: 'brand-monitor' as const, label: 'Brand Monitor', icon: Eye },
+  { id: 'image-templates' as const, label: 'Templates', icon: Image },
 ]
 
 export default function SettingsPage() {
@@ -34,7 +44,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 mb-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1.5 w-fit">
+        <div className="flex items-center gap-1 mb-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-1.5 overflow-x-auto max-w-full">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -60,6 +70,11 @@ export default function SettingsPage() {
           {activeTab === 'content-options' && <ContentOptionsTab />}
           {activeTab === 'api-keys' && <ApiKeysTab />}
           {activeTab === 'pricing' && <PricingTab />}
+          {activeTab === 'notifications' && <NotificationsTab />}
+          {activeTab === 'webhooks' && <WebhooksTab />}
+          {activeTab === 'social-accounts' && <SocialAccountsTab />}
+          {activeTab === 'brand-monitor' && <BrandMonitorTab />}
+          {activeTab === 'image-templates' && <ImageTemplatesTab />}
         </div>
       </div>
     </div>
