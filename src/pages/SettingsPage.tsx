@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const { activeTab, setActiveTab } = useAdminStore()
 
   return (
-    <div className="py-8 px-4">
+    <div>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">

@@ -60,7 +60,7 @@ export default function ForgePage() {
   const showTabs = activeTab !== 'content' || (!isProcessing && !output && !showError)
 
   return (
-    <div className="py-8 px-4">
+    <div>
       {/* Tab bar */}
       {showTabs && (
         <div className="max-w-4xl mx-auto">
