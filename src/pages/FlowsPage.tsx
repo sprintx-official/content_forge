@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { AnyFlow, Workflow } from '../types'
 import { SYSTEM_FLOWS } from '../constants/systemFlows'
 import { FlowCard } from '../components/flows/FlowCard'
+import { api } from '../lib/api'
 
 function FlowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
@@ -13,18 +14,7 @@ function FlowsPage() {
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch('/api/workflows')
-        if (!res.ok) {
-          if (res.status === 401) {
-            throw new Error('Unauthorized - please log in again')
-          } else if (res.status === 404) {
-            throw new Error('Workflows endpoint not found')
-          } else if (res.status === 500) {
-            throw new Error('Server error - please try again later')
-          }
-          throw new Error(`Failed to fetch workflows (${res.status})`)
-        }
-        const data = await res.json()
+        const data = await api.get<Workflow[]>('/api/workflows')
         setWorkflows(Array.isArray(data) ? data : [])
       } catch (err) {
         console.error('Failed to fetch workflows:', err)

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AnyFlow, HistoryItem } from '../../types'
 import { CoveragePostCard } from './CoveragePostCard'
+import { api } from '../../lib/api'
 
 interface CoveragePost {
   id: string
@@ -30,11 +31,9 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
         setError(null)
 
         // Fetch history items for manual runs
-        const historyRes = await fetch(
+        const historyData = await api.get<{ data: HistoryItem[]; pagination: unknown }>(
           `/api/history?workflowId=${workflowId}&limit=50`
         )
-        if (!historyRes.ok) throw new Error('Failed to fetch history')
-        const historyData = await historyRes.json()
         setHistoryItems(historyData.data || [])
 
         // Fetch coverage posts if it's an automated/both flow
@@ -42,12 +41,13 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
           'mode' in flow &&
           (flow.mode === 'automated' || flow.mode === 'both')
         ) {
-          const coverageRes = await fetch(
-            `/api/coverage?workflowId=${workflowId}&limit=50`
-          )
-          if (coverageRes.ok) {
-            const coverageData = await coverageRes.json()
+          try {
+            const coverageData = await api.get<{ posts: any[] }>(
+              `/api/coverage?workflowId=${workflowId}&limit=50`
+            )
             setCoveragePosts(coverageData.posts || [])
+          } catch {
+            // Coverage posts might not be available
           }
         }
       } catch (err) {

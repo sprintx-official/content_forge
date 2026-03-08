@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import type { AnyFlow, Workflow, User } from '../types'
 import { SYSTEM_FLOWS } from '../constants/systemFlows'
+import { api } from '../lib/api'
 import { FlowRunTab } from '../components/flows/FlowRunTab'
 import { FlowHistoryTab } from '../components/flows/FlowHistoryTab'
 import { FlowMonitorTab } from '../components/flows/FlowMonitorTab'
@@ -38,17 +39,16 @@ function FlowDetailPage() {
 
         // Otherwise fetch from database
         if (flowId) {
-          const res = await fetch(`/api/workflows/${flowId}`)
-          if (!res.ok) {
-            if (res.status === 404) {
+          try {
+            const workflow = await api.get<Workflow>(`/api/workflows/${flowId}`)
+            setFlow(workflow)
+          } catch (err) {
+            if (err instanceof Error && err.message.includes('404')) {
               setError('Flow not found')
             } else {
-              throw new Error('Failed to fetch flow')
+              throw err
             }
-            return
           }
-          const workflow: Workflow = await res.json()
-          setFlow(workflow)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
@@ -64,11 +64,8 @@ function FlowDetailPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me')
-        if (res.ok) {
-          const user: User = await res.json()
-          setCurrentUser(user)
-        }
+        const user = await api.get<User>('/api/auth/me')
+        setCurrentUser(user)
       } catch {
         // User not authenticated or endpoint doesn't exist
       }
