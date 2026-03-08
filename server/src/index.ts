@@ -40,6 +40,9 @@ import imageTemplateRoutes from './routes/imageTemplates.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
+// Trust proxy (behind Nginx/Coolify reverse proxy)
+app.set('trust proxy', 1)
+
 // Only apply helmet to API routes, not static files
 app.use('/api', helmet({
   contentSecurityPolicy: false,
