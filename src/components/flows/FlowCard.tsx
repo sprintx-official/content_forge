@@ -20,20 +20,20 @@ export function FlowCard({ flow }: FlowCardProps) {
   return (
     <Link
       to={`/flows/${flow.id}`}
-      className="block h-full rounded-lg border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow"
+      className="block h-full rounded-lg border border-white/10 bg-white/5 backdrop-blur-xl p-4 hover:bg-white/10 transition-all hover:border-white/20"
     >
       <div className="flex items-start gap-3 mb-3">
         <div
-          className="rounded p-2"
+          className="rounded p-2 flex-shrink-0"
           style={{ backgroundColor: FLOW_TYPE_COLORS[flow.type] + '20' }}
         >
           <TypeIcon size={24} style={{ color: FLOW_TYPE_COLORS[flow.type] }} />
         </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{flow.name}</h3>
-          <div className="flex gap-2 mt-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-white truncate">{flow.name}</h3>
+          <div className="flex gap-2 mt-1 flex-wrap">
             <span
-              className="inline-block px-2 py-1 text-xs rounded font-medium"
+              className="inline-block px-2 py-1 text-xs rounded font-medium whitespace-nowrap"
               style={{
                 backgroundColor: FLOW_TYPE_COLORS[flow.type] + '30',
                 color: FLOW_TYPE_COLORS[flow.type],
@@ -41,13 +41,13 @@ export function FlowCard({ flow }: FlowCardProps) {
             >
               {flow.type}
             </span>
-            <span className="inline-block px-2 py-1 text-xs rounded font-medium bg-gray-100 text-gray-700">
+            <span className="inline-block px-2 py-1 text-xs rounded font-medium bg-white/10 text-white/70">
               {flow.mode}
             </span>
           </div>
         </div>
       </div>
-      <p className="text-sm text-gray-600">{flow.description}</p>
+      <p className="text-sm text-gray-400 line-clamp-2">{flow.description}</p>
     </Link>
   )
 }
