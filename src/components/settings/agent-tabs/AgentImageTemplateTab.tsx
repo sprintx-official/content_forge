@@ -69,9 +69,45 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
   if (loading) return <div className="text-[#cbd5e1] py-4">Loading...</div>
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {message && (
         <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">{message}</div>
+      )}
+
+      {/* Canvas Preview */}
+      {template && (
+        <div>
+          <h4 className="text-xs text-[#cbd5e1] uppercase tracking-wider mb-3">Preview</h4>
+          <div className="bg-black border border-white/10 rounded-lg overflow-hidden aspect-video flex items-center justify-center relative">
+            <svg className="w-full h-full" viewBox="0 0 1200 675" preserveAspectRatio="xMidYMid meet">
+              {/* Background */}
+              <rect width="1200" height="675" fill="#1e293b" />
+              {/* Grid */}
+              <defs>
+                <pattern id="grid" width="120" height="67.5" patternUnits="userSpaceOnUse">
+                  <path d="M 120 0 L 0 0 0 67.5" fill="none" stroke="white" strokeWidth="0.5" opacity="0.1" />
+                </pattern>
+              </defs>
+              <rect width="1200" height="675" fill="url(#grid)" />
+              {/* Elements */}
+              {template.elements.map(el => {
+                const x = (el.x / 100) * 1200
+                const y = (el.y / 100) * 675
+                const w = (el.width / 100) * 1200 || 200
+                const h = (el.height / 100) * 675 || 150
+                const colors: Record<string, string> = { image: '#10b981', gradient: '#6366f1', text: '#f59e0b' }
+                const color = colors[el.type] || '#94a3b8'
+                return el.visible ? (
+                  <g key={el.id} opacity="0.8">
+                    <rect x={x} y={y} width={w} height={h} fill={color} fillOpacity="0.2" stroke={color} strokeWidth="2" />
+                    <text x={x + 5} y={y + 20} fontSize="14" fill={color} fontWeight="500">{el.id}</text>
+                    <text x={x + 5} y={y + 38} fontSize="12" fill={color} opacity="0.7">{el.type}</text>
+                  </g>
+                ) : null
+              })}
+            </svg>
+          </div>
+        </div>
       )}
 
       {/* Presets */}
