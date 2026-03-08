@@ -71,8 +71,8 @@ export default function PublishPanel({ title, content, agents }: PublishPanelPro
       {/* CMS Publishing */}
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#00f0ff]/10 flex items-center justify-center">
-            <Globe className="w-5 h-5 text-[#00f0ff]" />
+          <div className="w-10 h-10 rounded-lg bg-[#10b981]/10 flex items-center justify-center">
+            <Globe className="w-5 h-5 text-[#10b981]" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">Publish to CMS</h3>
@@ -86,7 +86,7 @@ export default function PublishPanel({ title, content, agents }: PublishPanelPro
           <select
             value={selectedAgentId}
             onChange={(e) => setSelectedAgentId(e.target.value)}
-            className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-[#00f0ff]/50"
+            className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-[#10b981]/50"
           >
             <option value="">Choose an agent...</option>
             {agents.map((a) => (
@@ -123,7 +123,7 @@ export default function PublishPanel({ title, content, agents }: PublishPanelPro
                   className={cn(
                     'px-4 py-2 rounded-lg text-sm font-medium border transition-all',
                     status === 'draft'
-                      ? 'border-[#a855f7] text-[#a855f7] bg-[#a855f7]/10'
+                      ? 'border-[#6366f1] text-[#6366f1] bg-[#6366f1]/10'
                       : 'border-white/10 text-white/40 hover:text-white/60',
                   )}
                 >
@@ -158,8 +158,8 @@ export default function PublishPanel({ title, content, agents }: PublishPanelPro
               className={cn(
                 'w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all',
                 publishing
-                  ? 'bg-[#00f0ff]/30 text-[#00f0ff]/50 cursor-wait'
-                  : 'bg-[#00f0ff] text-[#0a0e1a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]',
+                  ? 'bg-[#10b981]/30 text-[#10b981]/50 cursor-wait'
+                  : 'bg-[#10b981] text-[#0f172a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]',
               )}
             >
               {publishing ? (
@@ -194,7 +194,7 @@ export default function PublishPanel({ title, content, agents }: PublishPanelPro
                         href={result.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-auto text-sm text-[#00f0ff] hover:underline flex items-center gap-1"
+                        className="ml-auto text-sm text-[#10b981] hover:underline flex items-center gap-1"
                       >
                         View <ExternalLink className="w-3 h-3" />
                       </a>

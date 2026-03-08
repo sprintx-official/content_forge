@@ -12,7 +12,7 @@ export default function LengthSelector() {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+      <label className="block text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-3">
         Content Length
       </label>
       <div className="bg-white/5 rounded-xl border border-white/10 p-1 flex">
@@ -28,7 +28,7 @@ export default function LengthSelector() {
                 'flex-1 py-3 px-4 rounded-lg text-center cursor-pointer transition-all',
                 'text-[#d1d5db] hover:bg-white/5',
                 isSelected &&
-                  'bg-[#34d399]/10 text-[#34d399] border border-[#34d399]/30'
+                  'bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/30'
               )}
             >
               <div className="text-sm font-semibold">{l.name}</div>
@@ -36,7 +36,7 @@ export default function LengthSelector() {
                 <div
                   className={cn(
                     'text-xs mt-0.5',
-                    isSelected ? 'text-[#34d399]/70' : 'text-[#6b7280]'
+                    isSelected ? 'text-[#10b981]/70' : 'text-[#94a3b8]'
                   )}
                 >
                   ~{l.words} words
@@ -50,7 +50,7 @@ export default function LengthSelector() {
       {length === 'custom' && (
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1.5">
+            <label className="block text-xs font-medium text-[#cbd5e1] mb-1.5">
               Word Count
             </label>
             <input
@@ -72,15 +72,15 @@ export default function LengthSelector() {
               }}
               placeholder="e.g. 750"
               className={cn(
-                'w-full h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-[#f9fafb]',
-                'focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30',
-                'placeholder:text-[#6b7280]',
+                'w-full h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-[#f8fafc]',
+                'focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30',
+                'placeholder:text-[#94a3b8]',
               )}
             />
-            <p className="text-[10px] text-[#6b7280] mt-1">Min: 10 · Max: 10,000</p>
+            <p className="text-[10px] text-[#94a3b8] mt-1">Min: 10 · Max: 10,000</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1.5">
+            <label className="block text-xs font-medium text-[#cbd5e1] mb-1.5">
               Tolerance (±%)
             </label>
             <input
@@ -102,12 +102,12 @@ export default function LengthSelector() {
               }}
               placeholder="e.g. 10"
               className={cn(
-                'w-full h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-[#f9fafb]',
-                'focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30',
-                'placeholder:text-[#6b7280]',
+                'w-full h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-[#f8fafc]',
+                'focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30',
+                'placeholder:text-[#94a3b8]',
               )}
             />
-            <p className="text-[10px] text-[#6b7280] mt-1">Max: 50%</p>
+            <p className="text-[10px] text-[#94a3b8] mt-1">Max: 50%</p>
           </div>
         </div>
       )}

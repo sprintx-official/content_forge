@@ -54,7 +54,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
           </label>
         )}
         <div className={cn(
-          'bg-white/5 border border-white/10 rounded-xl text-sm text-[#6b7280]',
+          'bg-white/5 border border-white/10 rounded-xl text-sm text-[#94a3b8]',
           compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-3',
         )}>
           Loading models...
@@ -73,7 +73,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
           </label>
         )}
         <div className={cn(
-          'bg-white/5 border border-white/10 rounded-xl text-sm text-[#9ca3af]',
+          'bg-white/5 border border-white/10 rounded-xl text-sm text-[#cbd5e1]',
           compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-3',
         )}>
           {compact ? 'No models' : 'No models available — configure API keys in Settings'}
@@ -100,7 +100,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
           compact
             ? 'rounded-lg px-3 py-1.5 text-xs'
             : 'rounded-xl px-4 py-3 text-sm',
-          selectedModel ? 'text-[#f9fafb]' : 'text-[#6b7280]',
+          selectedModel ? 'text-[#f8fafc]' : 'text-[#94a3b8]',
         )}
       >
         <span className="truncate">{selectedLabel || 'Select a model...'}</span>
@@ -119,7 +119,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
             className={cn(
               'w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer flex items-center gap-2',
               isAuto
-                ? 'bg-[#a855f7]/10 text-[#a855f7]'
+                ? 'bg-[#6366f1]/10 text-[#6366f1]'
                 : 'text-[#d1d5db] hover:bg-white/5',
             )}
           >
@@ -129,7 +129,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
           <div className="border-t border-white/5" />
           {Object.entries(grouped).map(([provider, providerModels]) => (
             <div key={provider}>
-              <div className="px-4 py-2 text-xs font-semibold text-[#9ca3af] uppercase tracking-wider bg-white/5 sticky top-0">
+              <div className="px-4 py-2 text-xs font-semibold text-[#cbd5e1] uppercase tracking-wider bg-white/5 sticky top-0">
                 {PROVIDER_LABELS[provider] || provider}
               </div>
               {providerModels.map((model) => (
@@ -143,7 +143,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
                   className={cn(
                     'w-full text-left px-4 py-2.5 transition-colors cursor-pointer',
                     selectedModel?.modelId === model.id
-                      ? 'bg-[#00f0ff]/10'
+                      ? 'bg-[#10b981]/10'
                       : 'hover:bg-white/5',
                   )}
                 >
@@ -151,7 +151,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
                     <span className={cn(
                       'text-sm',
                       selectedModel?.modelId === model.id
-                        ? 'text-[#00f0ff]'
+                        ? 'text-[#10b981]'
                         : 'text-[#d1d5db]',
                     )}>
                       {model.name}
@@ -167,7 +167,7 @@ export default function ModelSelector({ compact = false }: { compact?: boolean }
                     ))}
                   </div>
                   {!compact && model.description && (
-                    <p className="text-xs text-[#6b7280] mt-0.5 line-clamp-1">
+                    <p className="text-xs text-[#94a3b8] mt-0.5 line-clamp-1">
                       {model.description}
                     </p>
                   )}

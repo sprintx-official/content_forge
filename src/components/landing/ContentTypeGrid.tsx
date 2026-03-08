@@ -33,7 +33,7 @@ export default function ContentTypeGrid() {
       <h2
         className={cn(
           'text-3xl md:text-5xl font-bold text-center mb-12',
-          'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent',
+          'bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent',
         )}
       >
         What Will You Create?
@@ -51,16 +51,16 @@ export default function ContentTypeGrid() {
               className={cn(
                 'group text-left',
                 'bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6',
-                'hover:border-[#00f0ff] hover:shadow-[0_0_20px_rgba(0,240,255,0.15)]',
+                'hover:border-[#10b981] hover:shadow-[0_0_20px_rgba(0,240,255,0.15)]',
                 'hover:scale-[1.03] transition-all duration-300',
                 'cursor-pointer',
               )}
             >
-              <Icon className="h-8 w-8 text-[#00f0ff] mb-4 transition-transform duration-300 group-hover:scale-110" />
+              <Icon className="h-8 w-8 text-[#10b981] mb-4 transition-transform duration-300 group-hover:scale-110" />
               <h3 className="text-lg font-semibold text-white mb-2">
                 {type.name}
               </h3>
-              <p className="text-sm text-[#9ca3af] leading-relaxed">
+              <p className="text-sm text-[#cbd5e1] leading-relaxed">
                 {type.description}
               </p>
             </button>

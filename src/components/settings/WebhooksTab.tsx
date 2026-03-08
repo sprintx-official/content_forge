@@ -64,21 +64,21 @@ export default function WebhooksTab() {
     }
   }
 
-  if (loading) return <div className="text-[#9ca3af]">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1]">Loading...</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-[#f9fafb] flex items-center gap-2">
-            <Webhook className="h-5 w-5 text-[#00f0ff]" />
+          <h2 className="text-xl font-semibold text-[#f8fafc] flex items-center gap-2">
+            <Webhook className="h-5 w-5 text-[#10b981]" />
             Webhooks
           </h2>
-          <p className="text-sm text-[#9ca3af]">Send notifications to Slack, Teams, or custom endpoints.</p>
+          <p className="text-sm text-[#cbd5e1]">Send notifications to Slack, Teams, or custom endpoints.</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1.5"
+          className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Add Webhook
@@ -86,7 +86,7 @@ export default function WebhooksTab() {
       </div>
 
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
@@ -98,29 +98,29 @@ export default function WebhooksTab() {
             placeholder="Webhook name"
             value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           />
           <input
             type="url"
             placeholder="Webhook URL"
             value={form.url}
             onChange={e => setForm({ ...form, url: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           />
           <select
             value={form.type}
             onChange={e => setForm({ ...form, type: e.target.value as typeof form.type })}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           >
             <option value="custom">Custom</option>
             <option value="slack">Slack</option>
             <option value="teams">Microsoft Teams</option>
           </select>
           <div className="flex gap-2">
-            <button onClick={create} className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-4 py-2 text-sm font-medium">
+            <button onClick={create} className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-4 py-2 text-sm font-medium">
               Create
             </button>
-            <button onClick={() => setShowForm(false)} className="text-[#9ca3af] hover:text-[#f9fafb] px-4 py-2 text-sm">
+            <button onClick={() => setShowForm(false)} className="text-[#cbd5e1] hover:text-[#f8fafc] px-4 py-2 text-sm">
               Cancel
             </button>
           </div>
@@ -129,29 +129,29 @@ export default function WebhooksTab() {
 
       <div className="space-y-3">
         {webhooks.length === 0 && (
-          <p className="text-[#9ca3af] text-sm text-center py-8">No webhooks configured yet.</p>
+          <p className="text-[#cbd5e1] text-sm text-center py-8">No webhooks configured yet.</p>
         )}
         {webhooks.map(w => (
           <div key={w.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <div>
-              <div className="text-sm font-medium text-[#f9fafb] flex items-center gap-2">
+              <div className="text-sm font-medium text-[#f8fafc] flex items-center gap-2">
                 {w.name}
-                <span className="text-xs bg-white/10 rounded px-1.5 py-0.5 text-[#9ca3af]">{w.type}</span>
+                <span className="text-xs bg-white/10 rounded px-1.5 py-0.5 text-[#cbd5e1]">{w.type}</span>
               </div>
-              <div className="text-xs text-[#9ca3af] mt-0.5 truncate max-w-md">{w.url}</div>
+              <div className="text-xs text-[#cbd5e1] mt-0.5 truncate max-w-md">{w.url}</div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => test(w.id)}
                 disabled={testing === w.id}
-                className="text-[#9ca3af] hover:text-[#00f0ff] p-1.5 rounded-lg hover:bg-white/5"
+                className="text-[#cbd5e1] hover:text-[#10b981] p-1.5 rounded-lg hover:bg-white/5"
                 title="Test webhook"
               >
                 <Zap className="h-4 w-4" />
               </button>
               <button
                 onClick={() => remove(w.id)}
-                className="text-[#9ca3af] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
+                className="text-[#cbd5e1] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
                 title="Delete webhook"
               >
                 <Trash2 className="h-4 w-4" />

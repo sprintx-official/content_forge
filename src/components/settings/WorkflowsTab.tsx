@@ -65,31 +65,31 @@ export default function WorkflowsTab() {
             key={workflow.id}
             className={cn(
               'rounded-xl border bg-white/5 p-5',
-              workflow.isActive ? 'border-[#00f0ff]/20' : 'border-white/10',
+              workflow.isActive ? 'border-[#10b981]/20' : 'border-white/10',
             )}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#a855f7]/10">
-                  <GitBranch className="h-5 w-5 text-[#a855f7]" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#6366f1]/10">
+                  <GitBranch className="h-5 w-5 text-[#6366f1]" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-semibold text-[#f9fafb]">
+                    <h4 className="text-sm font-semibold text-[#f8fafc]">
                       {workflow.name}
                     </h4>
                     <Badge variant={workflow.isActive ? 'green' : 'outline'}>
                       {workflow.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                     {(workflow.assignedUserIds?.length ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-[#9ca3af]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-xs text-[#cbd5e1]">
                         <Users className="h-3 w-3" />
                         {workflow.assignedUserIds!.length} {workflow.assignedUserIds!.length === 1 ? 'user' : 'users'}
                       </span>
                     )}
                   </div>
                   {workflow.description && (
-                    <p className="text-xs text-[#9ca3af] mt-0.5">
+                    <p className="text-xs text-[#cbd5e1] mt-0.5">
                       {workflow.description}
                     </p>
                   )}
@@ -109,13 +109,13 @@ export default function WorkflowsTab() {
                 return (
                   <div key={i} className="flex items-center gap-1.5">
                     <div className="flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2.5 py-1">
-                      <Icon className="h-3.5 w-3.5 text-[#00f0ff]" />
-                      <span className="text-xs text-[#9ca3af]">
+                      <Icon className="h-3.5 w-3.5 text-[#10b981]" />
+                      <span className="text-xs text-[#cbd5e1]">
                         {getAgentName(step.agentId)}
                       </span>
                     </div>
                     {i < workflow.steps.length - 1 && (
-                      <span className="text-[#6b7280] text-xs">&rarr;</span>
+                      <span className="text-[#94a3b8] text-xs">&rarr;</span>
                     )}
                   </div>
                 )
@@ -145,7 +145,7 @@ export default function WorkflowsTab() {
       </div>
 
       {workflows.length === 0 && (
-        <p className="text-center text-[#9ca3af] py-8">
+        <p className="text-center text-[#cbd5e1] py-8">
           No workflows created. Build your first workflow to get started.
         </p>
       )}

@@ -65,7 +65,7 @@ export default function TeamTab() {
       <AddMemberForm />
 
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-[#f9fafb]">
+        <h3 className="text-lg font-semibold text-[#f8fafc]">
           Team Members ({teamMembers.length})
         </h3>
 
@@ -85,28 +85,28 @@ export default function TeamTab() {
                   <div className={cn(
                     'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
                     member.role === 'admin'
-                      ? 'bg-[#a855f7]/20 text-[#a855f7]'
+                      ? 'bg-[#6366f1]/20 text-[#6366f1]'
                       : 'bg-white/[0.08] text-white/50',
                   )}>
                     {member.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-[#f9fafb] truncate">
+                      <p className="text-sm font-medium text-[#f8fafc] truncate">
                         {member.name}
-                        {isSelf && <span className="text-[#9ca3af]"> (you)</span>}
+                        {isSelf && <span className="text-[#cbd5e1]"> (you)</span>}
                       </p>
                       <Badge variant={member.role === 'admin' ? 'default' : 'outline'}>
                         {member.role}
                       </Badge>
                     </div>
-                    <p className="text-xs text-[#9ca3af] truncate">{member.email}</p>
+                    <p className="text-xs text-[#cbd5e1] truncate">{member.email}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   {isSuperAdmin && (
-                    <Badge variant="outline" className="text-[#00f0ff] border-[#00f0ff]/30">
+                    <Badge variant="outline" className="text-[#10b981] border-[#10b981]/30">
                       Super Admin
                     </Badge>
                   )}

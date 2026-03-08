@@ -37,20 +37,20 @@ export function ProgressSteps({ stages }: ProgressStepsProps) {
                   isPending && 'border-white/20 bg-white/5',
                   // Active
                   isActive && [
-                    'border-[#00f0ff] bg-[#00f0ff]/10',
+                    'border-[#10b981] bg-[#10b981]/10',
                     'shadow-[0_0_20px_rgba(0,240,255,0.4)]',
                   ],
                   // Completed
-                  isCompleted && 'border-[#34d399] bg-[#34d399]/20',
+                  isCompleted && 'border-[#10b981] bg-[#10b981]/20',
                 )}
               >
                 {isCompleted ? (
-                  <Check className="w-4 h-4 md:w-5 md:h-5 text-[#34d399]" />
+                  <Check className="w-4 h-4 md:w-5 md:h-5 text-[#10b981]" />
                 ) : (
                   <span
                     className={cn(
                       'text-xs md:text-sm font-bold transition-colors duration-500',
-                      isActive && 'text-[#00f0ff]',
+                      isActive && 'text-[#10b981]',
                       isPending && 'text-white/30',
                     )}
                   >
@@ -61,7 +61,7 @@ export function ProgressSteps({ stages }: ProgressStepsProps) {
                 {/* Active pulse ring */}
                 {isActive && (
                   <span
-                    className="absolute inset-0 rounded-full border-2 border-[#00f0ff] animate-ping opacity-30"
+                    className="absolute inset-0 rounded-full border-2 border-[#10b981] animate-ping opacity-30"
                     style={{ animationDuration: '2s' }}
                   />
                 )}
@@ -71,8 +71,8 @@ export function ProgressSteps({ stages }: ProgressStepsProps) {
               <span
                 className={cn(
                   'text-[10px] md:text-xs font-medium whitespace-nowrap transition-colors duration-500',
-                  isActive && 'text-[#00f0ff]',
-                  isCompleted && 'text-[#34d399]',
+                  isActive && 'text-[#10b981]',
+                  isCompleted && 'text-[#10b981]',
                   isPending && 'text-white/30',
                 )}
               >
@@ -91,16 +91,16 @@ export function ProgressSteps({ stages }: ProgressStepsProps) {
                   className={cn(
                     'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
                     lineCompleted
-                      ? 'w-full bg-[#34d399]'
+                      ? 'w-full bg-[#10b981]'
                       : isActive
-                        ? 'w-1/2 bg-gradient-to-r from-[#00f0ff] to-[#00f0ff]/0'
+                        ? 'w-1/2 bg-gradient-to-r from-[#10b981] to-[#10b981]/0'
                         : 'w-0',
                   )}
                 />
 
                 {/* Animated shimmer for active line */}
                 {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00f0ff]/30 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#10b981]/30 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
                 )}
               </div>
             )}

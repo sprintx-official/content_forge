@@ -11,17 +11,17 @@ export default function ToneSelector() {
   if (tones.length === 0) {
     return (
       <div>
-        <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+        <label className="block text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-3">
           Tone
         </label>
-        <div className="text-sm text-[#6b7280]">Loading tones...</div>
+        <div className="text-sm text-[#94a3b8]">Loading tones...</div>
       </div>
     )
   }
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+      <label className="block text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-3">
         Tone
       </label>
       <div className="flex flex-wrap gap-2">
@@ -36,7 +36,7 @@ export default function ToneSelector() {
               className={cn(
                 'px-4 py-2 rounded-full text-sm border border-white/10 bg-white/5 cursor-pointer transition-all',
                 'hover:bg-white/10 hover:border-white/20 text-[#d1d5db]',
-                isSelected && 'border-[#a855f7] bg-[#a855f7]/10 text-[#a855f7]'
+                isSelected && 'border-[#6366f1] bg-[#6366f1]/10 text-[#6366f1]'
               )}
             >
               {t.name}

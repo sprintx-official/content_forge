@@ -49,6 +49,7 @@ export interface WorkflowRow {
   is_active: number
   type: string
   mode: string
+  frequency?: string
   pipeline_agent_id: string | null
   created_at: string
   updated_at: string

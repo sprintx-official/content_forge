@@ -17,7 +17,7 @@ function ReadabilityCircle({ score }: { score: number }) {
 
   const color =
     score >= 70
-      ? '#00f0ff'
+      ? '#10b981'
       : score >= 50
         ? '#facc15'
         : '#ef4444'
@@ -72,7 +72,7 @@ function MetricCard({ children, label, index }: MetricCardProps) {
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {children}
-      <div className="text-xs text-[#9ca3af] uppercase tracking-wider mt-2">
+      <div className="text-xs text-[#cbd5e1] uppercase tracking-wider mt-2">
         {label}
       </div>
     </div>
@@ -102,8 +102,8 @@ export default function MetricsCards({ metrics, tokenUsage, targetWordCount, tol
       </MetricCard>
 
       <MetricCard label="Words" index={1}>
-        <BookOpen className="w-5 h-5 text-[#9ca3af] mx-auto mb-1" />
-        <div className="text-2xl font-bold text-[#f9fafb]">
+        <BookOpen className="w-5 h-5 text-[#cbd5e1] mx-auto mb-1" />
+        <div className="text-2xl font-bold text-[#f8fafc]">
           {metrics.wordCount.toLocaleString()}
         </div>
         {hasTarget && (
@@ -113,11 +113,11 @@ export default function MetricsCards({ metrics, tokenUsage, targetWordCount, tol
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${Math.min(100, wordPct)}%`,
-                  backgroundColor: isWithinTolerance ? '#34d399' : wordPct > 100 * (1 + tolerance) || wordPct < 100 * (1 - tolerance) ? '#ef4444' : '#facc15',
+                  backgroundColor: isWithinTolerance ? '#10b981' : wordPct > 100 * (1 + tolerance) || wordPct < 100 * (1 - tolerance) ? '#ef4444' : '#facc15',
                 }}
               />
             </div>
-            <div className="text-[10px] text-[#6b7280] mt-1">
+            <div className="text-[10px] text-[#94a3b8] mt-1">
               Target: {targetWordCount!.toLocaleString()}
             </div>
           </div>
@@ -125,15 +125,15 @@ export default function MetricsCards({ metrics, tokenUsage, targetWordCount, tol
       </MetricCard>
 
       <MetricCard label="min read" index={2}>
-        <Clock className="w-5 h-5 text-[#9ca3af] mx-auto mb-1" />
-        <div className="text-2xl font-bold text-[#f9fafb]">
+        <Clock className="w-5 h-5 text-[#cbd5e1] mx-auto mb-1" />
+        <div className="text-2xl font-bold text-[#f8fafc]">
           {metrics.readTimeMinutes}
         </div>
       </MetricCard>
 
       <MetricCard label="Grade Level" index={3}>
-        <GraduationCap className="w-5 h-5 text-[#9ca3af] mx-auto mb-1" />
-        <div className="text-2xl font-bold text-[#f9fafb]">
+        <GraduationCap className="w-5 h-5 text-[#cbd5e1] mx-auto mb-1" />
+        <div className="text-2xl font-bold text-[#f8fafc]">
           {metrics.gradeLevel}
         </div>
       </MetricCard>
@@ -148,8 +148,8 @@ export default function MetricsCards({ metrics, tokenUsage, targetWordCount, tol
           </MetricCard>
 
           <MetricCard label="Tokens" index={5}>
-            <Cpu className="w-5 h-5 text-[#9ca3af] mx-auto mb-1" />
-            <div className="text-2xl font-bold text-[#f9fafb]">
+            <Cpu className="w-5 h-5 text-[#cbd5e1] mx-auto mb-1" />
+            <div className="text-2xl font-bold text-[#f8fafc]">
               {tokenUsage.totalTokens.toLocaleString()}
             </div>
           </MetricCard>

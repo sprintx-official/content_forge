@@ -3,15 +3,15 @@ import { cn } from '@/lib/utils'
 
 const badgeVariants = {
   default:
-    'bg-[#00f0ff]/15 text-[#00f0ff] border-[#00f0ff]/30',
+    'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30',
   purple:
-    'bg-[#a855f7]/15 text-[#a855f7] border-[#a855f7]/30',
+    'bg-[#6366f1]/15 text-[#6366f1] border-[#6366f1]/30',
   pink:
-    'bg-[#f472b6]/15 text-[#f472b6] border-[#f472b6]/30',
+    'bg-[#ec4899]/15 text-[#ec4899] border-[#ec4899]/30',
   green:
-    'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+    'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30',
   outline:
-    'bg-transparent text-[#9ca3af] border-white/20',
+    'bg-transparent text-[#cbd5e1] border-white/20',
   amber:
     'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30',
   blue:

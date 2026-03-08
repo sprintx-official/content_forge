@@ -106,39 +106,39 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
   const subscribedIds = new Set(subscribedFeeds.map(f => f.id))
   const availableFeeds = allFeeds.filter(f => !subscribedIds.has(f.id))
 
-  if (loading) return <div className="text-[#9ca3af] py-4">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1] py-4">Loading...</div>
 
   return (
     <div className="space-y-6">
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
 
       {/* Pipeline Toggle */}
       <div className="space-y-4">
-        <h4 className="text-sm font-medium text-[#f9fafb]">Pipeline</h4>
+        <h4 className="text-sm font-medium text-[#f8fafc]">Pipeline</h4>
         <div className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3">
           <div>
-            <p className="text-sm text-[#f9fafb]">Auto-generate coverage</p>
-            <p className="text-xs text-[#9ca3af]">Pipeline monitors feeds and generates posts automatically</p>
+            <p className="text-sm text-[#f8fafc]">Auto-generate coverage</p>
+            <p className="text-xs text-[#cbd5e1]">Pipeline monitors feeds and generates posts automatically</p>
           </div>
           <button
             onClick={() => saveSettings({ pipeline_enabled: settings.pipeline_enabled === 'true' ? 'false' : 'true' })}
             disabled={saving}
-            className={`relative w-11 h-6 rounded-full transition-colors ${settings.pipeline_enabled === 'true' ? 'bg-[#00f0ff]' : 'bg-white/20'}`}
+            className={`relative w-11 h-6 rounded-full transition-colors ${settings.pipeline_enabled === 'true' ? 'bg-[#10b981]' : 'bg-white/20'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${settings.pipeline_enabled === 'true' ? 'translate-x-5' : ''}`} />
           </button>
         </div>
 
         <div>
-          <label className="text-xs text-[#9ca3af] mb-1 block">Run interval</label>
+          <label className="text-xs text-[#cbd5e1] mb-1 block">Run interval</label>
           <select
             value={settings.pipeline_interval || '30'}
             onChange={e => saveSettings({ pipeline_interval: e.target.value })}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           >
             <option value="15">Every 15 minutes</option>
             <option value="30">Every 30 minutes</option>
@@ -151,7 +151,7 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
 
       {/* Add Feed */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-[#f9fafb]">RSS Feeds ({subscribedFeeds.length})</h4>
+        <h4 className="text-sm font-medium text-[#f8fafc]">RSS Feeds ({subscribedFeeds.length})</h4>
         <div className="flex gap-2">
           <input
             type="url"
@@ -159,12 +159,12 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
             value={newFeedUrl}
             onChange={e => setNewFeedUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addFeed()}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           />
           <button
             onClick={addFeed}
             disabled={adding || !newFeedUrl.trim()}
-            className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1 disabled:opacity-50"
+            className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1 disabled:opacity-50"
           >
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Add
@@ -175,15 +175,15 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
       {/* Subscribed Feeds */}
       <div className="space-y-2">
         {subscribedFeeds.length === 0 && (
-          <p className="text-xs text-[#9ca3af] text-center py-4">No feeds subscribed. Add an RSS feed URL above.</p>
+          <p className="text-xs text-[#cbd5e1] text-center py-4">No feeds subscribed. Add an RSS feed URL above.</p>
         )}
         {subscribedFeeds.map(f => (
           <div key={f.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Rss className="h-3.5 w-3.5 text-[#00f0ff] shrink-0" />
+              <Rss className="h-3.5 w-3.5 text-[#10b981] shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm text-[#f9fafb] truncate">{f.title || f.url}</p>
-                <p className="text-xs text-[#9ca3af] truncate">{f.url}</p>
+                <p className="text-sm text-[#f8fafc] truncate">{f.title || f.url}</p>
+                <p className="text-xs text-[#cbd5e1] truncate">{f.url}</p>
               </div>
               {f.status === 'active' ? (
                 <CheckCircle className="h-3 w-3 text-emerald-400 shrink-0" />
@@ -191,7 +191,7 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
                 <XCircle className="h-3 w-3 text-red-400 shrink-0" />
               )}
             </div>
-            <button onClick={() => unsubscribeFeed(f.id)} className="text-[#9ca3af] hover:text-red-400 p-1 shrink-0">
+            <button onClick={() => unsubscribeFeed(f.id)} className="text-[#cbd5e1] hover:text-red-400 p-1 shrink-0">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -201,15 +201,15 @@ export default function PipelineFeedsTab({ agentId }: { agentId: string }) {
       {/* Available Feeds to Subscribe */}
       {availableFeeds.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-xs text-[#9ca3af] uppercase tracking-wider">Available feeds</h4>
+          <h4 className="text-xs text-[#cbd5e1] uppercase tracking-wider">Available feeds</h4>
           {availableFeeds.slice(0, 10).map(f => (
             <div key={f.id} className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
               <div className="min-w-0">
-                <p className="text-sm text-[#9ca3af] truncate">{f.title || f.url}</p>
+                <p className="text-sm text-[#cbd5e1] truncate">{f.title || f.url}</p>
               </div>
               <button
                 onClick={() => subscribeFeed(f.id)}
-                className="text-xs text-[#00f0ff] hover:text-[#00f0ff]/80 px-2 py-1 rounded bg-[#00f0ff]/10 shrink-0"
+                className="text-xs text-[#10b981] hover:text-[#10b981]/80 px-2 py-1 rounded bg-[#10b981]/10 shrink-0"
               >
                 Subscribe
               </button>

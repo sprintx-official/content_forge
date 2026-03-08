@@ -109,13 +109,13 @@ export default function HistoryViewModal({ item, onClose }: HistoryViewModalProp
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Content Forge Output</title>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #334155; }
   h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
   h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
   h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
   p { margin-bottom: 1rem; }
   ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #6b7280; }
+  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #94a3b8; }
   hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
   code { background: #f3f4f6; border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.875em; }
   pre { background: #f3f4f6; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
@@ -149,13 +149,13 @@ ${getHTML()}
 <meta charset="UTF-8">
 <title>Content Forge Output</title>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #334155; }
   h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
   h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
   h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
   p { margin-bottom: 1rem; }
   ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #6b7280; }
+  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #94a3b8; }
   hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
   code { background: #f3f4f6; border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.875em; }
   pre { background: #f3f4f6; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
@@ -194,7 +194,7 @@ ${getHTML()}
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 bg-[#0a0e1a] shadow-2xl overflow-hidden">
+      <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div className="flex items-center gap-3 min-w-0">
@@ -207,23 +207,23 @@ ${getHTML()}
               {input.contentType}
             </span>
             {item.workflowName && (
-              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#a855f7]/20 text-[#a855f7] shrink-0">
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#6366f1]/20 text-[#6366f1] shrink-0">
                 {item.workflowName}
               </span>
             )}
-            <h3 className="text-lg font-semibold text-[#f9fafb] truncate">{input.topic}</h3>
+            <h3 className="text-lg font-semibold text-[#f8fafc] truncate">{input.topic}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors shrink-0 ml-4 cursor-pointer"
+            className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors shrink-0 ml-4 cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Metadata row */}
-        <div className="flex items-center gap-4 px-6 py-3 text-xs text-[#9ca3af] border-b border-white/5">
+        <div className="flex items-center gap-4 px-6 py-3 text-xs text-[#cbd5e1] border-b border-white/5">
           {item.userName && (
             <span className="inline-flex items-center gap-1 text-[#d1d5db]">
               <User className="h-3.5 w-3.5" />
@@ -274,8 +274,8 @@ ${getHTML()}
             disabled={saving}
             className={cn(
               'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium',
-              'border border-[#00f0ff] text-[#00f0ff] bg-transparent',
-              'hover:bg-[#00f0ff]/10 transition-all cursor-pointer',
+              'border border-[#10b981] text-[#10b981] bg-transparent',
+              'hover:bg-[#10b981]/10 transition-all cursor-pointer',
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >

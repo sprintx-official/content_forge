@@ -29,8 +29,8 @@ export default function DiffView({ original, refined, onAccept, onReject }: Diff
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-white/[0.03]">
         <div className="flex items-center gap-3">
-          <GitCompareArrows className="w-5 h-5 text-[#a855f7]" />
-          <span className="text-sm font-semibold text-[#f9fafb]">Review Changes</span>
+          <GitCompareArrows className="w-5 h-5 text-[#6366f1]" />
+          <span className="text-sm font-semibold text-[#f8fafc]">Review Changes</span>
           <div className="flex items-center gap-2 ml-2">
             {removedCount > 0 && (
               <span className="text-xs bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full">
@@ -51,7 +51,7 @@ export default function DiffView({ original, refined, onAccept, onReject }: Diff
             onClick={onReject}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
-              'border border-white/10 text-[#9ca3af] hover:text-white hover:bg-white/10',
+              'border border-white/10 text-[#cbd5e1] hover:text-white hover:bg-white/10',
             )}
           >
             <X className="w-3.5 h-3.5" />
@@ -62,7 +62,7 @@ export default function DiffView({ original, refined, onAccept, onReject }: Diff
             onClick={onAccept}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
-              'bg-[#00f0ff] text-[#0a0e1a] hover:shadow-[0_0_15px_rgba(0,240,255,0.3)]',
+              'bg-[#10b981] text-[#0f172a] hover:shadow-[0_0_15px_rgba(0,240,255,0.3)]',
             )}
           >
             <Check className="w-3.5 h-3.5" />
@@ -87,7 +87,7 @@ export default function DiffView({ original, refined, onAccept, onReject }: Diff
             className={cn(
               change.added && 'bg-emerald-500/20 text-emerald-300 rounded-sm px-0.5',
               change.removed && 'bg-red-500/20 text-red-400 line-through rounded-sm px-0.5',
-              !change.added && !change.removed && 'text-[#f9fafb]',
+              !change.added && !change.removed && 'text-[#f8fafc]',
             )}
           >
             {change.value}

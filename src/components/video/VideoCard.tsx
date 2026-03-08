@@ -25,7 +25,7 @@ export function VideoCard({ video, onDelete, onExtend }: VideoCardProps) {
     <div
       className={cn(
         'group relative rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02]',
-        'transition-all hover:border-[#00f0ff]/20 hover:shadow-[0_0_20px_rgba(0,240,255,0.05)]',
+        'transition-all hover:border-[#10b981]/20 hover:shadow-[0_0_20px_rgba(0,240,255,0.05)]',
       )}
     >
       {/* Video */}
@@ -49,10 +49,10 @@ export function VideoCard({ video, onDelete, onExtend }: VideoCardProps) {
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onExtend(video) }}
-              className="p-2 rounded-lg bg-[#00f0ff]/20 hover:bg-[#00f0ff]/30 transition-colors"
+              className="p-2 rounded-lg bg-[#10b981]/20 hover:bg-[#10b981]/30 transition-colors"
               title="Extend scene"
             >
-              <Link2 className="w-4 h-4 text-[#00f0ff]" />
+              <Link2 className="w-4 h-4 text-[#10b981]" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(video.id) }}
@@ -77,7 +77,7 @@ export function VideoCard({ video, onDelete, onExtend }: VideoCardProps) {
           {video.sourceVideoId && (
             <>
               <span>&middot;</span>
-              <span className="inline-flex items-center gap-0.5 text-[#00f0ff]/50" title="Extended clip">
+              <span className="inline-flex items-center gap-0.5 text-[#10b981]/50" title="Extended clip">
                 <Link2 className="w-3 h-3" />
                 clip {video.clipIndex}
               </span>

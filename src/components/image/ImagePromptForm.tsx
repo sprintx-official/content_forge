@@ -37,7 +37,7 @@ export function ImagePromptForm() {
           className={cn(
             'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3',
             'text-sm text-white/80 placeholder:text-white/20',
-            'focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/20',
+            'focus:outline-none focus:border-[#10b981]/30 focus:ring-1 focus:ring-[#10b981]/20',
             'resize-none',
           )}
           disabled={isGenerating}
@@ -56,7 +56,7 @@ export function ImagePromptForm() {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                 selectedStyle === s.id
-                  ? 'bg-[#00f0ff]/15 border border-[#00f0ff]/30 text-[#00f0ff]'
+                  ? 'bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981]'
                   : 'bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60',
               )}
             >
@@ -78,7 +78,7 @@ export function ImagePromptForm() {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                 selectedSize.label === s.label
-                  ? 'bg-[#a855f7]/15 border border-[#a855f7]/30 text-[#a855f7]'
+                  ? 'bg-[#6366f1]/15 border border-[#6366f1]/30 text-[#6366f1]'
                   : 'bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60',
               )}
             >
@@ -98,7 +98,7 @@ export function ImagePromptForm() {
         className={cn(
           'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all',
           prompt.trim() && !isGenerating
-            ? 'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] text-[#0a0e1a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
+            ? 'bg-gradient-to-r from-[#10b981] to-[#6366f1] text-[#0f172a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
             : 'bg-white/[0.06] text-white/20 cursor-not-allowed',
         )}
       >

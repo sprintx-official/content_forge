@@ -22,17 +22,17 @@ export default function ContentTypeSelector() {
   if (contentTypes.length === 0) {
     return (
       <div>
-        <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+        <label className="block text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-3">
           Content Type
         </label>
-        <div className="text-sm text-[#6b7280]">Loading content types...</div>
+        <div className="text-sm text-[#94a3b8]">Loading content types...</div>
       </div>
     )
   }
 
   return (
     <div>
-      <label className="block text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-3">
+      <label className="block text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-3">
         Content Type
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -49,26 +49,26 @@ export default function ContentTypeSelector() {
                 'bg-white/5 border border-white/10 rounded-xl p-4 cursor-pointer transition-all text-left',
                 'hover:bg-white/10 hover:border-white/20',
                 isSelected &&
-                  'border-[#00f0ff] bg-[#00f0ff]/10 shadow-[0_0_15px_rgba(0,240,255,0.15)]'
+                  'border-[#10b981] bg-[#10b981]/10 shadow-[0_0_15px_rgba(0,240,255,0.15)]'
               )}
             >
               {Icon && (
                 <Icon
                   className={cn(
-                    'w-5 h-5 mb-2 text-[#6b7280] transition-colors',
-                    isSelected && 'text-[#00f0ff]'
+                    'w-5 h-5 mb-2 text-[#94a3b8] transition-colors',
+                    isSelected && 'text-[#10b981]'
                   )}
                 />
               )}
               <div
                 className={cn(
                   'text-sm font-semibold text-white transition-colors',
-                  isSelected && 'text-[#00f0ff]'
+                  isSelected && 'text-[#10b981]'
                 )}
               >
                 {type.name}
               </div>
-              <div className="text-xs text-[#6b7280] mt-1 line-clamp-2">
+              <div className="text-xs text-[#94a3b8] mt-1 line-clamp-2">
                 {type.description}
               </div>
             </button>

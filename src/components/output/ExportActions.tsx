@@ -91,13 +91,13 @@ export default function ExportActions({
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Content Forge Output</title>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #334155; }
   h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
   h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
   h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
   p { margin-bottom: 1rem; }
   ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #6b7280; }
+  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #94a3b8; }
   hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
   code { background: #f3f4f6; border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.875em; }
   pre { background: #f3f4f6; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
@@ -129,13 +129,13 @@ ${getHTML()}
 <meta charset="UTF-8">
 <title>Content Forge Output</title>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+  body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #334155; }
   h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
   h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
   h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
   p { margin-bottom: 1rem; }
   ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #6b7280; }
+  blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0 0 1rem; font-style: italic; color: #94a3b8; }
   hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
   code { background: #f3f4f6; border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.875em; }
   pre { background: #f3f4f6; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin-bottom: 1rem; }
@@ -160,19 +160,19 @@ ${getHTML()}
 
   const purpleClass = cn(
     'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium',
-    'border border-[#a855f7] text-[#a855f7] bg-transparent',
-    'hover:bg-[#a855f7]/10 transition-all cursor-pointer',
+    'border border-[#6366f1] text-[#6366f1] bg-transparent',
+    'hover:bg-[#6366f1]/10 transition-all cursor-pointer',
   )
 
   const cyanClass = cn(
     'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium',
-    'border border-[#00f0ff] text-[#00f0ff] bg-transparent',
-    'hover:bg-[#00f0ff]/10 transition-all cursor-pointer',
+    'border border-[#10b981] text-[#10b981] bg-transparent',
+    'hover:bg-[#10b981]/10 transition-all cursor-pointer',
   )
 
   const ghostClass = cn(
     'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium',
-    'border border-transparent text-[#9ca3af] bg-transparent',
+    'border border-transparent text-[#cbd5e1] bg-transparent',
     'hover:text-white hover:bg-white/5 transition-all cursor-pointer',
   )
 

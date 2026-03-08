@@ -112,21 +112,21 @@ export default function AgentsTab() {
               key={agent.id}
               className={cn(
                 'group relative rounded-xl border border-white/10 bg-white/5 p-5',
-                'hover:border-[#00f0ff]/20 transition-all',
+                'hover:border-[#10b981]/20 transition-all',
               )}
             >
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00f0ff]/10">
-                  <Icon className="h-5 w-5 text-[#00f0ff]" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#10b981]/10">
+                  <Icon className="h-5 w-5 text-[#10b981]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-semibold text-[#f9fafb]">{agent.name}</h4>
-                  <p className="text-xs text-[#9ca3af] mt-0.5 line-clamp-2">{agent.description}</p>
+                  <h4 className="text-sm font-semibold text-[#f8fafc]">{agent.name}</h4>
+                  <p className="text-xs text-[#cbd5e1] mt-0.5 line-clamp-2">{agent.description}</p>
                 </div>
               </div>
 
               {agent.systemPrompt && (
-                <p className="mt-3 text-xs text-[#6b7280] line-clamp-2 italic">
+                <p className="mt-3 text-xs text-[#94a3b8] line-clamp-2 italic">
                   {agent.systemPrompt}
                 </p>
               )}
@@ -187,7 +187,7 @@ export default function AgentsTab() {
       </div>
 
       {agents.length === 0 && (
-        <p className="text-center text-[#9ca3af] py-8">
+        <p className="text-center text-[#cbd5e1] py-8">
           No agents configured. Create your first agent to get started.
         </p>
       )}

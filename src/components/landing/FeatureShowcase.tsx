@@ -78,11 +78,11 @@ function FeatureCard({
       )}
       style={{ transitionDelay: `${index * 150}ms` }}
     >
-      <Icon className="h-10 w-10 text-[#00f0ff] mb-5" />
+      <Icon className="h-10 w-10 text-[#10b981] mb-5" />
       <h3 className="text-xl font-semibold text-white mb-3">
         {feature.title}
       </h3>
-      <p className="text-[#9ca3af] leading-relaxed">{feature.description}</p>
+      <p className="text-[#cbd5e1] leading-relaxed">{feature.description}</p>
     </div>
   )
 }
@@ -94,7 +94,7 @@ export default function FeatureShowcase() {
       <h2
         className={cn(
           'text-3xl md:text-5xl font-bold text-center mb-12',
-          'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent',
+          'bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent',
         )}
       >
         Why ContentForge?

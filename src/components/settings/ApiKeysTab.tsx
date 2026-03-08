@@ -125,10 +125,10 @@ export default function ApiKeysTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-[#f9fafb] mb-1">
+        <h3 className="text-lg font-semibold text-[#f8fafc] mb-1">
           AI Provider API Keys
         </h3>
-        <p className="text-sm text-[#9ca3af]">
+        <p className="text-sm text-[#cbd5e1]">
           Configure API keys to enable AI models for content generation.
           Keys are validated before saving.
         </p>
@@ -152,14 +152,14 @@ export default function ApiKeysTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                    <Sparkles className="h-5 w-5 text-[#a855f7]" />
+                    <Sparkles className="h-5 w-5 text-[#6366f1]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#f9fafb]">
+                    <p className="text-sm font-medium text-[#f8fafc]">
                       {provider.name}
                     </p>
                     {isConnected && (
-                      <p className="text-xs text-[#9ca3af]">{config.maskedKey}</p>
+                      <p className="text-xs text-[#cbd5e1]">{config.maskedKey}</p>
                     )}
                   </div>
                 </div>
@@ -225,7 +225,7 @@ export default function ApiKeysTab() {
 
               {/* Usage stats */}
               {isConnected && usage && (
-                <div className="flex items-center gap-4 text-xs text-[#9ca3af] bg-white/5 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-4 text-xs text-[#cbd5e1] bg-white/5 rounded-lg px-3 py-2">
                   <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                   <span>{usage.generation_count} generations</span>
                   <span>{usage.total_tokens.toLocaleString()} tokens</span>
@@ -237,19 +237,19 @@ export default function ApiKeysTab() {
               {isConnected && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-[#9ca3af]">Available models</p>
+                    <p className="text-xs text-[#cbd5e1]">Available models</p>
                     <button
                       type="button"
                       onClick={() => handleRefreshModels(provider.id)}
                       disabled={isLoadingModels}
-                      className="flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#22d3ee] transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 text-xs text-[#cbd5e1] hover:text-[#22d3ee] transition-colors disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
                       Refresh
                     </button>
                   </div>
                   {isLoadingModels ? (
-                    <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
+                    <div className="flex items-center gap-2 text-xs text-[#cbd5e1]">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       Loading models...
                     </div>
@@ -261,7 +261,7 @@ export default function ApiKeysTab() {
                           className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 space-y-1"
                         >
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-[#f9fafb]">
+                            <span className="text-sm font-medium text-[#f8fafc]">
                               {model.name}
                             </span>
                             {model.tags?.map((tag) => (
@@ -275,7 +275,7 @@ export default function ApiKeysTab() {
                             ))}
                           </div>
                           {model.description && (
-                            <p className="text-xs text-[#6b7280] leading-relaxed">
+                            <p className="text-xs text-[#94a3b8] leading-relaxed">
                               {model.description}
                             </p>
                           )}
@@ -283,7 +283,7 @@ export default function ApiKeysTab() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-[#6b7280]">No models found</p>
+                    <p className="text-xs text-[#94a3b8]">No models found</p>
                   )}
                 </div>
               )}

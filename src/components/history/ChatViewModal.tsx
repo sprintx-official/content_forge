@@ -42,28 +42,28 @@ export default function ChatViewModal({ conversation, onClose }: ChatViewModalPr
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 bg-[#0a0e1a] shadow-2xl overflow-hidden">
+      <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 shrink-0">
               Chat
             </span>
-            <h3 className="text-lg font-semibold text-[#f9fafb] truncate">
+            <h3 className="text-lg font-semibold text-[#f8fafc] truncate">
               {conversation.title}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors shrink-0 ml-4 cursor-pointer"
+            className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors shrink-0 ml-4 cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Metadata */}
-        <div className="flex items-center gap-4 px-6 py-3 text-xs text-[#9ca3af] border-b border-white/5">
+        <div className="flex items-center gap-4 px-6 py-3 text-xs text-[#cbd5e1] border-b border-white/5">
           <span>{formattedDate}</span>
           <span className="inline-flex items-center gap-1">
             <MessageSquare className="h-3.5 w-3.5" />
@@ -75,10 +75,10 @@ export default function ChatViewModal({ conversation, onClose }: ChatViewModalPr
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-[#9ca3af]" />
+              <Loader2 className="h-6 w-6 animate-spin text-[#cbd5e1]" />
             </div>
           ) : messages.length === 0 ? (
-            <p className="text-center text-[#6b7280] py-12">No messages in this conversation.</p>
+            <p className="text-center text-[#94a3b8] py-12">No messages in this conversation.</p>
           ) : (
             messages.map((msg) => (
               <div
@@ -86,7 +86,7 @@ export default function ChatViewModal({ conversation, onClose }: ChatViewModalPr
                 className={cn(
                   'rounded-xl px-4 py-3 max-w-[85%]',
                   msg.role === 'user'
-                    ? 'ml-auto bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#e5e7eb]'
+                    ? 'ml-auto bg-[#10b981]/10 border border-[#10b981]/20 text-[#e5e7eb]'
                     : 'mr-auto bg-white/[0.04] border border-white/[0.06] text-[#d1d5db]',
                 )}
               >

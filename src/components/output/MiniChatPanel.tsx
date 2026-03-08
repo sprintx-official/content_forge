@@ -49,7 +49,7 @@ export default function MiniChatPanel({ contentContext }: MiniChatPanelProps) {
         )}
       >
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-[#00f0ff]/50" />
+          <MessageSquare className="w-4 h-4 text-[#10b981]/50" />
           <span className="text-sm font-medium text-white/50">
             Ask AI about this content
           </span>

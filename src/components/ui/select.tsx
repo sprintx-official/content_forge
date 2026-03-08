@@ -24,7 +24,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="mb-1.5 block text-sm font-medium text-[#9ca3af]"
+            className="mb-1.5 block text-sm font-medium text-[#cbd5e1]"
           >
             {label}
           </label>
@@ -33,8 +33,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           <select
             id={selectId}
             className={cn(
-              'flex h-10 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-10 text-sm text-[#f9fafb] transition-all duration-200',
-              'focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30',
+              'flex h-10 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-10 text-sm text-[#f8fafc] transition-all duration-200',
+              'focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30',
               'disabled:cursor-not-allowed disabled:opacity-50',
               className,
             )}
@@ -44,17 +44,17 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
           >
             {placeholder && (
-              <option value="" className="bg-[#0a0e1a] text-[#9ca3af]">
+              <option value="" className="bg-[#0f172a] text-[#cbd5e1]">
                 {placeholder}
               </option>
             )}
             {options.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#0a0e1a] text-[#f9fafb]">
+              <option key={opt.value} value={opt.value} className="bg-[#0f172a] text-[#f8fafc]">
                 {opt.label}
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#cbd5e1]" />
         </div>
       </div>
     )

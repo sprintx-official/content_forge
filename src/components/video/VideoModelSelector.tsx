@@ -86,7 +86,7 @@ export function VideoModelSelector() {
           'w-full flex items-center justify-between',
           'bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-left',
           'hover:border-white/20 transition-all cursor-pointer',
-          selectedModel ? 'text-[#f9fafb]' : 'text-white/30',
+          selectedModel ? 'text-[#f8fafc]' : 'text-white/30',
         )}
       >
         <span className="truncate">{selectedLabel}</span>
@@ -106,14 +106,14 @@ export function VideoModelSelector() {
               className={cn(
                 'w-full text-left px-4 py-2.5 transition-colors cursor-pointer',
                 selectedModel?.modelId === model.id
-                  ? 'bg-[#00f0ff]/10'
+                  ? 'bg-[#10b981]/10'
                   : 'hover:bg-white/5',
               )}
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={cn(
                   'text-sm',
-                  selectedModel?.modelId === model.id ? 'text-[#00f0ff]' : 'text-[#d1d5db]',
+                  selectedModel?.modelId === model.id ? 'text-[#10b981]' : 'text-[#d1d5db]',
                 )}>
                   {model.name}
                 </span>
@@ -124,7 +124,7 @@ export function VideoModelSelector() {
                 ))}
               </div>
               {model.description && (
-                <p className="text-xs text-[#6b7280] mt-0.5 line-clamp-1">{model.description}</p>
+                <p className="text-xs text-[#94a3b8] mt-0.5 line-clamp-1">{model.description}</p>
               )}
             </button>
           ))}

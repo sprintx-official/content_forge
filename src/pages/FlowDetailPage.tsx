@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import type { AnyFlow, Workflow, User } from '../types'
 import { SYSTEM_FLOWS } from '../constants/systemFlows'
 import { api } from '../lib/api'
+import { formatFrequency } from '../lib/frequency'
 import { FlowRunTab } from '../components/flows/FlowRunTab'
 import { FlowHistoryTab } from '../components/flows/FlowHistoryTab'
 import { FlowMonitorTab } from '../components/flows/FlowMonitorTab'
@@ -76,9 +77,9 @@ function FlowDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-8 h-8 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading flow...</p>
         </div>
       </div>
@@ -87,14 +88,14 @@ function FlowDetailPage() {
 
   if (error || !flow) {
     return (
-      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="p-4 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg mb-4">
             Error: {error || 'Flow not found'}
           </div>
           <button
             onClick={() => navigate('/flows')}
-            className="px-4 py-2 bg-[#00f0ff] text-[#0a0e1a] font-medium rounded hover:bg-[#00f0ff]/90 transition-colors"
+            className="px-4 py-2 bg-[#10b981] text-[#0f172a] font-medium rounded hover:bg-[#10b981]/90 transition-colors"
           >
             Back to Flows
           </button>
@@ -119,12 +120,12 @@ function FlowDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]">
+    <div className="min-h-screen bg-[#0f172a]">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <button
           onClick={() => navigate('/flows')}
-          className="flex items-center gap-2 text-[#00f0ff] hover:text-[#00f0ff]/80 mb-4 transition-colors"
+          className="flex items-center gap-2 text-[#10b981] hover:text-[#10b981]/80 mb-4 transition-colors"
         >
           <ArrowLeft size={16} />
           Back to Flows
@@ -133,13 +134,18 @@ function FlowDetailPage() {
         <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg p-6 mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">{flow.name}</h1>
           <p className="text-gray-400 mb-4">{flow.description}</p>
-          <div className="flex gap-2">
-            <span className="px-3 py-1 text-sm rounded font-medium" style={{ backgroundColor: '#00f0ff' + '30', color: '#00f0ff' }}>
+          <div className="flex gap-2 flex-wrap">
+            <span className="px-3 py-1 text-sm rounded font-medium" style={{ backgroundColor: '#10b981' + '30', color: '#10b981' }}>
               {flow.type}
             </span>
             <span className="px-3 py-1 text-sm rounded font-medium bg-white/10 text-white/70">
               {flow.mode}
             </span>
+            {'frequency' in flow && flow.frequency && (
+              <span className="px-3 py-1 text-sm rounded font-medium bg-purple-500/20 text-purple-300">
+                Every {formatFrequency(flow.frequency)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -152,7 +158,7 @@ function FlowDetailPage() {
                 onClick={() => setSearchParams({ tab: t.id })}
                 className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
                   tab === t.id
-                    ? 'border-[#00f0ff] text-[#00f0ff]'
+                    ? 'border-[#10b981] text-[#10b981]'
                     : 'border-transparent text-gray-400 hover:text-gray-300'
                 }`}
               >

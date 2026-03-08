@@ -16,7 +16,7 @@ export function FeedbackButton() {
       onClick={openModal}
       className={cn(
         'fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-4 py-3',
-        'bg-[#a855f7] text-white font-semibold shadow-[0_0_20px_rgba(168,85,247,0.4)]',
+        'bg-[#6366f1] text-white font-semibold shadow-[0_0_20px_rgba(168,85,247,0.4)]',
         'hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] hover:bg-[#b96ef8] active:bg-[#9333ea]',
         'transition-all duration-200 cursor-pointer',
       )}
@@ -99,23 +99,23 @@ export function FeedbackModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a0e1a] p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f172a] p-6 shadow-2xl">
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#34d399]/15">
-              <Star className="h-6 w-6 text-[#34d399]" fill="#34d399" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#10b981]/15">
+              <Star className="h-6 w-6 text-[#10b981]" fill="#10b981" />
             </div>
-            <p className="text-lg font-semibold text-[#f9fafb]">Thank you!</p>
-            <p className="text-sm text-[#9ca3af]">Your feedback has been submitted.</p>
+            <p className="text-lg font-semibold text-[#f8fafc]">Thank you!</p>
+            <p className="text-sm text-[#cbd5e1]">Your feedback has been submitted.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#f9fafb]">Agent Feedback</h3>
+              <h3 className="text-lg font-semibold text-[#f8fafc]">Agent Feedback</h3>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+                className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -131,7 +131,7 @@ export function FeedbackModal() {
 
             {/* Star Rating */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#9ca3af]">Rating</label>
+              <label className="mb-1.5 block text-sm font-medium text-[#cbd5e1]">Rating</label>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -147,7 +147,7 @@ export function FeedbackModal() {
                         'h-7 w-7 transition-colors',
                         (hoverRating || rating) >= n
                           ? 'text-yellow-400'
-                          : 'text-[#6b7280]',
+                          : 'text-[#94a3b8]',
                       )}
                       fill={(hoverRating || rating) >= n ? 'currentColor' : 'none'}
                     />

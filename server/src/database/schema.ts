@@ -60,6 +60,9 @@ async function runMigrations(): Promise<void> {
   if (!workflowCols.some((c) => c.column_name === 'pipeline_agent_id')) {
     await exec("ALTER TABLE workflows ADD COLUMN pipeline_agent_id TEXT REFERENCES agents(id) ON DELETE SET NULL")
   }
+  if (!workflowCols.some((c) => c.column_name === 'frequency')) {
+    await exec("ALTER TABLE workflows ADD COLUMN frequency INTEGER DEFAULT 1440")
+  }
 
   // Migration: Add workflow_id to history
   const historyCols = await query<{ column_name: string }>(

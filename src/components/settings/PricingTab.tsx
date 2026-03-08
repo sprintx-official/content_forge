@@ -136,10 +136,10 @@ export default function PricingTab() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-[#f9fafb] mb-1">
+          <h3 className="text-lg font-semibold text-[#f8fafc] mb-1">
             Model Pricing
           </h3>
-          <p className="text-sm text-[#9ca3af]">
+          <p className="text-sm text-[#cbd5e1]">
             Configure pricing per model to accurately calculate API costs.
             Prices are per 1 million tokens.
           </p>
@@ -152,18 +152,18 @@ export default function PricingTab() {
 
       {/* Add/Edit Form */}
       {editing && (
-        <div className="rounded-xl border border-[#00f0ff]/30 bg-[#00f0ff]/5 p-5 space-y-4">
-          <h4 className="text-sm font-medium text-[#f9fafb]">
+        <div className="rounded-xl border border-[#10b981]/30 bg-[#10b981]/5 p-5 space-y-4">
+          <h4 className="text-sm font-medium text-[#f8fafc]">
             {editing.id ? 'Edit Pricing' : 'Add New Pricing'}
           </h4>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#9ca3af] mb-1">Provider</label>
+              <label className="block text-xs text-[#cbd5e1] mb-1">Provider</label>
               <select
                 value={editing.provider}
                 onChange={(e) => setEditing({ ...editing, provider: e.target.value as AiProvider })}
-                className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-[#f9fafb] focus:outline-none focus:border-[#00f0ff]/60"
+                className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-[#f8fafc] focus:outline-none focus:border-[#10b981]/60"
               >
                 {PROVIDERS.map((p) => (
                   <option key={p.id} value={p.id} className="bg-[#1a1a2e]">
@@ -173,19 +173,19 @@ export default function PricingTab() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#9ca3af] mb-1">Model Pattern</label>
+              <label className="block text-xs text-[#cbd5e1] mb-1">Model Pattern</label>
               <Input
                 placeholder="e.g. gpt-4o-mini"
                 value={editing.modelPattern}
                 onChange={(e) => setEditing({ ...editing, modelPattern: e.target.value })}
               />
-              <p className="text-[10px] text-[#6b7280] mt-1">Prefix match (e.g. "gpt-4" matches "gpt-4-turbo")</p>
+              <p className="text-[10px] text-[#94a3b8] mt-1">Prefix match (e.g. "gpt-4" matches "gpt-4-turbo")</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-[#9ca3af] mb-1">Input ($/1M tokens)</label>
+              <label className="block text-xs text-[#cbd5e1] mb-1">Input ($/1M tokens)</label>
               <Input
                 type="number"
                 step="0.01"
@@ -196,7 +196,7 @@ export default function PricingTab() {
               />
             </div>
             <div>
-              <label className="block text-xs text-[#9ca3af] mb-1">Cached Input ($/1M)</label>
+              <label className="block text-xs text-[#cbd5e1] mb-1">Cached Input ($/1M)</label>
               <Input
                 type="number"
                 step="0.01"
@@ -205,10 +205,10 @@ export default function PricingTab() {
                 value={editing.cachedInputPricePerMillion}
                 onChange={(e) => setEditing({ ...editing, cachedInputPricePerMillion: e.target.value })}
               />
-              <p className="text-[10px] text-[#6b7280] mt-1">Usually ~25% of input price</p>
+              <p className="text-[10px] text-[#94a3b8] mt-1">Usually ~25% of input price</p>
             </div>
             <div>
-              <label className="block text-xs text-[#9ca3af] mb-1">Output ($/1M tokens)</label>
+              <label className="block text-xs text-[#cbd5e1] mb-1">Output ($/1M tokens)</label>
               <Input
                 type="number"
                 step="0.01"
@@ -251,8 +251,8 @@ export default function PricingTab() {
               className="rounded-xl border border-white/10 bg-white/5 overflow-hidden"
             >
               <div className="px-4 py-3 border-b border-white/10 bg-white/5">
-                <span className="text-sm font-medium text-[#f9fafb]">{provider.name}</span>
-                <span className="text-xs text-[#6b7280] ml-2">
+                <span className="text-sm font-medium text-[#f8fafc]">{provider.name}</span>
+                <span className="text-xs text-[#94a3b8] ml-2">
                   {providerPricing.length} model{providerPricing.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -266,12 +266,12 @@ export default function PricingTab() {
                     <div className="flex items-center gap-3">
                       <DollarSign className="h-4 w-4 text-emerald-400" />
                       <div>
-                        <p className="text-sm font-medium text-[#f9fafb]">
+                        <p className="text-sm font-medium text-[#f8fafc]">
                           {pricing.modelPattern}
                         </p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#9ca3af] mt-0.5">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#cbd5e1] mt-0.5">
                           <span>
-                            Input: <span className="text-[#00f0ff]">${pricing.inputPricePerMillion}</span>/1M
+                            Input: <span className="text-[#10b981]">${pricing.inputPricePerMillion}</span>/1M
                           </span>
                           {pricing.cachedInputPricePerMillion > 0 && (
                             <span>
@@ -279,7 +279,7 @@ export default function PricingTab() {
                             </span>
                           )}
                           <span>
-                            Output: <span className="text-[#a855f7]">${pricing.outputPricePerMillion}</span>/1M
+                            Output: <span className="text-[#6366f1]">${pricing.outputPricePerMillion}</span>/1M
                           </span>
                         </div>
                       </div>
@@ -311,7 +311,7 @@ export default function PricingTab() {
         })}
 
         {modelPricing.length === 0 && (
-          <div className="text-center py-12 text-[#6b7280]">
+          <div className="text-center py-12 text-[#94a3b8]">
             <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p className="text-sm">No pricing configured yet.</p>
             <p className="text-xs mt-1">Add model pricing to enable accurate cost tracking.</p>

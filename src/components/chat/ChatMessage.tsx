@@ -32,14 +32,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
         className={cn(
           'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
           isUser
-            ? 'bg-gradient-to-br from-[#a855f7]/20 to-[#00f0ff]/20 border border-[#a855f7]/20'
+            ? 'bg-gradient-to-br from-[#6366f1]/20 to-[#10b981]/20 border border-[#6366f1]/20'
             : 'bg-white/[0.06] border border-white/[0.08]',
         )}
       >
         {isUser ? (
-          <User className="w-4 h-4 text-[#a855f7]" />
+          <User className="w-4 h-4 text-[#6366f1]" />
         ) : (
-          <Bot className="w-4 h-4 text-[#00f0ff]" />
+          <Bot className="w-4 h-4 text-[#10b981]" />
         )}
       </div>
 
@@ -48,7 +48,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         className={cn(
           'relative max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed',
           isUser
-            ? 'bg-gradient-to-br from-[#a855f7]/10 to-[#00f0ff]/10 border border-[#a855f7]/15 text-white/90'
+            ? 'bg-gradient-to-br from-[#6366f1]/10 to-[#10b981]/10 border border-[#6366f1]/15 text-white/90'
             : 'bg-white/[0.04] border border-white/[0.08] text-white/80',
         )}
       >

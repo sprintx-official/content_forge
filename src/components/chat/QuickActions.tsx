@@ -26,7 +26,7 @@ export function QuickActions({ onAction, disabled }: QuickActionsProps) {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all',
               'bg-white/[0.04] border border-white/[0.08] text-white/40',
-              'hover:bg-[#00f0ff]/10 hover:border-[#00f0ff]/20 hover:text-[#00f0ff]/70',
+              'hover:bg-[#10b981]/10 hover:border-[#10b981]/20 hover:text-[#10b981]/70',
               'disabled:opacity-30 disabled:cursor-not-allowed',
             )}
           >

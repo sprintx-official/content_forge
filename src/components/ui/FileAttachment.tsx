@@ -158,7 +158,7 @@ export default function FileAttachment({
           'flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed transition-all duration-200',
           compact ? 'px-3 py-2' : 'px-4 py-6',
           isDragging
-            ? 'border-[#00f0ff] bg-[#00f0ff]/10 shadow-[0_0_20px_rgba(0,240,255,0.15)]'
+            ? 'border-[#10b981] bg-[#10b981]/10 shadow-[0_0_20px_rgba(0,240,255,0.15)]'
             : 'border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]',
           files.length >= maxFiles && 'pointer-events-none opacity-40'
         )}
@@ -167,14 +167,14 @@ export default function FileAttachment({
           className={cn(
             'shrink-0',
             compact ? 'h-4 w-4' : 'h-5 w-5',
-            isDragging ? 'text-[#00f0ff]' : 'text-[#6b7280]'
+            isDragging ? 'text-[#10b981]' : 'text-[#94a3b8]'
           )}
         />
         <span
           className={cn(
             'select-none',
             compact ? 'text-xs' : 'text-sm',
-            isDragging ? 'text-[#00f0ff]' : 'text-[#6b7280]'
+            isDragging ? 'text-[#10b981]' : 'text-[#94a3b8]'
           )}
         >
           Drop files here or click to browse
@@ -208,14 +208,14 @@ export default function FileAttachment({
                 />
               ) : (
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/[0.06]">
-                  <FileText className="h-5 w-5 text-[#6b7280]" />
+                  <FileText className="h-5 w-5 text-[#94a3b8]" />
                 </div>
               )}
 
               {/* File info */}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-[#f9fafb]">{file.name}</p>
-                <p className="text-xs text-[#6b7280]">
+                <p className="truncate text-sm text-[#f8fafc]">{file.name}</p>
+                <p className="text-xs text-[#94a3b8]">
                   {formatFileSize(file.size)}
                 </p>
               </div>
@@ -224,7 +224,7 @@ export default function FileAttachment({
               <button
                 type="button"
                 onClick={() => removeFile(index)}
-                className="shrink-0 rounded-md p-1 text-[#6b7280] transition-colors hover:bg-white/[0.06] hover:text-red-400"
+                className="shrink-0 rounded-md p-1 text-[#94a3b8] transition-colors hover:bg-white/[0.06] hover:text-red-400"
                 aria-label={`Remove ${file.name}`}
               >
                 <X className="h-4 w-4" />

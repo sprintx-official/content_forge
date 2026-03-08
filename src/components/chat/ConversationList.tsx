@@ -36,8 +36,8 @@ export function ConversationList({
           onClick={onCreate}
           className={cn(
             'w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
-            'bg-[#00f0ff]/10 border border-[#00f0ff]/20 text-[#00f0ff]',
-            'hover:bg-[#00f0ff]/20 hover:shadow-[0_0_12px_rgba(0,240,255,0.1)]',
+            'bg-[#10b981]/10 border border-[#10b981]/20 text-[#10b981]',
+            'hover:bg-[#10b981]/20 hover:shadow-[0_0_12px_rgba(0,240,255,0.1)]',
           )}
         >
           <Plus className="w-4 h-4" />
@@ -54,7 +54,7 @@ export function ConversationList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chats..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[#00f0ff]/20"
+            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/20 focus:outline-none focus:border-[#10b981]/20"
           />
         </div>
       </div>
@@ -83,7 +83,7 @@ export function ConversationList({
               className={cn(
                 'group w-full text-left px-3 py-2.5 rounded-lg mb-0.5 transition-all',
                 isActive
-                  ? 'bg-[#00f0ff]/10 border border-[#00f0ff]/15'
+                  ? 'bg-[#10b981]/10 border border-[#10b981]/15'
                   : 'hover:bg-white/[0.04] border border-transparent',
               )}
             >

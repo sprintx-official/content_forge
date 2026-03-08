@@ -21,7 +21,7 @@ function StarDisplay({ rating }: { rating: number }) {
           key={n}
           className={cn(
             'h-4 w-4',
-            n <= rating ? 'text-yellow-400' : 'text-[#6b7280]',
+            n <= rating ? 'text-yellow-400' : 'text-[#94a3b8]',
           )}
           fill={n <= rating ? 'currentColor' : 'none'}
         />
@@ -71,7 +71,7 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <h3 className="text-lg font-semibold text-[#f9fafb]">
+        <h3 className="text-lg font-semibold text-[#f8fafc]">
           Feedback for {agentName}
         </h3>
       </div>
@@ -89,7 +89,7 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
 
       {/* Feedback list */}
       {items.length === 0 ? (
-        <p className="text-center text-[#9ca3af] py-8">No feedback yet.</p>
+        <p className="text-center text-[#cbd5e1] py-8">No feedback yet.</p>
       ) : (
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
           {items
@@ -101,7 +101,7 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-[#f9fafb]">
+                    <span className="text-sm font-medium text-[#f8fafc]">
                       {item.userName}
                     </span>
                     <Badge variant="outline">{item.userId === 'anonymous' ? 'guest' : 'user'}</Badge>
@@ -112,14 +112,14 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(item.id)}
-                      className="text-[#9ca3af] hover:text-red-400"
+                      className="text-[#cbd5e1] hover:text-red-400"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
                 <p className="text-sm text-[#d1d5db]">{item.text}</p>
-                <p className="text-xs text-[#6b7280]">
+                <p className="text-xs text-[#94a3b8]">
                   {new Date(item.createdAt).toLocaleDateString()} &middot;{' '}
                   {new Date(item.createdAt).toLocaleTimeString()}
                 </p>

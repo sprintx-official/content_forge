@@ -93,17 +93,17 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
   const platformLabel = Object.fromEntries(PLATFORMS.map(p => [p.id, p.label]))
   const currentPlatform = PLATFORMS.find(p => p.id === platform)
 
-  if (loading) return <div className="text-[#9ca3af] py-4">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1] py-4">Loading...</div>
 
   return (
     <div className="space-y-4">
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">{message}</div>
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">{message}</div>
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#9ca3af]">{accounts.length} account{accounts.length !== 1 ? 's' : ''} connected</p>
-        <button onClick={() => setShowForm(!showForm)} className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1">
+        <p className="text-sm text-[#cbd5e1]">{accounts.length} account{accounts.length !== 1 ? 's' : ''} connected</p>
+        <button onClick={() => setShowForm(!showForm)} className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1">
           <Plus className="h-3 w-3" /> Add
         </button>
       </div>
@@ -111,53 +111,53 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
       {showForm && (
         <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-2">
           <div className="flex gap-2">
-            <select value={platform} onChange={e => setPlatform(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs">
+            <select value={platform} onChange={e => setPlatform(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs">
               {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
             <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)}
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
           </div>
-          {currentPlatform && <p className="text-[10px] text-[#9ca3af]">{currentPlatform.help}</p>}
+          {currentPlatform && <p className="text-[10px] text-[#cbd5e1]">{currentPlatform.help}</p>}
 
           {platform === 'x' ? (
             <div className="space-y-1.5">
               <input type="password" placeholder="API Key" value={xForm.apiKey} onChange={e => setXForm({ ...xForm, apiKey: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
               <input type="password" placeholder="API Secret" value={xForm.apiSecret} onChange={e => setXForm({ ...xForm, apiSecret: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
               <input type="password" placeholder="Access Token" value={xForm.accessToken} onChange={e => setXForm({ ...xForm, accessToken: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
               <input type="password" placeholder="Access Token Secret" value={xForm.accessTokenSecret} onChange={e => setXForm({ ...xForm, accessTokenSecret: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
             </div>
           ) : (
             <div className="space-y-1.5">
               <input type="password" placeholder="Access Token" value={genericForm.accessToken} onChange={e => setGenericForm({ ...genericForm, accessToken: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
               <input type="text" placeholder={platform === 'facebook' ? 'Page ID' : platform === 'linkedin' ? 'Organization ID' : 'Account ID'}
                 value={genericForm.platformUserId} onChange={e => setGenericForm({ ...genericForm, platformUserId: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f9fafb] text-xs" />
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[#f8fafc] text-xs" />
             </div>
           )}
 
           <div className="flex gap-2">
-            <button onClick={create} className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-3 py-1.5 text-xs font-medium">Connect</button>
-            <button onClick={() => setShowForm(false)} className="text-[#9ca3af] px-3 py-1.5 text-xs">Cancel</button>
+            <button onClick={create} className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-3 py-1.5 text-xs font-medium">Connect</button>
+            <button onClick={() => setShowForm(false)} className="text-[#cbd5e1] px-3 py-1.5 text-xs">Cancel</button>
           </div>
         </div>
       )}
 
       {accounts.map(a => (
         <div key={a.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-          <div className="text-sm text-[#f9fafb]">
+          <div className="text-sm text-[#f8fafc]">
             {platformLabel[a.platform] || a.platform}
-            {a.platform_username && <span className="text-[#9ca3af] ml-1">@{a.platform_username}</span>}
+            {a.platform_username && <span className="text-[#cbd5e1] ml-1">@{a.platform_username}</span>}
           </div>
           <div className="flex gap-1">
-            <button onClick={() => test(a.id)} disabled={testing === a.id} className="text-[#9ca3af] hover:text-[#00f0ff] p-1 disabled:opacity-50">
+            <button onClick={() => test(a.id)} disabled={testing === a.id} className="text-[#cbd5e1] hover:text-[#10b981] p-1 disabled:opacity-50">
               <Zap className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => remove(a.id)} className="text-[#9ca3af] hover:text-red-400 p-1">
+            <button onClick={() => remove(a.id)} className="text-[#cbd5e1] hover:text-red-400 p-1">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -165,7 +165,7 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
       ))}
 
       {accounts.length === 0 && !showForm && (
-        <p className="text-xs text-[#9ca3af] text-center py-4">No social accounts. Click Add to connect one.</p>
+        <p className="text-xs text-[#cbd5e1] text-center py-4">No social accounts. Click Add to connect one.</p>
       )}
     </div>
   )

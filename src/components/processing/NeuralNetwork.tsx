@@ -89,13 +89,13 @@ export function NeuralNetwork({ stages }: NeuralNetworkProps) {
       >
         <defs>
           <linearGradient id="activeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#a855f7" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+            <stop offset="50%" stopColor="#6366f1" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.8" />
           </linearGradient>
           <linearGradient id="completedGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#34d399" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="#34d399" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.4" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="0.3" result="coloredBlur" />
@@ -128,8 +128,8 @@ export function NeuralNetwork({ stages }: NeuralNetworkProps) {
                 strokeWidth={isActive ? 0.4 : 0.25}
                 className={cn(
                   'transition-all duration-700',
-                  isActive && 'stroke-[#00f0ff]',
-                  isCompleted && 'stroke-[#34d399]',
+                  isActive && 'stroke-[#10b981]',
+                  isCompleted && 'stroke-[#10b981]',
                   !isActive && !isCompleted && 'stroke-white/10',
                 )}
                 strokeOpacity={isActive ? 0.6 : isCompleted ? 0.5 : 0.15}
@@ -150,14 +150,14 @@ export function NeuralNetwork({ stages }: NeuralNetworkProps) {
 
               {isActive && (
                 <>
-                  <circle r="0.6" fill="#00f0ff" filter="url(#glow)">
+                  <circle r="0.6" fill="#10b981" filter="url(#glow)">
                     <animateMotion
                       dur="2s"
                       repeatCount="indefinite"
                       path={pathD}
                     />
                   </circle>
-                  <circle r="0.4" fill="#a855f7" filter="url(#glow)">
+                  <circle r="0.4" fill="#6366f1" filter="url(#glow)">
                     <animateMotion
                       dur="2s"
                       repeatCount="indefinite"

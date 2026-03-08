@@ -86,7 +86,7 @@ export default function FileUploadPanel({ agentId, files, onChange }: FileUpload
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-[#9ca3af]">
+      <label className="block text-sm font-medium text-[#cbd5e1]">
         Knowledge Base Files
       </label>
 
@@ -102,18 +102,18 @@ export default function FileUploadPanel({ agentId, files, onChange }: FileUpload
         className={cn(
           'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 cursor-pointer transition-all duration-200',
           dragging
-            ? 'border-[#00f0ff]/60 bg-[#00f0ff]/5'
+            ? 'border-[#10b981]/60 bg-[#10b981]/5'
             : 'border-white/10 bg-white/[0.02] hover:border-white/20',
           uploading && 'pointer-events-none opacity-50',
         )}
       >
-        <Upload className="h-6 w-6 text-[#9ca3af]" />
-        <p className="text-sm text-[#9ca3af]">
+        <Upload className="h-6 w-6 text-[#cbd5e1]" />
+        <p className="text-sm text-[#cbd5e1]">
           {uploading ? 'Uploading...' : (
-            <>Drag & drop files here or <span className="text-[#00f0ff] underline">browse</span></>
+            <>Drag & drop files here or <span className="text-[#10b981] underline">browse</span></>
           )}
         </p>
-        <p className="text-xs text-[#6b7280]">.txt, .md, .pdf, .doc, .docx</p>
+        <p className="text-xs text-[#94a3b8]">.txt, .md, .pdf, .doc, .docx</p>
         <input
           ref={inputRef}
           type="file"
@@ -139,10 +139,10 @@ export default function FileUploadPanel({ agentId, files, onChange }: FileUpload
               key={file.id}
               className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
             >
-              <FileText className="h-4 w-4 shrink-0 text-[#00f0ff]" />
+              <FileText className="h-4 w-4 shrink-0 text-[#10b981]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-[#f9fafb]">{file.name}</p>
-                <p className="text-xs text-[#6b7280]">
+                <p className="truncate text-sm text-[#f8fafc]">{file.name}</p>
+                <p className="text-xs text-[#94a3b8]">
                   {formatSize(file.size)} &middot;{' '}
                   {new Date(file.uploadedAt).toLocaleDateString()}
                 </p>
@@ -152,7 +152,7 @@ export default function FileUploadPanel({ agentId, files, onChange }: FileUpload
                 variant="ghost"
                 size="sm"
                 onClick={() => handleRemove(file.id)}
-                className="text-[#9ca3af] hover:text-red-400"
+                className="text-[#cbd5e1] hover:text-red-400"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>

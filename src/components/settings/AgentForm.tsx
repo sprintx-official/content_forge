@@ -130,13 +130,13 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
     <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#f9fafb]">
+        <h3 className="text-lg font-semibold text-[#f8fafc]">
           {isEditing ? `Configure: ${editingAgent.name}` : 'New Agent'}
         </h3>
         <button
           type="button"
           onClick={() => onClose()}
-          className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+          className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
@@ -155,10 +155,10 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
               className={cn(
                 'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap',
                 activeTab === id
-                  ? 'bg-[#00f0ff]/10 text-[#00f0ff]'
+                  ? 'bg-[#10b981]/10 text-[#10b981]'
                   : disabled
                     ? 'text-white/20 cursor-not-allowed'
-                    : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5',
+                    : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5',
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -167,7 +167,7 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
           )
         })}
         {!isEditing && (
-          <span className="text-[10px] text-[#9ca3af] self-center ml-2">Save agent to unlock other tabs</span>
+          <span className="text-[10px] text-[#cbd5e1] self-center ml-2">Save agent to unlock other tabs</span>
         )}
       </div>
 
@@ -183,7 +183,7 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
             <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-[#d1d5db]">AI Model</label>
               <button type="button" onClick={handleRefreshModels} disabled={refreshingModels}
-                className="flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#22d3ee] transition-colors disabled:opacity-50">
+                className="flex items-center gap-1 text-xs text-[#cbd5e1] hover:text-[#22d3ee] transition-colors disabled:opacity-50">
                 <RefreshCw className={`h-3 w-3 ${refreshingModels ? 'animate-spin' : ''}`} />
                 {refreshingModels ? 'Refreshing...' : 'Refresh models'}
               </button>
@@ -226,6 +226,7 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
       {activeTab === 'cms' && agentId && <CmsTab agentId={agentId} />}
       {activeTab === 'social' && agentId && <AgentSocialTab agentId={agentId} />}
       {activeTab === 'templates' && agentId && <AgentImageTemplateTab agentId={agentId} />}
+
     </div>
   )
 }

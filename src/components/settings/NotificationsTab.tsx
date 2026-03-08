@@ -66,35 +66,35 @@ export default function NotificationsTab() {
     }
   }
 
-  if (loading) return <div className="text-[#9ca3af]">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1]">Loading...</div>
   if (!prefs) return <div className="text-red-400">Failed to load preferences</div>
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-[#f9fafb] mb-1 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-[#00f0ff]" />
+        <h2 className="text-xl font-semibold text-[#f8fafc] mb-1 flex items-center gap-2">
+          <Bell className="h-5 w-5 text-[#10b981]" />
           Notification Preferences
         </h2>
-        <p className="text-sm text-[#9ca3af]">Configure email digests and push notifications.</p>
+        <p className="text-sm text-[#cbd5e1]">Configure email digests and push notifications.</p>
       </div>
 
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-[#f9fafb] mb-2">
+          <label className="block text-sm font-medium text-[#f8fafc] mb-2">
             <Mail className="h-4 w-4 inline mr-1.5" />
             Email Digest Frequency
           </label>
           <select
             value={prefs.digest_frequency}
             onChange={e => setPrefs({ ...prefs, digest_frequency: e.target.value as EmailPreferences['digest_frequency'] })}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm w-full max-w-xs"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm w-full max-w-xs"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -108,21 +108,21 @@ export default function NotificationsTab() {
               type="checkbox"
               checked={prefs.breaking_news === 1}
               onChange={e => setPrefs({ ...prefs, breaking_news: e.target.checked ? 1 : 0 })}
-              className="rounded border-white/20 bg-white/5 text-[#00f0ff]"
+              className="rounded border-white/20 bg-white/5 text-[#10b981]"
             />
-            <span className="text-sm text-[#f9fafb]">Breaking news alerts</span>
+            <span className="text-sm text-[#f8fafc]">Breaking news alerts</span>
           </label>
-          <p className="text-xs text-[#9ca3af] mt-1 ml-6">Get notified when critical/high urgency posts are generated.</p>
+          <p className="text-xs text-[#cbd5e1] mt-1 ml-6">Get notified when critical/high urgency posts are generated.</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#f9fafb] mb-2">Timezone</label>
+          <label className="block text-sm font-medium text-[#f8fafc] mb-2">Timezone</label>
           <input
             type="text"
             value={prefs.timezone}
             onChange={e => setPrefs({ ...prefs, timezone: e.target.value })}
             placeholder="e.g. America/New_York"
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm w-full max-w-xs"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm w-full max-w-xs"
           />
         </div>
 
@@ -130,14 +130,14 @@ export default function NotificationsTab() {
           <button
             onClick={save}
             disabled={saving}
-            className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+            className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Preferences'}
           </button>
           <button
             onClick={testDigest}
             disabled={testingSend !== null}
-            className="bg-white/5 hover:bg-white/10 text-[#9ca3af] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="bg-white/5 hover:bg-white/10 text-[#cbd5e1] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             <Send className="h-3.5 w-3.5" />
             {testingSend === 'digest' ? 'Sending...' : 'Test Digest'}
@@ -145,7 +145,7 @@ export default function NotificationsTab() {
           <button
             onClick={testPush}
             disabled={testingSend !== null}
-            className="bg-white/5 hover:bg-white/10 text-[#9ca3af] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="bg-white/5 hover:bg-white/10 text-[#cbd5e1] rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             <Bell className="h-3.5 w-3.5" />
             {testingSend === 'push' ? 'Sending...' : 'Test Push'}

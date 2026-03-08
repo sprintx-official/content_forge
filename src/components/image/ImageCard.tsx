@@ -28,7 +28,7 @@ export function ImageCard({ image, onDelete, onView }: ImageCardProps) {
     <div
       className={cn(
         'group relative rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02]',
-        'cursor-pointer transition-all hover:border-[#00f0ff]/20 hover:shadow-[0_0_20px_rgba(0,240,255,0.05)]',
+        'cursor-pointer transition-all hover:border-[#10b981]/20 hover:shadow-[0_0_20px_rgba(0,240,255,0.05)]',
       )}
       onClick={() => onView(image)}
     >

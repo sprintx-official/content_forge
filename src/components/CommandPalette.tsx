@@ -118,7 +118,7 @@ export default function CommandPalette() {
       <div className="relative w-full max-w-lg bg-[#0f1629] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-          <Search className="h-5 w-5 text-[#9ca3af] shrink-0" />
+          <Search className="h-5 w-5 text-[#cbd5e1] shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -126,15 +126,15 @@ export default function CommandPalette() {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search commands..."
-            className="flex-1 bg-transparent text-[#f9fafb] text-sm outline-none placeholder:text-[#9ca3af]"
+            className="flex-1 bg-transparent text-[#f8fafc] text-sm outline-none placeholder:text-[#cbd5e1]"
           />
-          <kbd className="text-xs text-[#9ca3af] bg-white/5 border border-white/10 rounded px-1.5 py-0.5">ESC</kbd>
+          <kbd className="text-xs text-[#cbd5e1] bg-white/5 border border-white/10 rounded px-1.5 py-0.5">ESC</kbd>
         </div>
 
         {/* Results */}
         <div className="max-h-[300px] overflow-y-auto py-2">
           {filtered.length === 0 && (
-            <p className="text-center text-sm text-[#9ca3af] py-8">No commands found</p>
+            <p className="text-center text-sm text-[#cbd5e1] py-8">No commands found</p>
           )}
           {filtered.map((cmd, i) => {
             const Icon = cmd.icon
@@ -146,8 +146,8 @@ export default function CommandPalette() {
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
                   i === selectedIndex
-                    ? 'bg-[#00f0ff]/10 text-[#00f0ff]'
-                    : 'text-[#9ca3af] hover:bg-white/5 hover:text-[#f9fafb]'
+                    ? 'bg-[#10b981]/10 text-[#10b981]'
+                    : 'text-[#cbd5e1] hover:bg-white/5 hover:text-[#f8fafc]'
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -158,7 +158,7 @@ export default function CommandPalette() {
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-white/10 flex items-center gap-4 text-xs text-[#9ca3af]">
+        <div className="px-4 py-2 border-t border-white/10 flex items-center gap-4 text-xs text-[#cbd5e1]">
           <span><kbd className="bg-white/5 border border-white/10 rounded px-1 py-0.5 mr-1">↑↓</kbd> Navigate</span>
           <span><kbd className="bg-white/5 border border-white/10 rounded px-1 py-0.5 mr-1">↵</kbd> Select</span>
           <span className="ml-auto"><kbd className="bg-white/5 border border-white/10 rounded px-1 py-0.5 mr-1">⌘K</kbd> Toggle</span>

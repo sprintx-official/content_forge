@@ -60,7 +60,7 @@ interface IconPickerProps {
 export default function IconPicker({ value, onChange }: IconPickerProps) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-[#9ca3af]">
+      <label className="mb-1.5 block text-sm font-medium text-[#cbd5e1]">
         Icon
       </label>
       <div className="grid grid-cols-10 gap-2">
@@ -75,8 +75,8 @@ export default function IconPicker({ value, onChange }: IconPickerProps) {
               className={cn(
                 'flex items-center justify-center rounded-lg p-2 transition-all duration-200 border',
                 selected
-                  ? 'border-[#00f0ff] bg-[#00f0ff]/10 text-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.2)]'
-                  : 'border-white/10 bg-white/5 text-[#9ca3af] hover:bg-white/10 hover:text-[#f9fafb]',
+                  ? 'border-[#10b981] bg-[#10b981]/10 text-[#10b981] shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+                  : 'border-white/10 bg-white/5 text-[#cbd5e1] hover:bg-white/10 hover:text-[#f8fafc]',
               )}
               title={name}
             >

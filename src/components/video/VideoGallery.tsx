@@ -37,9 +37,9 @@ export function VideoGallery({ videos, isLoading, isGenerating, onDelete, onExte
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Loading skeleton for current generation */}
       {isGenerating && (
-        <div className="aspect-video rounded-xl bg-gradient-to-br from-[#00f0ff]/5 to-[#a855f7]/5 border border-white/[0.08] animate-pulse flex items-center justify-center">
+        <div className="aspect-video rounded-xl bg-gradient-to-br from-[#10b981]/5 to-[#6366f1]/5 border border-white/[0.08] animate-pulse flex items-center justify-center">
           <div className="text-center">
-            <div className="w-8 h-8 border-2 border-[#00f0ff]/30 border-t-[#00f0ff] rounded-full animate-spin mx-auto mb-2" />
+            <div className="w-8 h-8 border-2 border-[#10b981]/30 border-t-[#10b981] rounded-full animate-spin mx-auto mb-2" />
             <span className="text-[10px] text-white/20 font-mono">GENERATING VIDEO</span>
             <p className="text-[10px] text-white/10 mt-1">This may take a few minutes</p>
           </div>

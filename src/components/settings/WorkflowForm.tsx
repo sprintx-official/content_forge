@@ -24,6 +24,8 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
   const [type, setType] = useState<'text' | 'chat' | 'image' | 'video'>('text')
   const [mode, setMode] = useState<'manual' | 'automated' | 'both'>('manual')
   const [pipelineAgentId, setPipelineAgentId] = useState('')
+  const [frequency, setFrequency] = useState<number>(1440)
+  const [customFrequency, setCustomFrequency] = useState<string>('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -41,6 +43,8 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       setType(workflow.type)
       setMode(workflow.mode)
       setPipelineAgentId(workflow.pipelineAgentId || '')
+      setFrequency(workflow.frequency || 1440)
+      setCustomFrequency('')
     }
   }, [workflow])
 
@@ -100,6 +104,17 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       return
     }
 
+    // Use custom frequency if provided, otherwise use preset
+    let finalFrequency = frequency
+    if (customFrequency.trim()) {
+      const customValue = parseInt(customFrequency, 10)
+      if (isNaN(customValue) || customValue < 5) {
+        setError('Custom frequency must be at least 5 minutes.')
+        return
+      }
+      finalFrequency = customValue
+    }
+
     const data = {
       name: name.trim(),
       description: description.trim(),
@@ -108,6 +123,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       type,
       mode,
       pipelineAgentId: pipelineAgentId || null,
+      frequency: (mode === 'automated' || mode === 'both') ? finalFrequency : undefined,
     }
 
     try {
@@ -129,14 +145,14 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#f9fafb]">
+        <h3 className="text-lg font-semibold text-[#f8fafc]">
           {workflow ? 'Edit Workflow' : 'New Workflow'}
         </h3>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+            className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -169,11 +185,11 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-sm font-medium text-[#9ca3af]">Type</label>
+          <label className="text-sm font-medium text-[#cbd5e1]">Type</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as any)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
           >
             <option value="text">Text</option>
             <option value="chat">Chat</option>
@@ -183,11 +199,11 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-[#9ca3af]">Mode</label>
+          <label className="text-sm font-medium text-[#cbd5e1]">Mode</label>
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as any)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
           >
             <option value="manual">Manual</option>
             <option value="automated">Automated</option>
@@ -197,26 +213,68 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       </div>
 
       {(mode === 'automated' || mode === 'both') && (
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">Pipeline Agent</label>
-          <select
-            value={pipelineAgentId}
-            onChange={(e) => setPipelineAgentId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
-          >
-            <option value="">Select an agent...</option>
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-[#cbd5e1]">Pipeline Agent</label>
+            <select
+              value={pipelineAgentId}
+              onChange={(e) => setPipelineAgentId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+            >
+              <option value="">Select an agent...</option>
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-[#cbd5e1] block mb-2">Run Frequency (minutes)</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {[15, 30, 60, 1440].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => {
+                    setFrequency(preset)
+                    setCustomFrequency('')
+                  }}
+                  className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    frequency === preset && !customFrequency
+                      ? 'bg-[#10b981] text-[#0f172a]'
+                      : 'bg-white/10 text-[#f8fafc] hover:bg-white/15'
+                  }`}
+                >
+                  {preset === 1440 ? '1 day' : `${preset}m`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="5"
+                placeholder="Custom minutes..."
+                value={customFrequency}
+                onChange={(e) => {
+                  setCustomFrequency(e.target.value)
+                  if (e.target.value.trim()) {
+                    setFrequency(parseInt(e.target.value, 10) || 1440)
+                  }
+                }}
+                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+              />
+            </div>
+            <p className="text-xs text-[#94a3b8] mt-2">Choose a preset or enter custom minutes (minimum 5)</p>
+          </div>
         </div>
       )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-[#9ca3af]">
+          <label className="text-sm font-medium text-[#cbd5e1]">
             Steps ({steps.length})
           </label>
           <Button type="button" variant="outline" size="sm" onClick={addStep}>
@@ -240,7 +298,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         ))}
 
         {steps.length === 0 && (
-          <p className="text-center text-[#6b7280] text-sm py-4 border border-dashed border-white/10 rounded-lg">
+          <p className="text-center text-[#94a3b8] text-sm py-4 border border-dashed border-white/10 rounded-lg">
             No steps added yet. Click "Add Step" to build your workflow.
           </p>
         )}
@@ -250,14 +308,14 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       {workflow && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#9ca3af]" />
-            <label className="text-sm font-medium text-[#9ca3af]">
+            <Users className="h-4 w-4 text-[#cbd5e1]" />
+            <label className="text-sm font-medium text-[#cbd5e1]">
               User Access ({selectedUserIds.size})
             </label>
           </div>
 
           {nonAdminMembers.length === 0 ? (
-            <p className="text-xs text-[#6b7280]">
+            <p className="text-xs text-[#94a3b8]">
               No non-admin team members to assign.
             </p>
           ) : (
@@ -271,13 +329,13 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
                     type="checkbox"
                     checked={selectedUserIds.has(member.id)}
                     onChange={() => toggleUser(member.id)}
-                    className="rounded border-white/20 bg-white/5 text-[#00f0ff] focus:ring-[#00f0ff]/30"
+                    className="rounded border-white/20 bg-white/5 text-[#10b981] focus:ring-[#10b981]/30"
                   />
                   <div className="min-w-0">
-                    <span className="text-sm text-[#f9fafb] block truncate">
+                    <span className="text-sm text-[#f8fafc] block truncate">
                       {member.name}
                     </span>
-                    <span className="text-xs text-[#6b7280] block truncate">
+                    <span className="text-xs text-[#94a3b8] block truncate">
                       {member.email}
                     </span>
                   </div>
@@ -286,7 +344,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
             </div>
           )}
 
-          <p className="text-xs text-[#6b7280]">
+          <p className="text-xs text-[#94a3b8]">
             Admin users always have access to all workflows.
           </p>
         </div>

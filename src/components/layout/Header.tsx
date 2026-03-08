@@ -31,13 +31,13 @@ export default function Header() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0e1a]/80 backdrop-blur-xl border-b border-white/10">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0f172a]/80 backdrop-blur-xl border-b border-white/10">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to={isAuthenticated ? '/forge' : '/login'} onClick={resetForge} className="flex items-center gap-2 group">
-          <Zap className="h-6 w-6 text-[#00f0ff] transition-transform duration-200 group-hover:scale-110" />
+          <Zap className="h-6 w-6 text-[#10b981] transition-transform duration-200 group-hover:scale-110" />
           <span
-            className="text-xl font-bold bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent"
+            className="text-xl font-bold bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             ContentForge
@@ -54,8 +54,8 @@ export default function Header() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                   isActive(to)
-                    ? 'text-[#00f0ff] bg-[#00f0ff]/10'
-                    : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5'
+                    ? 'text-[#10b981] bg-[#10b981]/10'
+                    : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5'
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -68,8 +68,8 @@ export default function Header() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                   isActive('/settings')
-                    ? 'text-[#00f0ff] bg-[#00f0ff]/10'
-                    : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5'
+                    ? 'text-[#10b981] bg-[#10b981]/10'
+                    : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5'
                 )}
               >
                 <Settings className="h-4 w-4" />
@@ -83,11 +83,11 @@ export default function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
-              <kbd className="text-xs text-[#9ca3af] bg-white/5 border border-white/10 rounded px-1.5 py-0.5 cursor-pointer hover:bg-white/10"
+              <kbd className="text-xs text-[#cbd5e1] bg-white/5 border border-white/10 rounded px-1.5 py-0.5 cursor-pointer hover:bg-white/10"
                    onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}>
                 ⌘K
               </kbd>
-              <span className="text-sm text-[#9ca3af]">
+              <span className="text-sm text-[#cbd5e1]">
                 {user?.name}
               </span>
               <Button variant="ghost" size="sm" onClick={logout}>
@@ -107,7 +107,7 @@ export default function Header() {
 
         {/* Mobile Hamburger */}
         <button
-          className="inline-flex items-center justify-center rounded-lg p-2 text-[#9ca3af] transition-colors hover:bg-white/5 hover:text-[#f9fafb] md:hidden"
+          className="inline-flex items-center justify-center rounded-lg p-2 text-[#cbd5e1] transition-colors hover:bg-white/5 hover:text-[#f8fafc] md:hidden"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle menu"
         >
@@ -121,7 +121,7 @@ export default function Header() {
 
       {/* Mobile Dropdown */}
       {mobileMenuOpen && (
-        <div className="border-t border-white/10 bg-[#0a0e1a]/95 backdrop-blur-xl md:hidden">
+        <div className="border-t border-white/10 bg-[#0f172a]/95 backdrop-blur-xl md:hidden">
           <div className="space-y-1 px-4 py-3">
             {isAuthenticated &&
               navLinks.map(({ to, label, icon: Icon }) => (
@@ -132,8 +132,8 @@ export default function Header() {
                   className={cn(
                     'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                     isActive(to)
-                      ? 'text-[#00f0ff] bg-[#00f0ff]/10'
-                      : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5'
+                      ? 'text-[#10b981] bg-[#10b981]/10'
+                      : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -147,8 +147,8 @@ export default function Header() {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive('/settings')
-                    ? 'text-[#00f0ff] bg-[#00f0ff]/10'
-                    : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5'
+                    ? 'text-[#10b981] bg-[#10b981]/10'
+                    : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5'
                 )}
               >
                 <Settings className="h-4 w-4" />
@@ -160,15 +160,15 @@ export default function Header() {
 
             {isAuthenticated ? (
               <>
-                <div className="px-3 py-2 text-sm text-[#9ca3af]">
-                  Signed in as <span className="text-[#f9fafb]">{user?.name}</span>
+                <div className="px-3 py-2 text-sm text-[#cbd5e1]">
+                  Signed in as <span className="text-[#f8fafc]">{user?.name}</span>
                 </div>
                 <button
                   onClick={() => {
                     logout()
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#9ca3af] transition-colors hover:bg-white/5 hover:text-[#f9fafb]"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#cbd5e1] transition-colors hover:bg-white/5 hover:text-[#f8fafc]"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -178,7 +178,7 @@ export default function Header() {
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#9ca3af] transition-colors hover:bg-white/5 hover:text-[#f9fafb]"
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#cbd5e1] transition-colors hover:bg-white/5 hover:text-[#f8fafc]"
               >
                 <LogIn className="h-4 w-4" />
                 Login

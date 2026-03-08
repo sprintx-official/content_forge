@@ -98,7 +98,7 @@ export function AgentNodes({ stages }: AgentNodesProps) {
                   className={cn(
                     'absolute rounded-full',
                     isMain ? 'w-28 h-28 md:w-32 md:h-32' : 'w-24 h-24 md:w-28 md:h-28',
-                    'bg-[#00f0ff]/5 animate-ping',
+                    'bg-[#10b981]/5 animate-ping',
                   )}
                   style={{ animationDuration: '2s' }}
                 />
@@ -109,24 +109,24 @@ export function AgentNodes({ stages }: AgentNodesProps) {
                   'border backdrop-blur-sm transition-all duration-500',
                   isMain ? 'w-22 h-22 md:w-26 md:h-26' : 'w-20 h-20 md:w-24 md:h-24',
                   'bg-white/5 border-white/20',
-                  isActive && ['border-[#00f0ff] bg-[#00f0ff]/10', 'shadow-[0_0_30px_rgba(0,240,255,0.3)]', 'scale-110'],
-                  isCompleted && ['border-[#34d399] bg-[#34d399]/10', 'shadow-[0_0_20px_rgba(52,211,153,0.2)]'],
+                  isActive && ['border-[#10b981] bg-[#10b981]/10', 'shadow-[0_0_30px_rgba(0,240,255,0.3)]', 'scale-110'],
+                  isCompleted && ['border-[#10b981] bg-[#10b981]/10', 'shadow-[0_0_20px_rgba(52,211,153,0.2)]'],
                 )}
               >
                 <Icon
                   className={cn(
                     'transition-colors duration-500',
                     isMain ? 'w-7 h-7 md:w-8 md:h-8' : 'w-5 h-5 md:w-6 md:h-6',
-                    isActive && 'text-[#00f0ff]',
-                    isCompleted && 'text-[#34d399]',
+                    isActive && 'text-[#10b981]',
+                    isCompleted && 'text-[#10b981]',
                     !isActive && !isCompleted && 'text-white/40',
                   )}
                 />
                 <span
                   className={cn(
                     'text-[10px] md:text-xs font-medium tracking-wide transition-colors duration-500',
-                    isActive && 'text-[#00f0ff]',
-                    isCompleted && 'text-[#34d399]',
+                    isActive && 'text-[#10b981]',
+                    isCompleted && 'text-[#10b981]',
                     !isActive && !isCompleted && 'text-white/40',
                   )}
                 >
@@ -134,13 +134,13 @@ export function AgentNodes({ stages }: AgentNodesProps) {
                 </span>
                 {isActive && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00f0ff] opacity-75" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[#00f0ff]" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[#10b981]" />
                   </span>
                 )}
                 {isCompleted && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[#34d399]" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[#10b981]" />
                   </span>
                 )}
               </div>
@@ -169,7 +169,7 @@ export function AgentNodes({ stages }: AgentNodesProps) {
           >
             {isActive && (
               <div
-                className="absolute w-24 h-24 md:w-28 md:h-28 rounded-full bg-[#00f0ff]/5 animate-ping"
+                className="absolute w-24 h-24 md:w-28 md:h-28 rounded-full bg-[#10b981]/5 animate-ping"
                 style={{ animationDuration: '2s' }}
               />
             )}
@@ -179,23 +179,23 @@ export function AgentNodes({ stages }: AgentNodesProps) {
                 'border backdrop-blur-sm transition-all duration-500',
                 'w-20 h-20 md:w-24 md:h-24',
                 'bg-white/5 border-white/20',
-                isActive && ['border-[#00f0ff] bg-[#00f0ff]/10', 'shadow-[0_0_30px_rgba(0,240,255,0.3)]', 'scale-110'],
-                isCompleted && ['border-[#34d399] bg-[#34d399]/10', 'shadow-[0_0_20px_rgba(52,211,153,0.2)]'],
+                isActive && ['border-[#10b981] bg-[#10b981]/10', 'shadow-[0_0_30px_rgba(0,240,255,0.3)]', 'scale-110'],
+                isCompleted && ['border-[#10b981] bg-[#10b981]/10', 'shadow-[0_0_20px_rgba(52,211,153,0.2)]'],
               )}
             >
               <Icon
                 className={cn(
                   'w-5 h-5 md:w-6 md:h-6 transition-colors duration-500',
-                  isActive && 'text-[#00f0ff]',
-                  isCompleted && 'text-[#34d399]',
+                  isActive && 'text-[#10b981]',
+                  isCompleted && 'text-[#10b981]',
                   !isActive && !isCompleted && 'text-white/40',
                 )}
               />
               <span
                 className={cn(
                   'text-[10px] md:text-xs font-medium tracking-wide transition-colors duration-500',
-                  isActive && 'text-[#00f0ff]',
-                  isCompleted && 'text-[#34d399]',
+                  isActive && 'text-[#10b981]',
+                  isCompleted && 'text-[#10b981]',
                   !isActive && !isCompleted && 'text-white/40',
                 )}
               >
@@ -203,13 +203,13 @@ export function AgentNodes({ stages }: AgentNodesProps) {
               </span>
               {isActive && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00f0ff] opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#00f0ff]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#10b981]" />
                 </span>
               )}
               {isCompleted && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#34d399]" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#10b981]" />
                 </span>
               )}
             </div>

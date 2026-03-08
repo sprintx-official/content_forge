@@ -33,8 +33,8 @@ export default function FileTabBar({ files, activeIndex, onTabChange }: FileTabB
             className={cn(
               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer',
               isActive
-                ? 'bg-[#00f0ff]/10 text-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.1)]'
-                : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5',
+                ? 'bg-[#10b981]/10 text-[#10b981] shadow-[0_0_10px_rgba(0,240,255,0.1)]'
+                : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5',
             )}
           >
             <Icon className="w-3.5 h-3.5" />

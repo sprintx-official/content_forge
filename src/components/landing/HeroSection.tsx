@@ -28,7 +28,7 @@ export default function HeroSection() {
         {PARTICLES.map((p) => (
           <div
             key={p.id}
-            className="absolute rounded-full bg-[#00f0ff]/30 animate-[float_6s_ease-in-out_infinite]"
+            className="absolute rounded-full bg-[#10b981]/30 animate-[float_6s_ease-in-out_infinite]"
             style={{
               width: p.size,
               height: p.size,
@@ -47,7 +47,7 @@ export default function HeroSection() {
         <h1
           className={cn(
             'text-5xl md:text-7xl font-bold',
-            'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent',
+            'bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent',
             'animate-[fadeInUp_0.8s_ease-out_both]',
           )}
         >
@@ -55,7 +55,7 @@ export default function HeroSection() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-xl text-[#9ca3af] max-w-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
+        <p className="text-xl text-[#cbd5e1] max-w-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
           AI-powered writing assistant for mass communication students
         </p>
 
@@ -65,7 +65,7 @@ export default function HeroSection() {
             onClick={() => navigate('/forge')}
             className={cn(
               'inline-flex items-center gap-2',
-              'bg-[#00f0ff] text-[#0a0e1a] font-semibold px-8 py-4 rounded-xl text-lg',
+              'bg-[#10b981] text-[#0f172a] font-semibold px-8 py-4 rounded-xl text-lg',
               'hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-all',
               'cursor-pointer',
             )}
@@ -79,7 +79,7 @@ export default function HeroSection() {
             className={cn(
               'inline-flex items-center gap-2',
               'border border-white/20 text-white/80 font-semibold px-8 py-4 rounded-xl text-lg',
-              'hover:border-[#00f0ff]/50 hover:text-white transition-all',
+              'hover:border-[#10b981]/50 hover:text-white transition-all',
               'cursor-pointer',
             )}
           >

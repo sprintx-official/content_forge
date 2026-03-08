@@ -20,6 +20,7 @@ function formatWorkflow(row: WorkflowRow, steps: WorkflowStepRow[], assignedUser
     description: row.description,
     type: row.type,
     mode: row.mode,
+    frequency: row.frequency,
     pipelineAgentId: row.pipeline_agent_id,
     isActive: row.is_active === 1,
     steps: steps
@@ -151,13 +152,13 @@ router.put('/:id/access', authenticate, requireAdmin, validateParams(idParamSche
 
 // POST /api/workflows
 router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { name, description, steps, isActive, type, mode, pipelineAgentId } = req.body
+  const { name, description, steps, isActive, type, mode, frequency, pipelineAgentId } = req.body
 
   const workflowId = crypto.randomUUID()
   const now = new Date().toISOString()
 
   await execute(
-    'INSERT INTO workflows (id, name, description, is_active, type, mode, pipeline_agent_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    'INSERT INTO workflows (id, name, description, is_active, type, mode, frequency, pipeline_agent_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
     [
       workflowId,
       name.trim(),
@@ -165,6 +166,7 @@ router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema),
       isActive !== false ? 1 : 0,
       type || 'text',
       mode || 'manual',
+      frequency || 1440,
       pipelineAgentId || null,
       now,
       now,
@@ -200,17 +202,18 @@ router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), va
     return
   }
 
-  const { name, description, steps, isActive, type, mode, pipelineAgentId } = req.body
+  const { name, description, steps, isActive, type, mode, frequency, pipelineAgentId } = req.body
   const now = new Date().toISOString()
 
   await execute(
-    'UPDATE workflows SET name = $1, description = $2, is_active = $3, type = $4, mode = $5, pipeline_agent_id = $6, updated_at = $7 WHERE id = $8',
+    'UPDATE workflows SET name = $1, description = $2, is_active = $3, type = $4, mode = $5, frequency = $6, pipeline_agent_id = $7, updated_at = $8 WHERE id = $9',
     [
       (name ?? existing.name).trim(),
       (description ?? existing.description).trim(),
       isActive !== undefined ? (isActive ? 1 : 0) : existing.is_active,
       type ?? existing.type,
       mode ?? existing.mode,
+      frequency ?? existing.frequency ?? 1440,
       pipelineAgentId !== undefined ? pipelineAgentId : existing.pipeline_agent_id,
       now,
       req.params.id,

@@ -8,17 +8,20 @@ import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const CommandPalette = lazy(() => import('@/components/CommandPalette'))
 const FlowsPage = lazy(() => import('@/pages/FlowsPage'))
+const CreateFlowPage = lazy(() => import('@/pages/CreateFlowPage'))
 const FlowDetailPage = lazy(() => import('@/pages/FlowDetailPage'))
+const MonitoringPage = lazy(() => import('@/pages/MonitoringPage'))
 
 function LoadingFallback() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="text-center">
-        <div className="w-12 h-12 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-[#9ca3af]">Loading...</p>
+        <div className="w-12 h-12 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-[#cbd5e1]">Loading...</p>
       </div>
     </div>
   )
@@ -43,10 +46,10 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#9ca3af]">Initializing...</p>
+          <div className="w-12 h-12 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#cbd5e1]">Initializing...</p>
         </div>
       </div>
     )
@@ -69,7 +72,17 @@ export default function App() {
             />
 
             {/* Protected routes - require authentication */}
-            {/* New Flows routes */}
+            {/* Dashboard */}
+            <Route
+              path="/"
+              element={
+                <AuthGuard>
+                  <DashboardPage />
+                </AuthGuard>
+              }
+            />
+
+            {/* Flows routes */}
             <Route
               path="/flows"
               element={
@@ -79,10 +92,28 @@ export default function App() {
               }
             />
             <Route
+              path="/flows/new"
+              element={
+                <AuthGuard>
+                  <AdminGuard>
+                    <CreateFlowPage />
+                  </AdminGuard>
+                </AuthGuard>
+              }
+            />
+            <Route
               path="/flows/:flowId"
               element={
                 <AuthGuard>
                   <FlowDetailPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/monitoring"
+              element={
+                <AuthGuard>
+                  <MonitoringPage />
                 </AuthGuard>
               }
             />
@@ -128,7 +159,7 @@ export default function App() {
             {/* Root redirects based on auth state */}
             <Route
               path="*"
-              element={<Navigate to={isAuthenticated ? '/flows' : '/login'} replace />}
+              element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />}
             />
           </Routes>
         </Suspense>

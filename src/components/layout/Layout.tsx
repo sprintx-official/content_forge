@@ -26,7 +26,7 @@ export default function Layout({ children }: LayoutProps) {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-[#f9fafb]">
+    <div className="min-h-screen bg-[#0f172a] text-[#f8fafc]">
       {showSidebar && <Sidebar />}
 
       <main

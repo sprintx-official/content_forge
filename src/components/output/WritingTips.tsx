@@ -41,17 +41,17 @@ export default function WritingTips({ tips, contentType }: WritingTipsProps) {
         )}
       >
         <div className="flex items-center gap-3">
-          <Lightbulb className="w-5 h-5 text-[#00f0ff]" />
-          <span className="text-[#f9fafb] font-semibold text-lg">
+          <Lightbulb className="w-5 h-5 text-[#10b981]" />
+          <span className="text-[#f8fafc] font-semibold text-lg">
             Writing Tips
           </span>
-          <span className="text-xs text-[#6b7280] bg-white/5 rounded-full px-2.5 py-0.5">
+          <span className="text-xs text-[#94a3b8] bg-white/5 rounded-full px-2.5 py-0.5">
             {contentTypeLabel[contentType]}
           </span>
         </div>
         <ChevronDown
           className={cn(
-            'w-5 h-5 text-[#6b7280] transition-transform duration-300',
+            'w-5 h-5 text-[#94a3b8] transition-transform duration-300',
             isOpen && 'rotate-180',
           )}
         />
@@ -70,12 +70,12 @@ export default function WritingTips({ tips, contentType }: WritingTipsProps) {
                 index < displayedTips.length - 1 && 'mb-3',
               )}
             >
-              <h4 className="font-medium text-[#00f0ff] mb-1">{tip.title}</h4>
-              <p className="text-sm text-[#9ca3af] leading-relaxed">
+              <h4 className="font-medium text-[#10b981] mb-1">{tip.title}</h4>
+              <p className="text-sm text-[#cbd5e1] leading-relaxed">
                 {tip.description}
               </p>
               {tip.example && (
-                <p className="mt-2 pl-3 border-l-2 border-[#00f0ff]/30 italic text-sm text-[#6b7280] leading-relaxed">
+                <p className="mt-2 pl-3 border-l-2 border-[#10b981]/30 italic text-sm text-[#94a3b8] leading-relaxed">
                   {tip.example}
                 </p>
               )}

@@ -47,24 +47,24 @@ export default function ChatHistoryCard({ conversation, onDelete, onView }: Chat
         <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">
           Chat
         </span>
-        <span className="text-xs text-[#6b7280]">{formattedDate}</span>
+        <span className="text-xs text-[#94a3b8]">{formattedDate}</span>
       </div>
 
       {/* Title */}
-      <p className="text-[#f9fafb] font-medium line-clamp-2 mb-3 pr-6">
+      <p className="text-[#f8fafc] font-medium line-clamp-2 mb-3 pr-6">
         {conversation.title}
       </p>
 
       {/* Last message preview */}
       {conversation.lastMessage && (
-        <p className="text-sm text-[#9ca3af] line-clamp-2 mb-4 leading-relaxed">
+        <p className="text-sm text-[#cbd5e1] line-clamp-2 mb-4 leading-relaxed">
           {conversation.lastMessage}
         </p>
       )}
 
       {/* Bottom row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 text-xs text-[#9ca3af]">
+        <div className="flex items-center gap-4 text-xs text-[#cbd5e1]">
           <span className="inline-flex items-center gap-1">
             <MessageSquare className="h-3.5 w-3.5" />
             {conversation.messageCount} messages
@@ -72,7 +72,7 @@ export default function ChatHistoryCard({ conversation, onDelete, onView }: Chat
         </div>
         <span
           className={cn(
-            'inline-flex items-center gap-1 text-xs text-[#00f0ff]',
+            'inline-flex items-center gap-1 text-xs text-[#10b981]',
             'opacity-0 group-hover:opacity-100 transition-opacity',
           )}
         >

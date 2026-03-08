@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import type { AnyFlow, Workflow } from '../types'
 import { SYSTEM_FLOWS } from '../constants/systemFlows'
 import { FlowCard } from '../components/flows/FlowCard'
 import { api } from '../lib/api'
 
 function FlowsPage() {
+  const navigate = useNavigate()
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,11 +36,20 @@ function FlowsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Flows</h1>
-        <p className="text-gray-400">
-          Choose a flow to get started or manage your custom workflows
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Flows</h1>
+          <p className="text-gray-400">
+            Choose a flow to get started or manage your custom workflows
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/flows/new')}
+          className="flex items-center gap-2 px-4 py-2 bg-[#10b981] text-[#0f172a] font-medium rounded-lg hover:bg-[#10b981]/90 transition-colors"
+        >
+          <Plus size={20} />
+          Create Flow
+        </button>
       </div>
 
       {error && (
@@ -48,7 +60,7 @@ function FlowsPage() {
 
       {loading ? (
         <div className="text-center text-gray-400 py-12">
-          <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-8 h-8 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           Loading flows...
         </div>
       ) : (

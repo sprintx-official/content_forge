@@ -121,9 +121,9 @@ export default function NewsroomPage() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Posts Today', value: stats.posts_today, icon: TrendingUp, color: 'text-[#00f0ff]' },
+            { label: 'Posts Today', value: stats.posts_today, icon: TrendingUp, color: 'text-[#10b981]' },
             { label: 'Active Feeds', value: stats.active_feeds, icon: Rss, color: 'text-emerald-400' },
-            { label: 'Articles Today', value: stats.articles_today, icon: Newspaper, color: 'text-[#a855f7]' },
+            { label: 'Articles Today', value: stats.articles_today, icon: Newspaper, color: 'text-[#6366f1]' },
             { label: 'Pipelines', value: stats.active_pipelines, icon: Radio, color: 'text-amber-400' },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
@@ -147,7 +147,7 @@ export default function NewsroomPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && loadData()}
-            className="w-full pl-10 pr-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#00f0ff]/50"
+            className="w-full pl-10 pr-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-lg text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#10b981]/50"
           />
         </div>
         <select
@@ -175,7 +175,7 @@ export default function NewsroomPage() {
 
       {/* Message */}
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
@@ -183,7 +183,7 @@ export default function NewsroomPage() {
       {/* Posts grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-16">
@@ -199,14 +199,14 @@ export default function NewsroomPage() {
               { step: '3', text: 'Add RSS feed URLs and enable the pipeline' },
             ].map(({ step, text }) => (
               <div key={step} className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-[#00f0ff]/10 text-[#00f0ff] text-xs flex items-center justify-center shrink-0">{step}</span>
+                <span className="w-6 h-6 rounded-full bg-[#10b981]/10 text-[#10b981] text-xs flex items-center justify-center shrink-0">{step}</span>
                 <span className="text-sm text-white/50">{text}</span>
               </div>
             ))}
           </div>
           <a
             href="/settings"
-            className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-lg bg-[#00f0ff]/10 text-[#00f0ff] text-sm font-medium hover:bg-[#00f0ff]/20 transition-colors"
+            className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-lg bg-[#10b981]/10 text-[#10b981] text-sm font-medium hover:bg-[#10b981]/20 transition-colors"
           >
             Go to Agent Setup
           </a>
@@ -283,7 +283,7 @@ export default function NewsroomPage() {
                         <button
                           onClick={() => publishToCms(post.id, 'published')}
                           disabled={publishing === post.id}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] disabled:opacity-50 transition-colors"
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] disabled:opacity-50 transition-colors"
                         >
                           <Upload className="w-3 h-3" />
                           {publishing === post.id ? 'Publishing...' : 'Publish to CMS'}

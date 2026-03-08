@@ -36,7 +36,7 @@ export function useParticles({ reducedMotion = false }: UseParticlesOptions = {}
           vy: (Math.random() - 0.5) * SPEED_FACTOR,
           radius: 1 + Math.random() * 2,
           opacity: 0.1 + Math.random() * 0.5,
-          color: Math.random() > 0.5 ? '#00f0ff' : '#a855f7',
+          color: Math.random() > 0.5 ? '#10b981' : '#6366f1',
         })
       }
       return particles
@@ -81,7 +81,7 @@ export function useParticles({ reducedMotion = false }: UseParticlesOptions = {}
             const connectionOpacity =
               (1 - distance / CONNECTION_DISTANCE) * 0.15
             ctx.beginPath()
-            ctx.strokeStyle = `rgba(0, 240, 255, ${connectionOpacity})`
+            ctx.strokeStyle = `rgba(16, 185, 129, ${connectionOpacity})`
             ctx.lineWidth = 0.5
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
@@ -95,9 +95,9 @@ export function useParticles({ reducedMotion = false }: UseParticlesOptions = {}
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
         ctx.fillStyle =
-          p.color === '#00f0ff'
-            ? `rgba(0, 240, 255, ${p.opacity})`
-            : `rgba(168, 85, 247, ${p.opacity})`
+          p.color === '#10b981'
+            ? `rgba(16, 185, 129, ${p.opacity})`
+            : `rgba(99, 102, 241, ${p.opacity})`
         ctx.fill()
       }
 

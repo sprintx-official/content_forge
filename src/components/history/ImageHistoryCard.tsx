@@ -66,16 +66,16 @@ export default function ImageHistoryCard({ image, onDelete, onView }: ImageHisto
           <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
             Image
           </span>
-          <span className="text-xs text-[#6b7280]">{formattedDate}</span>
+          <span className="text-xs text-[#94a3b8]">{formattedDate}</span>
         </div>
 
         {/* Prompt */}
-        <p className="text-sm text-[#9ca3af] line-clamp-2 mb-3 leading-relaxed">
+        <p className="text-sm text-[#cbd5e1] line-clamp-2 mb-3 leading-relaxed">
           {image.prompt}
         </p>
 
         {/* Bottom row */}
-        <div className="flex items-center gap-4 text-xs text-[#9ca3af]">
+        <div className="flex items-center gap-4 text-xs text-[#cbd5e1]">
           <span>{image.width}x{image.height}</span>
           <span className="capitalize">{image.style}</span>
           <span className="text-white/30">{image.model}</span>

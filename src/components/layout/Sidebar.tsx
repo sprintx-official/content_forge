@@ -8,20 +8,27 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Command,
+  ChevronDown,
+  Activity,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useForgeStore } from '@/stores/useForgeStore'
+import { useAdminStore } from '@/stores/useAdminStore'
+import { SETTINGS_NAV_SECTIONS } from '@/constants/settingsNav'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/flows', label: 'Flows', icon: Workflow, section: 'main' },
+  { to: '/monitoring', label: 'Monitoring', icon: Activity, section: 'main' },
 ]
 
 export default function Sidebar() {
   const { isAuthenticated, isAdmin, user, logout } = useAuthStore()
+  const { activeTab, setActiveTab } = useAdminStore()
   const resetForge = useForgeStore((s) => s.reset)
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cf_sidebar') === 'collapsed')
+  const [settingsExpanded, setSettingsExpanded] = useState(() => localStorage.getItem('cf_settings') === 'expanded')
 
   const isActive = (path: string) => location.pathname === path
 
@@ -42,7 +49,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 px-4 border-b border-white/[0.06]">
-        <Link to="/flows" onClick={resetForge} className="flex items-center gap-2.5 group min-w-0">
+        <Link to="/" onClick={resetForge} className="flex items-center gap-2.5 group min-w-0">
           <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center shrink-0">
             <Zap className="h-4 w-4 text-white/70" />
           </div>
@@ -104,20 +111,62 @@ export default function Sidebar() {
             <div className="text-[10px] font-semibold text-white/20 uppercase tracking-widest px-2.5 mb-2">
               {!collapsed && 'Admin'}
             </div>
-            <Link
-              to="/settings"
+
+            {/* Settings menu */}
+            <button
+              onClick={() => {
+                const nextExpanded = !settingsExpanded
+                setSettingsExpanded(nextExpanded)
+                localStorage.setItem('cf_settings', nextExpanded ? 'expanded' : 'collapsed')
+              }}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150',
+                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
                 collapsed && 'justify-center px-0',
-                isActive('/settings')
-                  ? 'bg-white/[0.06] text-white'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
+                'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
               )}
               title={collapsed ? 'Settings' : undefined}
             >
               <Settings className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </Link>
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">Settings</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 shrink-0 transition-transform',
+                      settingsExpanded && 'rotate-180',
+                    )}
+                  />
+                </>
+              )}
+            </button>
+
+            {/* Settings submenu */}
+            {settingsExpanded && !collapsed && (
+              <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
+                {SETTINGS_NAV_SECTIONS.map((section) => (
+                  <div key={section.label}>
+                    <div className="text-[9px] font-semibold text-white/15 uppercase tracking-wider px-2 py-1.5 mt-2 first:mt-0">
+                      {section.label}
+                    </div>
+                    {section.items.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        onClick={() => setActiveTab(id)}
+                        className={cn(
+                          'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
+                          activeTab === id
+                            ? 'bg-white/[0.08] text-[#10b981]'
+                            : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="flex-1 text-left">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </nav>

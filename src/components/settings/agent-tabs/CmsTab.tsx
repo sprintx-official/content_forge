@@ -72,12 +72,12 @@ export default function CmsTab({ agentId }: { agentId: string }) {
     }
   }
 
-  if (loading) return <div className="text-[#9ca3af] py-4">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1] py-4">Loading...</div>
 
   return (
     <div className="space-y-5">
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
@@ -85,12 +85,12 @@ export default function CmsTab({ agentId }: { agentId: string }) {
       {/* Enable Toggle */}
       <div className="flex items-center justify-between bg-white/5 rounded-lg px-4 py-3">
         <div>
-          <p className="text-sm text-[#f9fafb]">CMS Publishing</p>
-          <p className="text-xs text-[#9ca3af]">Auto-publish coverage posts to your CMS</p>
+          <p className="text-sm text-[#f8fafc]">CMS Publishing</p>
+          <p className="text-xs text-[#cbd5e1]">Auto-publish coverage posts to your CMS</p>
         </div>
         <button
           onClick={() => setSettings({ ...settings, cms_enabled: settings.cms_enabled === 'true' ? 'false' : 'true' })}
-          className={`relative w-11 h-6 rounded-full transition-colors ${settings.cms_enabled === 'true' ? 'bg-[#00f0ff]' : 'bg-white/20'}`}
+          className={`relative w-11 h-6 rounded-full transition-colors ${settings.cms_enabled === 'true' ? 'bg-[#10b981]' : 'bg-white/20'}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${settings.cms_enabled === 'true' ? 'translate-x-5' : ''}`} />
         </button>
@@ -98,19 +98,19 @@ export default function CmsTab({ agentId }: { agentId: string }) {
 
       {/* CMS URL */}
       <div>
-        <label className="text-xs text-[#9ca3af] mb-1 block">CMS API URL</label>
+        <label className="text-xs text-[#cbd5e1] mb-1 block">CMS API URL</label>
         <input
           type="url"
           placeholder="https://yourcms.com"
           value={settings.cms_api_url || ''}
           onChange={e => setSettings({ ...settings, cms_api_url: e.target.value })}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
         />
       </div>
 
       {/* API Key */}
       <div>
-        <label className="text-xs text-[#9ca3af] mb-1 block">
+        <label className="text-xs text-[#cbd5e1] mb-1 block">
           API Key {settings.cms_api_key && !apiKeyInput && <span className="text-emerald-400">(configured)</span>}
         </label>
         <input
@@ -118,28 +118,28 @@ export default function CmsTab({ agentId }: { agentId: string }) {
           placeholder={settings.cms_api_key ? 'Enter new key to replace...' : 'CMS API key'}
           value={apiKeyInput}
           onChange={e => setApiKeyInput(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
         />
       </div>
 
       {/* Category & Status */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-[#9ca3af] mb-1 block">Default Category</label>
+          <label className="text-xs text-[#cbd5e1] mb-1 block">Default Category</label>
           <input
             type="text"
             placeholder="general"
             value={settings.cms_category || ''}
             onChange={e => setSettings({ ...settings, cms_category: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           />
         </div>
         <div>
-          <label className="text-xs text-[#9ca3af] mb-1 block">Publish Status</label>
+          <label className="text-xs text-[#cbd5e1] mb-1 block">Publish Status</label>
           <select
             value={settings.cms_publish_status || 'draft'}
             onChange={e => setSettings({ ...settings, cms_publish_status: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           >
             <option value="draft">Draft</option>
             <option value="published">Published</option>
@@ -160,14 +160,14 @@ export default function CmsTab({ agentId }: { agentId: string }) {
         <button
           onClick={save}
           disabled={saving}
-          className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>
         <button
           onClick={testConnection}
           disabled={testing || !settings.cms_api_url}
-          className="bg-white/5 hover:bg-white/10 text-[#9ca3af] rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 flex items-center gap-1"
+          className="bg-white/5 hover:bg-white/10 text-[#cbd5e1] rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 flex items-center gap-1"
         >
           {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
           Test Connection

@@ -137,20 +137,20 @@ export default function ImageTemplatesTab() {
     })
   }
 
-  if (loading) return <div className="text-[#9ca3af]">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1]">Loading...</div>
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-[#f9fafb] flex items-center gap-2">
-          <Image className="h-5 w-5 text-[#00f0ff]" />
+        <h2 className="text-xl font-semibold text-[#f8fafc] flex items-center gap-2">
+          <Image className="h-5 w-5 text-[#10b981]" />
           Image Templates
         </h2>
-        <p className="text-sm text-[#9ca3af]">Configure branded overlays for coverage post images per agent.</p>
+        <p className="text-sm text-[#cbd5e1]">Configure branded overlays for coverage post images per agent.</p>
       </div>
 
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
@@ -160,24 +160,24 @@ export default function ImageTemplatesTab() {
         <select
           value={selectedAgent}
           onChange={e => setSelectedAgent(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
         >
           {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <span className="text-xs text-[#9ca3af]">
+        <span className="text-xs text-[#cbd5e1]">
           {isCustom ? 'Custom template' : 'Default template'}
         </span>
       </div>
 
       {/* Presets */}
       <div>
-        <h3 className="text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-2">Presets</h3>
+        <h3 className="text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-2">Presets</h3>
         <div className="flex gap-2">
           {presets.map(p => (
             <button
               key={p.id}
               onClick={() => applyPreset(p.id)}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-[#f9fafb] transition-colors"
+              className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-[#f8fafc] transition-colors"
             >
               {p.name}
             </button>
@@ -188,7 +188,7 @@ export default function ImageTemplatesTab() {
       {/* Template elements */}
       {template && (
         <div>
-          <h3 className="text-sm font-medium text-[#9ca3af] uppercase tracking-wider mb-2">
+          <h3 className="text-sm font-medium text-[#cbd5e1] uppercase tracking-wider mb-2">
             Elements ({template.name})
           </h3>
           <div className="space-y-2">
@@ -197,14 +197,14 @@ export default function ImageTemplatesTab() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => toggleElement(el.id)}
-                    className={`w-4 h-4 rounded border ${el.visible ? 'bg-[#00f0ff] border-[#00f0ff]' : 'bg-transparent border-white/30'}`}
+                    className={`w-4 h-4 rounded border ${el.visible ? 'bg-[#10b981] border-[#10b981]' : 'bg-transparent border-white/30'}`}
                   />
                   <div>
-                    <span className="text-sm text-[#f9fafb]">{el.id}</span>
-                    <span className="text-xs text-[#9ca3af] ml-2">{el.type} · {el.source}</span>
+                    <span className="text-sm text-[#f8fafc]">{el.id}</span>
+                    <span className="text-xs text-[#cbd5e1] ml-2">{el.type} · {el.source}</span>
                   </div>
                 </div>
-                <div className="text-xs text-[#9ca3af]">
+                <div className="text-xs text-[#cbd5e1]">
                   {Math.round(el.x)}%, {Math.round(el.y)}% · {Math.round(el.width)}x{Math.round(el.height)}%
                 </div>
               </div>
@@ -215,19 +215,19 @@ export default function ImageTemplatesTab() {
 
       {/* Preview */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-[#9ca3af] uppercase tracking-wider">Preview</h3>
+        <h3 className="text-sm font-medium text-[#cbd5e1] uppercase tracking-wider">Preview</h3>
         <input
           type="text"
           value={previewHeadline}
           onChange={e => setPreviewHeadline(e.target.value)}
           placeholder="Test headline..."
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
         />
         <div className="flex gap-2">
           <button
             onClick={generatePreview}
             disabled={previewing}
-            className="bg-[#a855f7]/10 hover:bg-[#a855f7]/20 text-[#a855f7] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
+            className="bg-[#6366f1]/10 hover:bg-[#6366f1]/20 text-[#6366f1] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
           >
             <Eye className="h-4 w-4" />
             {previewing ? 'Generating...' : 'Preview'}
@@ -235,7 +235,7 @@ export default function ImageTemplatesTab() {
           <button
             onClick={save}
             disabled={saving}
-            className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
+            className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving...' : 'Save'}
@@ -243,7 +243,7 @@ export default function ImageTemplatesTab() {
           {isCustom && (
             <button
               onClick={reset}
-              className="bg-white/5 hover:bg-white/10 text-[#9ca3af] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5"
+              className="bg-white/5 hover:bg-white/10 text-[#cbd5e1] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-1.5"
             >
               <RotateCcw className="h-4 w-4" />
               Reset

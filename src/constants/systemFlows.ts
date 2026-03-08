@@ -41,8 +41,8 @@ export const SYSTEM_FLOWS: SystemFlow[] = [
 ]
 
 export const FLOW_TYPE_COLORS: Record<'text' | 'chat' | 'image' | 'video', string> = {
-  text: '#00f0ff',
-  chat: '#a855f7',
+  text: '#10b981',
+  chat: '#6366f1',
   image: '#f59e0b',
   video: '#10b981',
 }

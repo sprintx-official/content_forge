@@ -27,8 +27,8 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
           disabled={disabled}
           onClick={() => !disabled && onChange(!checked)}
           className={cn(
-            'relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00f0ff]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a]',
-            checked ? 'bg-[#00f0ff]' : 'bg-white/20',
+            'relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10b981]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a]',
+            checked ? 'bg-[#10b981]' : 'bg-white/20',
           )}
         >
           <span
@@ -39,7 +39,7 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
           />
         </button>
         {label && (
-          <span className="text-sm text-[#9ca3af]">{label}</span>
+          <span className="text-sm text-[#cbd5e1]">{label}</span>
         )}
       </label>
     )

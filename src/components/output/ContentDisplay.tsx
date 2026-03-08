@@ -89,8 +89,8 @@ function ToolbarButton({ onClick, isActive, title, children }: ToolbarButtonProp
       className={cn(
         'p-1.5 rounded-lg transition-all',
         isActive
-          ? 'bg-[#00f0ff]/20 text-[#00f0ff]'
-          : 'text-[#9ca3af] hover:text-white hover:bg-white/10',
+          ? 'bg-[#10b981]/20 text-[#10b981]'
+          : 'text-[#cbd5e1] hover:text-white hover:bg-white/10',
       )}
     >
       {children}
@@ -338,7 +338,7 @@ export default function ContentDisplay({
         }
 
         .tiptap-editor .tiptap {
-          color: #f9fafb;
+          color: #f8fafc;
           font-family: 'Inter', sans-serif;
           font-size: 1rem;
           line-height: 1.625;
@@ -359,7 +359,7 @@ export default function ContentDisplay({
           font-weight: 700;
           margin-bottom: 0.75rem;
           margin-top: 1.5rem;
-          background: linear-gradient(to right, #00f0ff, #a855f7);
+          background: linear-gradient(to right, #10b981, #6366f1);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -370,7 +370,7 @@ export default function ContentDisplay({
           font-weight: 600;
           margin-bottom: 0.5rem;
           margin-top: 1.25rem;
-          color: #00f0ff;
+          color: #10b981;
         }
 
         .tiptap-editor .tiptap h3 {
@@ -398,12 +398,12 @@ export default function ContentDisplay({
         }
 
         .tiptap-editor .tiptap blockquote {
-          border-left: 3px solid #00f0ff;
+          border-left: 3px solid #10b981;
           padding-left: 1rem;
           margin-left: 0;
           margin-bottom: 1rem;
           font-style: italic;
-          color: #9ca3af;
+          color: #cbd5e1;
         }
 
         .tiptap-editor .tiptap hr {
@@ -443,7 +443,7 @@ export default function ContentDisplay({
         .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #6b7280;
+          color: #94a3b8;
           pointer-events: none;
           height: 0;
         }

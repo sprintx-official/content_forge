@@ -176,7 +176,7 @@ export default function HistoryList() {
           className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer',
             activeTab === tab.id
-              ? 'bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20'
+              ? 'bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20'
               : 'text-white/40 hover:text-white/60 border border-transparent',
           )}
         >
@@ -187,7 +187,7 @@ export default function HistoryList() {
               className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full',
                 activeTab === tab.id
-                  ? 'bg-[#00f0ff]/20 text-[#00f0ff]'
+                  ? 'bg-[#10b981]/20 text-[#10b981]'
                   : 'bg-white/5 text-white/30',
               )}
             >
@@ -206,12 +206,12 @@ export default function HistoryList() {
         {/* Top bar */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-[#f9fafb]">History</h2>
+            <h2 className="text-2xl font-bold text-[#f8fafc]">History</h2>
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && (
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6b7280]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
                 <input
                   type="text"
                   placeholder="Search by user name..."
@@ -219,8 +219,8 @@ export default function HistoryList() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className={cn(
                     'pl-9 pr-4 py-2 rounded-xl text-sm',
-                    'bg-white/5 border border-white/10 text-[#f9fafb] placeholder-[#6b7280]',
-                    'focus:outline-none focus:border-[#00f0ff]/50 focus:ring-1 focus:ring-[#00f0ff]/30',
+                    'bg-white/5 border border-white/10 text-[#f8fafc] placeholder-[#94a3b8]',
+                    'focus:outline-none focus:border-[#10b981]/50 focus:ring-1 focus:ring-[#10b981]/30',
                     'transition-all w-64',
                   )}
                 />
@@ -233,12 +233,12 @@ export default function HistoryList() {
 
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="bg-white/5 border border-white/10 rounded-full p-5 mb-6">
-            <Clock className="h-10 w-10 text-[#9ca3af]" />
+            <Clock className="h-10 w-10 text-[#cbd5e1]" />
           </div>
-          <h2 className="text-xl font-semibold text-[#f9fafb] mb-2">
+          <h2 className="text-xl font-semibold text-[#f8fafc] mb-2">
             {hasSearch ? 'No results found' : 'Nothing here yet'}
           </h2>
-          <p className="text-[#9ca3af] mb-6 max-w-sm">
+          <p className="text-[#cbd5e1] mb-6 max-w-sm">
             {hasSearch
               ? 'Try a different search term or clear the search.'
               : 'Start creating in the Forge and your history will appear here.'}
@@ -248,7 +248,7 @@ export default function HistoryList() {
               to="/forge"
               className={cn(
                 'inline-flex items-center gap-2',
-                'bg-[#00f0ff] text-[#0a0e1a] font-semibold px-6 py-3 rounded-xl',
+                'bg-[#10b981] text-[#0f172a] font-semibold px-6 py-3 rounded-xl',
                 'hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all',
               )}
             >
@@ -266,11 +266,11 @@ export default function HistoryList() {
       {/* Top bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-[#f9fafb]">History</h2>
+          <h2 className="text-2xl font-bold text-[#f8fafc]">History</h2>
           <span
             className={cn(
               'text-xs font-medium px-2.5 py-0.5 rounded-full',
-              'bg-[#00f0ff]/10 text-[#00f0ff]',
+              'bg-[#10b981]/10 text-[#10b981]',
             )}
           >
             {counts[activeTab]}
@@ -279,7 +279,7 @@ export default function HistoryList() {
         <div className="flex items-center gap-3">
           {isAdmin && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6b7280]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
               <input
                 type="text"
                 placeholder="Search by user name..."
@@ -287,8 +287,8 @@ export default function HistoryList() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cn(
                   'pl-9 pr-4 py-2 rounded-xl text-sm',
-                  'bg-white/5 border border-white/10 text-[#f9fafb] placeholder-[#6b7280]',
-                  'focus:outline-none focus:border-[#00f0ff]/50 focus:ring-1 focus:ring-[#00f0ff]/30',
+                  'bg-white/5 border border-white/10 text-[#f8fafc] placeholder-[#94a3b8]',
+                  'focus:outline-none focus:border-[#10b981]/50 focus:ring-1 focus:ring-[#10b981]/30',
                   'transition-all w-64',
                 )}
               />

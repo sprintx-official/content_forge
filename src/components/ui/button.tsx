@@ -4,13 +4,13 @@ import { cn } from '@/lib/utils'
 const buttonVariants = {
   variant: {
     default:
-      'bg-[#00f0ff] text-[#0a0e1a] font-semibold hover:bg-[#33f3ff] active:bg-[#00d4e0]',
+      'bg-[#10b981] text-[#0f172a] font-semibold hover:bg-[#33f3ff] active:bg-[#00d4e0]',
     secondary:
-      'bg-[#a855f7] text-white font-semibold hover:bg-[#b96ef8] active:bg-[#9333ea]',
+      'bg-[#6366f1] text-white font-semibold hover:bg-[#b96ef8] active:bg-[#9333ea]',
     outline:
       'border border-white/[0.12] bg-transparent text-white/70 hover:border-white/25 hover:bg-white/[0.04] hover:text-white/90',
     ghost:
-      'bg-transparent text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5',
+      'bg-transparent text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5',
     danger:
       'bg-red-600 text-white font-semibold hover:bg-red-500 active:bg-red-700',
   },
@@ -69,7 +69,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          'inline-flex items-center justify-center whitespace-nowrap font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00f0ff]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0e1a] disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+          'inline-flex items-center justify-center whitespace-nowrap font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10b981]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a] disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
           buttonVariants.variant[variant],
           buttonVariants.size[size],
           className

@@ -137,7 +137,7 @@ export function ChatInput({ onSend, onCancel, isStreaming, placeholder }: ChatIn
     <div
       className={cn(
         'border-t border-white/[0.06] bg-white/[0.02] transition-colors',
-        isDragging && 'bg-[#00f0ff]/5 border-[#00f0ff]/20',
+        isDragging && 'bg-[#10b981]/5 border-[#10b981]/20',
       )}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -159,7 +159,7 @@ export function ChatInput({ onSend, onCancel, isStreaming, placeholder }: ChatIn
                   className="h-8 w-8 shrink-0 rounded object-cover"
                 />
               ) : (
-                <FileText className="h-4 w-4 shrink-0 text-[#6b7280]" />
+                <FileText className="h-4 w-4 shrink-0 text-[#94a3b8]" />
               )}
               <div className="min-w-0 max-w-[120px]">
                 <p className="truncate text-xs text-white/70">{file.name}</p>
@@ -215,7 +215,7 @@ export function ChatInput({ onSend, onCancel, isStreaming, placeholder }: ChatIn
           className={cn(
             'flex-1 resize-none bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5',
             'text-sm text-white/80 placeholder:text-white/25',
-            'focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/20',
+            'focus:outline-none focus:border-[#10b981]/30 focus:ring-1 focus:ring-[#10b981]/20',
             'scrollbar-thin scrollbar-thumb-white/10',
           )}
           disabled={isStreaming}
@@ -235,7 +235,7 @@ export function ChatInput({ onSend, onCancel, isStreaming, placeholder }: ChatIn
             className={cn(
               'shrink-0 p-2.5 rounded-xl transition-all',
               value.trim() || files.length > 0
-                ? 'bg-[#00f0ff]/20 border border-[#00f0ff]/30 text-[#00f0ff] hover:bg-[#00f0ff]/30'
+                ? 'bg-[#10b981]/20 border border-[#10b981]/30 text-[#10b981] hover:bg-[#10b981]/30'
                 : 'bg-white/[0.04] border border-white/[0.06] text-white/20 cursor-not-allowed',
             )}
             title="Send message"

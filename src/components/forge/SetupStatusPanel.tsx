@@ -60,12 +60,12 @@ export default function SetupStatusPanel() {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4 text-[#a855f7]" />
-          <span className="text-sm font-medium text-[#f9fafb]">
+          <Settings className="h-4 w-4 text-[#6366f1]" />
+          <span className="text-sm font-medium text-[#f8fafc]">
             Setup ({items.filter(i => i.ok).length}/{items.length} complete)
           </span>
         </div>
-        {collapsed ? <ChevronDown className="h-4 w-4 text-[#9ca3af]" /> : <ChevronUp className="h-4 w-4 text-[#9ca3af]" />}
+        {collapsed ? <ChevronDown className="h-4 w-4 text-[#cbd5e1]" /> : <ChevronUp className="h-4 w-4 text-[#cbd5e1]" />}
       </button>
 
       {!collapsed && (
@@ -78,9 +78,9 @@ export default function SetupStatusPanel() {
                 <XCircle className="h-4 w-4 text-amber-400 shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <span className={`text-sm ${item.ok ? 'text-emerald-400' : 'text-[#f9fafb]'}`}>{item.label}</span>
+                <span className={`text-sm ${item.ok ? 'text-emerald-400' : 'text-[#f8fafc]'}`}>{item.label}</span>
                 {!item.ok && (
-                  <a href={item.link} className="text-xs text-[#00f0ff] hover:underline ml-2">
+                  <a href={item.link} className="text-xs text-[#10b981] hover:underline ml-2">
                     {item.action} →
                   </a>
                 )}
@@ -88,7 +88,7 @@ export default function SetupStatusPanel() {
             </div>
           ))}
           {incomplete.length > 0 && (
-            <p className="text-[10px] text-[#9ca3af] mt-1">Complete setup in Settings to unlock all features.</p>
+            <p className="text-[10px] text-[#cbd5e1] mt-1">Complete setup in Settings to unlock all features.</p>
           )}
         </div>
       )}

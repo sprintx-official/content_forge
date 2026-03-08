@@ -47,7 +47,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="mb-1.5 block text-sm font-medium text-[#9ca3af]"
+            className="mb-1.5 block text-sm font-medium text-[#cbd5e1]"
           >
             {label}
           </label>
@@ -55,8 +55,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           id={textareaId}
           className={cn(
-            'flex min-h-[80px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f9fafb] placeholder:text-[#9ca3af]/60 transition-all duration-200 resize-y',
-            'focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30',
+            'flex min-h-[80px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f8fafc] placeholder:text-[#cbd5e1]/60 transition-all duration-200 resize-y',
+            'focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30',
             'disabled:cursor-not-allowed disabled:opacity-50',
             autoResize && 'resize-none overflow-hidden',
             className
@@ -75,7 +75,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                   ? 'text-red-400'
                   : charCount >= maxLength * 0.9
                     ? 'text-yellow-400'
-                    : 'text-[#9ca3af]/60'
+                    : 'text-[#cbd5e1]/60'
               )}
             >
               {charCount}/{maxLength}

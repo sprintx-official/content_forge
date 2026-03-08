@@ -57,7 +57,7 @@ export default function AddMemberForm() {
       onSubmit={handleSubmit}
       className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4"
     >
-      <h3 className="text-lg font-semibold text-[#f9fafb]">Add Team Member</h3>
+      <h3 className="text-lg font-semibold text-[#f8fafc]">Add Team Member</h3>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input

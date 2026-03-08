@@ -32,18 +32,18 @@ export function VideoExtendDialog({ video, isExtending, onExtend, onClose }: Vid
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget && !isExtending) onClose() }}
     >
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a0e1a] p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f172a] p-6 shadow-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#f9fafb] flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-[#00f0ff]" />
+            <h3 className="text-lg font-semibold text-[#f8fafc] flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-[#10b981]" />
               Extend Video
             </h3>
             <button
               type="button"
               onClick={onClose}
               disabled={isExtending}
-              className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+              className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -65,7 +65,7 @@ export function VideoExtendDialog({ video, isExtending, onExtend, onClose }: Vid
               className={cn(
                 'w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3',
                 'text-sm text-white/80 placeholder:text-white/20',
-                'focus:outline-none focus:border-[#00f0ff]/30 focus:ring-1 focus:ring-[#00f0ff]/20',
+                'focus:outline-none focus:border-[#10b981]/30 focus:ring-1 focus:ring-[#10b981]/20',
                 'resize-none',
               )}
               disabled={isExtending}
@@ -79,7 +79,7 @@ export function VideoExtendDialog({ video, isExtending, onExtend, onClose }: Vid
             className={cn(
               'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all',
               prompt.trim() && !isExtending
-                ? 'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] text-[#0a0e1a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
+                ? 'bg-gradient-to-r from-[#10b981] to-[#6366f1] text-[#0f172a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
                 : 'bg-white/[0.06] text-white/20 cursor-not-allowed',
             )}
           >

@@ -39,19 +39,19 @@ export default function LoginForm() {
       <h1
         className={cn(
           'text-3xl font-bold font-[\'Space_Grotesk\']',
-          'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent',
+          'bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent',
         )}
       >
         Welcome Back
       </h1>
-      <p className="text-[#9ca3af] mt-2 mb-8">
+      <p className="text-[#cbd5e1] mt-2 mb-8">
         Sign in to your ContentForge account
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Email */}
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9ca3af]" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#cbd5e1]" />
           <input
             type="email"
             placeholder="Email address"
@@ -60,8 +60,8 @@ export default function LoginForm() {
             required
             className={cn(
               'bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 w-full',
-              'text-[#f9fafb] placeholder:text-[#6b7280]',
-              'focus:border-[#00f0ff] focus:outline-none focus:shadow-[0_0_15px_rgba(0,240,255,0.1)]',
+              'text-[#f8fafc] placeholder:text-[#94a3b8]',
+              'focus:border-[#10b981] focus:outline-none focus:shadow-[0_0_15px_rgba(0,240,255,0.1)]',
               'transition-all',
             )}
           />
@@ -69,7 +69,7 @@ export default function LoginForm() {
 
         {/* Password */}
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9ca3af]" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#cbd5e1]" />
           <input
             type="password"
             placeholder="Password"
@@ -78,8 +78,8 @@ export default function LoginForm() {
             required
             className={cn(
               'bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 w-full',
-              'text-[#f9fafb] placeholder:text-[#6b7280]',
-              'focus:border-[#00f0ff] focus:outline-none focus:shadow-[0_0_15px_rgba(0,240,255,0.1)]',
+              'text-[#f8fafc] placeholder:text-[#94a3b8]',
+              'focus:border-[#10b981] focus:outline-none focus:shadow-[0_0_15px_rgba(0,240,255,0.1)]',
               'transition-all',
             )}
           />
@@ -93,7 +93,7 @@ export default function LoginForm() {
           type="submit"
           disabled={loading}
           className={cn(
-            'w-full bg-[#00f0ff] text-[#0a0e1a] font-bold py-3 rounded-xl',
+            'w-full bg-[#10b981] text-[#0f172a] font-bold py-3 rounded-xl',
             'hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'cursor-pointer',

@@ -283,13 +283,13 @@ export default function ContentOptionsTab() {
   const renderForm = (mode: 'add' | 'edit') => (
     <div className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#f9fafb]">
+        <h4 className="text-sm font-semibold text-[#f8fafc]">
           {mode === 'add' ? 'Add New Option' : 'Edit Option'}
         </h4>
         <button
           type="button"
           onClick={resetForm}
-          className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+          className="text-[#cbd5e1] hover:text-[#f8fafc] transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -311,11 +311,11 @@ export default function ContentOptionsTab() {
       </div>
 
       <div className="w-full">
-        <label className="mb-1.5 block text-sm font-medium text-[#9ca3af]">
+        <label className="mb-1.5 block text-sm font-medium text-[#cbd5e1]">
           Description
         </label>
         <textarea
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f9fafb] placeholder:text-[#9ca3af]/60 transition-all duration-200 resize-y min-h-[60px] focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f8fafc] placeholder:text-[#cbd5e1]/60 transition-all duration-200 resize-y min-h-[60px] focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30"
           placeholder="Short description shown on cards"
           rows={2}
           value={form.description}
@@ -324,11 +324,11 @@ export default function ContentOptionsTab() {
       </div>
 
       <div className="w-full">
-        <label className="mb-1.5 block text-sm font-medium text-[#9ca3af]">
+        <label className="mb-1.5 block text-sm font-medium text-[#cbd5e1]">
           Guidance
         </label>
         <textarea
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f9fafb] placeholder:text-[#9ca3af]/60 transition-all duration-200 resize-y min-h-[100px] focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-[#f8fafc] placeholder:text-[#cbd5e1]/60 transition-all duration-200 resize-y min-h-[100px] focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30"
           placeholder="Detailed instructions sent to the AI in the prompt..."
           rows={4}
           value={form.guidance}
@@ -340,17 +340,17 @@ export default function ContentOptionsTab() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Icon picker */}
           <div className="w-full">
-            <label className="mb-1.5 block text-sm font-medium text-[#9ca3af]">
+            <label className="mb-1.5 block text-sm font-medium text-[#cbd5e1]">
               Icon
             </label>
             <div className="relative">
               <select
-                className="flex h-10 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-10 text-sm text-[#f9fafb] transition-all duration-200 focus:outline-none focus:border-[#00f0ff]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#00f0ff]/30"
+                className="flex h-10 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-10 text-sm text-[#f8fafc] transition-all duration-200 focus:outline-none focus:border-[#10b981]/60 focus:shadow-[0_0_15px_rgba(0,240,255,0.15)] focus:ring-1 focus:ring-[#10b981]/30"
                 value={form.icon}
                 onChange={(e) => updateFormField('icon', e.target.value)}
               >
                 {ICON_OPTIONS.map((name) => (
-                  <option key={name} value={name} className="bg-[#0a0e1a] text-[#f9fafb]">
+                  <option key={name} value={name} className="bg-[#0f172a] text-[#f8fafc]">
                     {name}
                   </option>
                 ))}
@@ -358,7 +358,7 @@ export default function ContentOptionsTab() {
               {(() => {
                 const IconComponent = ICON_MAP[form.icon]
                 return IconComponent ? (
-                  <IconComponent className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a855f7]" />
+                  <IconComponent className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6366f1]" />
                 ) : null
               })()}
             </div>
@@ -427,18 +427,18 @@ export default function ContentOptionsTab() {
           <div className="flex items-start gap-3 min-w-0 flex-1">
             {IconComponent && (
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                <IconComponent className="h-4 w-4 text-[#a855f7]" />
+                <IconComponent className="h-4 w-4 text-[#6366f1]" />
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[#f9fafb] truncate">
+              <p className="text-sm font-medium text-[#f8fafc] truncate">
                 {option.label}
               </p>
-              <p className="text-xs text-[#6b7280] mt-0.5">
+              <p className="text-xs text-[#94a3b8] mt-0.5">
                 {option.value}
               </p>
               {option.description && (
-                <p className="text-xs text-[#9ca3af] mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-[#cbd5e1] mt-1.5 line-clamp-2 leading-relaxed">
                   {option.description}
                 </p>
               )}
@@ -449,7 +449,7 @@ export default function ContentOptionsTab() {
             <button
               type="button"
               onClick={() => startEdit(option)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:text-[#00f0ff] hover:bg-white/10 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#cbd5e1] hover:text-[#10b981] hover:bg-white/10 transition-colors"
               title="Edit"
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -458,7 +458,7 @@ export default function ContentOptionsTab() {
               type="button"
               onClick={() => handleDelete(option)}
               disabled={isDeleting}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] hover:text-red-400 hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#cbd5e1] hover:text-red-400 hover:bg-white/10 transition-colors disabled:opacity-50"
               title="Delete"
             >
               {isDeleting ? (
@@ -479,10 +479,10 @@ export default function ContentOptionsTab() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-[#f9fafb] mb-1">
+        <h3 className="text-lg font-semibold text-[#f8fafc] mb-1">
           Content Options
         </h3>
-        <p className="text-sm text-[#9ca3af]">
+        <p className="text-sm text-[#cbd5e1]">
           Manage the content types, tones, and target audiences available in the forge.
         </p>
       </div>
@@ -502,15 +502,15 @@ export default function ContentOptionsTab() {
               className={cn(
                 'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
                 activeTab === tab.key
-                  ? 'bg-[#00f0ff]/10 text-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.1)]'
-                  : 'text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5'
+                  ? 'bg-[#10b981]/10 text-[#10b981] shadow-[0_0_10px_rgba(0,240,255,0.1)]'
+                  : 'text-[#cbd5e1] hover:text-[#f8fafc] hover:bg-white/5'
               )}
             >
               {tab.label}
               <span
                 className={cn(
                   'ml-2 text-xs',
-                  activeTab === tab.key ? 'text-[#00f0ff]/70' : 'text-[#6b7280]'
+                  activeTab === tab.key ? 'text-[#10b981]/70' : 'text-[#94a3b8]'
                 )}
               >
                 {count}
@@ -532,10 +532,10 @@ export default function ContentOptionsTab() {
       <div className="space-y-3">
         {filteredOptions.length === 0 && !showAddForm && (
           <div className="rounded-xl border border-white/10 bg-white/5 py-12 text-center">
-            <p className="text-sm text-[#6b7280]">
+            <p className="text-sm text-[#94a3b8]">
               No {SUB_TABS.find((t) => t.key === activeTab)?.label.toLowerCase()} configured yet.
             </p>
-            <p className="text-xs text-[#6b7280] mt-1">
+            <p className="text-xs text-[#94a3b8] mt-1">
               Click "Add New" below to create one.
             </p>
           </div>

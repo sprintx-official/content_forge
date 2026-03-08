@@ -116,14 +116,14 @@ export default function ForgePage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-6">
                 <AlertCircle className="w-8 h-8 text-red-400" />
               </div>
-              <h2 className="text-2xl font-bold text-[#f9fafb] mb-3">Generation Failed</h2>
-              <p className="text-[#9ca3af] mb-6">{error}</p>
+              <h2 className="text-2xl font-bold text-[#f8fafc] mb-3">Generation Failed</h2>
+              <p className="text-[#cbd5e1] mb-6">{error}</p>
               <button
                 type="button"
                 onClick={reset}
                 className={cn(
                   'inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium',
-                  'bg-[#00f0ff] text-[#0a0e1a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)] transition-all',
+                  'bg-[#10b981] text-[#0f172a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)] transition-all',
                 )}
               >
                 <RotateCcw className="w-4 h-4" />

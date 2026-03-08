@@ -63,7 +63,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   if (loading) {
     return (
       <div className="p-4 text-center">
-        <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <div className="w-6 h-6 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
         <p className="text-gray-400">Loading history...</p>
       </div>
     )

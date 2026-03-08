@@ -255,6 +255,7 @@ export interface Workflow {
   type: FlowType
   mode: FlowMode
   pipelineAgentId?: string | null
+  frequency?: number
   steps: WorkflowStep[]
   isActive: boolean
   assignedUserIds?: string[]

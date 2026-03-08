@@ -88,11 +88,11 @@ export default function OutputPanel() {
       {/* Title + settings badges */}
       <div>
         <div className="flex items-center gap-3">
-          <Sparkles className="w-6 h-6 text-[#00f0ff]" />
+          <Sparkles className="w-6 h-6 text-[#10b981]" />
           <h2
             className={cn(
               'text-2xl md:text-3xl font-bold',
-              'bg-gradient-to-r from-[#00f0ff] to-[#a855f7] bg-clip-text text-transparent',
+              'bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent',
             )}
           >
             Your Content is Ready
@@ -126,14 +126,14 @@ export default function OutputPanel() {
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
               outputTab === id
-                ? 'bg-gradient-to-r from-[#00f0ff]/15 to-[#a855f7]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
+                ? 'bg-gradient-to-r from-[#10b981]/15 to-[#6366f1]/15 text-white shadow-[0_0_12px_rgba(0,240,255,0.15)]'
                 : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]',
             )}
           >
-            <Icon className={cn('w-4 h-4', outputTab === id ? 'text-[#00f0ff]' : 'text-white/30')} />
+            <Icon className={cn('w-4 h-4', outputTab === id ? 'text-[#10b981]' : 'text-white/30')} />
             {label}
             {id === 'social' && output.socialPosts && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#a855f7]/20 text-[#a855f7]">
+              <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#6366f1]/20 text-[#6366f1]">
                 {output.socialPosts.length}
               </span>
             )}

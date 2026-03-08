@@ -51,7 +51,7 @@ export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
             disabled={isDisabled}
             className={cn(
               'w-full flex items-center justify-center gap-2',
-              'bg-[#00f0ff] text-[#0a0e1a] font-bold py-4 rounded-xl text-lg',
+              'bg-[#10b981] text-[#0f172a] font-bold py-4 rounded-xl text-lg',
               'transition-all hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]',
               isDisabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -66,7 +66,7 @@ export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
               onClick={reset}
               className={cn(
                 'w-full flex items-center justify-center gap-2',
-                'text-[#6b7280] hover:text-white text-sm py-2 rounded-xl transition-all',
+                'text-[#94a3b8] hover:text-white text-sm py-2 rounded-xl transition-all',
                 'hover:bg-white/5'
               )}
             >

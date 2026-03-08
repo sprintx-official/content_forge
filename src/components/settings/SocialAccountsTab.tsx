@@ -139,21 +139,21 @@ export default function SocialAccountsTab() {
   const platformLabel: Record<string, string> = Object.fromEntries(PLATFORMS.map(p => [p.id, p.label]))
   const currentPlatform = PLATFORMS.find(p => p.id === platform)
 
-  if (loading) return <div className="text-[#9ca3af]">Loading...</div>
+  if (loading) return <div className="text-[#cbd5e1]">Loading...</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-[#f9fafb] flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-[#00f0ff]" />
+          <h2 className="text-xl font-semibold text-[#f8fafc] flex items-center gap-2">
+            <Share2 className="h-5 w-5 text-[#10b981]" />
             Social Accounts
           </h2>
-          <p className="text-sm text-[#9ca3af]">Connect social media accounts for publishing.</p>
+          <p className="text-sm text-[#cbd5e1]">Connect social media accounts for publishing.</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1.5"
+          className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Add Account
@@ -161,7 +161,7 @@ export default function SocialAccountsTab() {
       </div>
 
       {message && (
-        <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 rounded-lg px-4 py-2 text-sm text-[#00f0ff]">
+        <div className="bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-4 py-2 text-sm text-[#10b981]">
           {message}
         </div>
       )}
@@ -171,7 +171,7 @@ export default function SocialAccountsTab() {
           <select
             value={agentId}
             onChange={e => setAgentId(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
           >
             <option value="">Select Agent</option>
             {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -181,7 +181,7 @@ export default function SocialAccountsTab() {
             <select
               value={platform}
               onChange={e => setPlatform(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
             >
               {PLATFORMS.map(p => (
                 <option key={p.id} value={p.id}>{p.label}</option>
@@ -192,12 +192,12 @@ export default function SocialAccountsTab() {
               placeholder="Username (optional)"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
             />
           </div>
 
           {currentPlatform && (
-            <p className="text-xs text-[#9ca3af]">{currentPlatform.help}</p>
+            <p className="text-xs text-[#cbd5e1]">{currentPlatform.help}</p>
           )}
 
           {/* Platform-specific fields */}
@@ -208,28 +208,28 @@ export default function SocialAccountsTab() {
                 placeholder="API Key (Consumer Key)"
                 value={xForm.apiKey}
                 onChange={e => setXForm({ ...xForm, apiKey: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
               <input
                 type="password"
                 placeholder="API Key Secret (Consumer Secret)"
                 value={xForm.apiSecret}
                 onChange={e => setXForm({ ...xForm, apiSecret: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
               <input
                 type="password"
                 placeholder="Access Token"
                 value={xForm.accessToken}
                 onChange={e => setXForm({ ...xForm, accessToken: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
               <input
                 type="password"
                 placeholder="Access Token Secret"
                 value={xForm.accessTokenSecret}
                 onChange={e => setXForm({ ...xForm, accessTokenSecret: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
             </div>
           ) : (
@@ -239,7 +239,7 @@ export default function SocialAccountsTab() {
                 placeholder={platform === 'facebook' ? 'Page Access Token' : 'Access Token'}
                 value={genericForm.accessToken}
                 onChange={e => setGenericForm({ ...genericForm, accessToken: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
               <input
                 type="text"
@@ -251,16 +251,16 @@ export default function SocialAccountsTab() {
                 }
                 value={genericForm.platformUserId}
                 onChange={e => setGenericForm({ ...genericForm, platformUserId: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f9fafb] text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[#f8fafc] text-sm"
               />
             </div>
           )}
 
           <div className="flex gap-2">
-            <button onClick={create} className="bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] rounded-lg px-4 py-2 text-sm font-medium">
+            <button onClick={create} className="bg-[#10b981]/10 hover:bg-[#10b981]/20 text-[#10b981] rounded-lg px-4 py-2 text-sm font-medium">
               Connect
             </button>
-            <button onClick={() => { setShowForm(false); resetForm() }} className="text-[#9ca3af] hover:text-[#f9fafb] px-4 py-2 text-sm">
+            <button onClick={() => { setShowForm(false); resetForm() }} className="text-[#cbd5e1] hover:text-[#f8fafc] px-4 py-2 text-sm">
               Cancel
             </button>
           </div>
@@ -269,29 +269,29 @@ export default function SocialAccountsTab() {
 
       <div className="space-y-3">
         {accounts.length === 0 && (
-          <p className="text-[#9ca3af] text-sm text-center py-8">No social accounts connected yet.</p>
+          <p className="text-[#cbd5e1] text-sm text-center py-8">No social accounts connected yet.</p>
         )}
         {accounts.map(a => (
           <div key={a.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <div>
-              <div className="text-sm font-medium text-[#f9fafb] flex items-center gap-2">
+              <div className="text-sm font-medium text-[#f8fafc] flex items-center gap-2">
                 {platformLabel[a.platform] || a.platform}
-                {a.platform_username && <span className="text-[#9ca3af]">@{a.platform_username}</span>}
+                {a.platform_username && <span className="text-[#cbd5e1]">@{a.platform_username}</span>}
               </div>
-              <div className="text-xs text-[#9ca3af] mt-0.5">Agent: {a.agent_name}</div>
+              <div className="text-xs text-[#cbd5e1] mt-0.5">Agent: {a.agent_name}</div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => test(a.id)}
                 disabled={testing === a.id}
-                className="text-[#9ca3af] hover:text-[#00f0ff] p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-50"
+                className="text-[#cbd5e1] hover:text-[#10b981] p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-50"
                 title="Test credentials"
               >
                 <Zap className="h-4 w-4" />
               </button>
               <button
                 onClick={() => remove(a.id)}
-                className="text-[#9ca3af] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
+                className="text-[#cbd5e1] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

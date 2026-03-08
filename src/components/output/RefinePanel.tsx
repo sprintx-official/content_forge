@@ -33,31 +33,31 @@ export default function RefinePanel({
   const hasChanges = toneChanged || audienceChanged
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-[#a855f7]/30 rounded-2xl p-5 animate-[slideUp_0.3s_ease-out_both]">
+    <div className="bg-white/5 backdrop-blur-xl border border-[#6366f1]/30 rounded-2xl p-5 animate-[slideUp_0.3s_ease-out_both]">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-[#a855f7]" />
-          <h3 className="text-lg font-semibold text-[#f9fafb]">Refine Content</h3>
+          <Wand2 className="w-5 h-5 text-[#6366f1]" />
+          <h3 className="text-lg font-semibold text-[#f8fafc]">Refine Content</h3>
         </div>
         <button
           type="button"
           onClick={onCancel}
-          className="p-1.5 rounded-lg text-[#6b7280] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+          className="p-1.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <p className="text-sm text-[#9ca3af] mb-4">
+      <p className="text-sm text-[#cbd5e1] mb-4">
         Adjust the tone or audience and the AI will refine your content to match.
         You&apos;ll see a diff preview before accepting changes.
       </p>
 
       {/* Tone selector */}
       <div className="mb-4">
-        <label className="text-xs text-[#9ca3af] uppercase tracking-wider mb-2 block">
-          Tone {toneChanged && <span className="text-[#a855f7] normal-case">(changed)</span>}
+        <label className="text-xs text-[#cbd5e1] uppercase tracking-wider mb-2 block">
+          Tone {toneChanged && <span className="text-[#6366f1] normal-case">(changed)</span>}
         </label>
         <div className="flex flex-wrap gap-2">
           {tones.map((t) => (
@@ -69,8 +69,8 @@ export default function RefinePanel({
                 'px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer',
                 'border',
                 refineTone === t.id
-                  ? 'border-[#a855f7] bg-[#a855f7]/10 text-[#a855f7]'
-                  : 'border-white/10 text-[#9ca3af] hover:bg-white/10 hover:border-white/20',
+                  ? 'border-[#6366f1] bg-[#6366f1]/10 text-[#6366f1]'
+                  : 'border-white/10 text-[#cbd5e1] hover:bg-white/10 hover:border-white/20',
               )}
             >
               {t.name}
@@ -81,8 +81,8 @@ export default function RefinePanel({
 
       {/* Audience selector */}
       <div className="mb-5">
-        <label className="text-xs text-[#9ca3af] uppercase tracking-wider mb-2 block">
-          Audience {audienceChanged && <span className="text-[#f472b6] normal-case">(changed)</span>}
+        <label className="text-xs text-[#cbd5e1] uppercase tracking-wider mb-2 block">
+          Audience {audienceChanged && <span className="text-[#ec4899] normal-case">(changed)</span>}
         </label>
         <div className="flex flex-wrap gap-2">
           {audiences.map((a) => (
@@ -94,8 +94,8 @@ export default function RefinePanel({
                 'px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer',
                 'border',
                 refineAudience === a.id
-                  ? 'border-[#f472b6] bg-[#f472b6]/10 text-[#f472b6]'
-                  : 'border-white/10 text-[#9ca3af] hover:bg-white/10 hover:border-white/20',
+                  ? 'border-[#ec4899] bg-[#ec4899]/10 text-[#ec4899]'
+                  : 'border-white/10 text-[#cbd5e1] hover:bg-white/10 hover:border-white/20',
               )}
             >
               {a.name}
@@ -113,8 +113,8 @@ export default function RefinePanel({
           className={cn(
             'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer',
             hasChanges && !isRefining
-              ? 'bg-[#00f0ff] text-[#0a0e1a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
-              : 'bg-white/10 text-[#6b7280] cursor-not-allowed',
+              ? 'bg-[#10b981] text-[#0f172a] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)]'
+              : 'bg-white/10 text-[#94a3b8] cursor-not-allowed',
           )}
         >
           {isRefining ? (
@@ -134,7 +134,7 @@ export default function RefinePanel({
           type="button"
           onClick={onCancel}
           disabled={isRefining}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-[#9ca3af] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-[#cbd5e1] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
         >
           Cancel
         </button>

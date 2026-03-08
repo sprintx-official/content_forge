@@ -1,15 +1,8 @@
-import { ArrowUp, ArrowDown, Trash2, PenTool, ImageIcon, Video } from 'lucide-react'
+import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import type { AgentConfig, WorkflowStep, WorkflowStepType } from '@/types'
-
-const STEP_TYPES: { id: WorkflowStepType; label: string; icon: typeof PenTool; description: string }[] = [
-  { id: 'text', label: 'Text', icon: PenTool, description: 'Generate text content' },
-  { id: 'image', label: 'Image', icon: ImageIcon, description: 'Generate an image from context' },
-  { id: 'video', label: 'Video', icon: Video, description: 'Generate a video from context' },
-]
+import type { AgentConfig, WorkflowStep } from '@/types'
 
 interface WorkflowStepEditorProps {
   step: WorkflowStep
@@ -37,8 +30,6 @@ export default function WorkflowStepEditor({
     label: a.name,
   }))
 
-  const currentType = step.stepType || 'text'
-
   return (
     <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
       <div className="flex flex-col items-center gap-1 pt-6">
@@ -46,46 +37,22 @@ export default function WorkflowStepEditor({
           type="button"
           disabled={index === 0}
           onClick={() => onMoveUp(index)}
-          className="text-[#9ca3af] hover:text-[#f9fafb] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="text-[#cbd5e1] hover:text-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ArrowUp className="h-4 w-4" />
         </button>
-        <span className="text-xs text-[#6b7280] font-mono">{index + 1}</span>
+        <span className="text-xs text-[#94a3b8] font-mono">{index + 1}</span>
         <button
           type="button"
           disabled={index === total - 1}
           onClick={() => onMoveDown(index)}
-          className="text-[#9ca3af] hover:text-[#f9fafb] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="text-[#cbd5e1] hover:text-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ArrowDown className="h-4 w-4" />
         </button>
       </div>
 
       <div className="flex-1 space-y-3">
-        {/* Step type selector */}
-        <div className="flex items-center gap-1.5">
-          {STEP_TYPES.map((t) => {
-            const Icon = t.icon
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onChange(index, { ...step, stepType: t.id })}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all',
-                  currentType === t.id
-                    ? 'bg-[#00f0ff]/15 border border-[#00f0ff]/30 text-[#00f0ff]'
-                    : 'bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60',
-                )}
-                title={t.description}
-              >
-                <Icon className="h-3 w-3" />
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
-
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Select
             label="Agent"
@@ -98,13 +65,7 @@ export default function WorkflowStepEditor({
             label="Description"
             value={step.instructions}
             onChange={(e) => onChange(index, { ...step, instructions: e.target.value })}
-            placeholder={
-              currentType === 'image'
-                ? 'Image will be generated from previous output'
-                : currentType === 'video'
-                  ? 'Video will be generated from previous output'
-                  : 'Describe what this step does'
-            }
+            placeholder="Describe what this step does"
           />
         </div>
       </div>

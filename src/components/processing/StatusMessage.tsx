@@ -13,13 +13,13 @@ export function StatusMessage({ message, agentName }: StatusMessageProps) {
         <div className="flex items-center gap-2">
           {/* Pulsing dot */}
           <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00f0ff] opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00f0ff]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#10b981]" />
           </span>
 
           <span
             className={cn(
-              'text-sm md:text-base font-semibold tracking-wide text-[#00f0ff]',
+              'text-sm md:text-base font-semibold tracking-wide text-[#10b981]',
               'drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]',
             )}
           >
@@ -40,7 +40,7 @@ export function StatusMessage({ message, agentName }: StatusMessageProps) {
         >
           {message}
           {message && (
-            <span className="inline-block w-[2px] h-4 ml-0.5 bg-[#00f0ff] animate-[blink_1s_step-end_infinite] align-middle" />
+            <span className="inline-block w-[2px] h-4 ml-0.5 bg-[#10b981] animate-[blink_1s_step-end_infinite] align-middle" />
           )}
         </p>
       </div>

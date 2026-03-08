@@ -79,7 +79,7 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
   if (loading) {
     return (
       <div className="p-4 text-center">
-        <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <div className="w-6 h-6 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
         <p className="text-gray-400">Loading pipeline status...</p>
       </div>
     )
@@ -92,7 +92,7 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
         <button
           onClick={handleManualRun}
           disabled={runningManual}
-          className="flex items-center gap-2 px-3 py-2 bg-[#00f0ff] text-[#0a0e1a] font-medium rounded hover:bg-[#00f0ff]/90 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-[#10b981] text-[#0f172a] font-medium rounded hover:bg-[#10b981]/90 disabled:opacity-50 transition-colors"
         >
           <Play size={16} />
           {runningManual ? 'Running...' : 'Run Now'}
