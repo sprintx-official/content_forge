@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Zap,
   Workflow,
@@ -27,6 +27,7 @@ export default function Sidebar() {
   const { activeTab, setActiveTab } = useAdminStore()
   const resetForge = useForgeStore((s) => s.reset)
   const location = useLocation()
+  const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cf_sidebar') === 'collapsed')
   const [settingsExpanded, setSettingsExpanded] = useState(() => localStorage.getItem('cf_settings') === 'expanded')
 
@@ -151,10 +152,13 @@ export default function Sidebar() {
                     {section.items.map(({ id, label, icon: Icon }) => (
                       <button
                         key={id}
-                        onClick={() => setActiveTab(id)}
+                        onClick={() => {
+                          setActiveTab(id)
+                          navigate('/settings')
+                        }}
                         className={cn(
                           'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
-                          activeTab === id
+                          activeTab === id && location.pathname === '/settings'
                             ? 'bg-white/[0.08] text-[#10b981]'
                             : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
                         )}
