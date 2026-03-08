@@ -42,7 +42,7 @@ router.put('/settings/:agentId', authenticate, requireAdmin, async (req: Authent
   ]
 
   for (const [key, value] of Object.entries(settings)) {
-    if (allowedKeys.includes(key)) {
+    if (allowedKeys.includes(key) && value !== null && value !== undefined && value !== '') {
       await execute(
         `INSERT INTO agent_settings (id, agent_id, key, value)
          VALUES ($1, $2, $3, $4)
