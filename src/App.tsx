@@ -7,12 +7,11 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useForgeOptionsStore } from '@/stores/useForgeOptionsStore'
 
 // Lazy load pages for code splitting
-const ForgePage = lazy(() => import('@/pages/ForgePage'))
-const HistoryPage = lazy(() => import('@/pages/HistoryPage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
-const NewsroomPage = lazy(() => import('@/pages/NewsroomPage'))
 const CommandPalette = lazy(() => import('@/components/CommandPalette'))
+const FlowsPage = lazy(() => import('@/pages/FlowsPage'))
+const FlowDetailPage = lazy(() => import('@/pages/FlowDetailPage'))
 
 function LoadingFallback() {
   return (
@@ -66,23 +65,34 @@ export default function App() {
             {/* Public routes - redirect to dashboard if already logged in */}
             <Route
               path="/login"
-              element={isAuthenticated ? <Navigate to="/forge" replace /> : <LoginPage />}
+              element={isAuthenticated ? <Navigate to="/flows" replace /> : <LoginPage />}
             />
 
             {/* Protected routes - require authentication */}
+            {/* New Flows routes */}
             <Route
-              path="/forge"
+              path="/flows"
               element={
                 <AuthGuard>
-                  <ForgePage />
+                  <FlowsPage />
                 </AuthGuard>
               }
             />
             <Route
-              path="/history"
+              path="/flows/:flowId"
               element={
                 <AuthGuard>
-                  <HistoryPage />
+                  <FlowDetailPage />
+                </AuthGuard>
+              }
+            />
+
+            {/* Legacy routes - redirect to new flows */}
+            <Route
+              path="/forge"
+              element={
+                <AuthGuard>
+                  <Navigate to="/flows/system-write" replace />
                 </AuthGuard>
               }
             />
@@ -90,10 +100,20 @@ export default function App() {
               path="/newsroom"
               element={
                 <AuthGuard>
-                  <NewsroomPage />
+                  <Navigate to="/flows" replace />
                 </AuthGuard>
               }
             />
+            <Route
+              path="/history"
+              element={
+                <AuthGuard>
+                  <Navigate to="/flows/system-write?tab=history" replace />
+                </AuthGuard>
+              }
+            />
+
+            {/* Settings */}
             <Route
               path="/settings"
               element={
@@ -108,7 +128,7 @@ export default function App() {
             {/* Root redirects based on auth state */}
             <Route
               path="*"
-              element={<Navigate to={isAuthenticated ? '/forge' : '/login'} replace />}
+              element={<Navigate to={isAuthenticated ? '/flows' : '/login'} replace />}
             />
           </Routes>
         </Suspense>

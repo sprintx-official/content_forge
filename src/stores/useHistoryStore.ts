@@ -5,21 +5,21 @@ import type { ForgeInput, ForgeOutput, HistoryItem } from '@/types'
 interface HistoryState {
   items: HistoryItem[]
   loading: boolean
-  addItem: (input: ForgeInput, output: ForgeOutput, workflowName?: string) => Promise<void>
+  addItem: (input: ForgeInput, output: ForgeOutput, workflowName?: string, workflowId?: string) => Promise<void>
   prependItem: (item: HistoryItem) => void
   removeItem: (id: string) => Promise<void>
   updateItem: (id: string, content: string) => Promise<void>
   clearHistory: () => Promise<void>
-  loadHistory: (search?: string) => Promise<void>
+  loadHistory: (search?: string, workflowId?: string) => Promise<void>
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   items: [],
   loading: false,
 
-  addItem: async (input: ForgeInput, output: ForgeOutput, workflowName?: string) => {
+  addItem: async (input: ForgeInput, output: ForgeOutput, workflowName?: string, workflowId?: string) => {
     try {
-      const item = await api.post<HistoryItem>('/api/history', { input, output, workflowName })
+      const item = await api.post<HistoryItem>('/api/history', { input, output, workflowName, workflowId })
       set({ items: [item, ...get().items].slice(0, 50) })
     } catch (err) {
       console.error('Failed to save history item:', err)
@@ -59,12 +59,13 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     }
   },
 
-  loadHistory: async (search?: string) => {
+  loadHistory: async (search?: string, workflowId?: string) => {
     set({ loading: true })
     try {
-      const path = search
-        ? `/api/history?search=${encodeURIComponent(search)}`
-        : '/api/history'
+      const params = new URLSearchParams()
+      if (search) params.append('search', search)
+      if (workflowId) params.append('workflowId', workflowId)
+      const path = params.toString() ? `/api/history?${params.toString()}` : '/api/history'
       const res = await api.get<{ data: HistoryItem[]; pagination: unknown }>(path)
       set({ items: res.data })
     } catch {

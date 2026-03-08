@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Zap,
-  Hammer,
-  Newspaper,
-  Clock,
+  Workflow,
   Settings,
   LogOut,
   ChevronsLeft,
@@ -16,9 +14,7 @@ import { useForgeStore } from '@/stores/useForgeStore'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { to: '/forge', label: 'Forge', icon: Hammer, section: 'main' },
-  { to: '/newsroom', label: 'Newsroom', icon: Newspaper, section: 'main' },
-  { to: '/history', label: 'History', icon: Clock, section: 'main' },
+  { to: '/flows', label: 'Flows', icon: Workflow, section: 'main' },
 ]
 
 export default function Sidebar() {
@@ -46,7 +42,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 px-4 border-b border-white/[0.06]">
-        <Link to="/forge" onClick={resetForge} className="flex items-center gap-2.5 group min-w-0">
+        <Link to="/flows" onClick={resetForge} className="flex items-center gap-2.5 group min-w-0">
           <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center shrink-0">
             <Zap className="h-4 w-4 text-white/70" />
           </div>

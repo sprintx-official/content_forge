@@ -18,7 +18,7 @@ const router = Router()
 // GET /api/coverage — List coverage posts (across all agents or filtered)
 // ---------------------------------------------------------------------------
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { agentId, status, urgency, search } = req.query
+  const { agentId, status, urgency, search, workflowId } = req.query
   const limit = Math.min(parseInt(String(req.query.limit || '20'), 10), 100)
   const offset = parseInt(String(req.query.offset || '0'), 10)
 
@@ -45,6 +45,10 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
   if (search && typeof search === 'string') {
     params.push(`%${search}%`)
     conditions.push(`(cp.title ILIKE $${params.length} OR cp.summary ILIKE $${params.length})`)
+  }
+  if (workflowId && typeof workflowId === 'string') {
+    params.push(workflowId)
+    conditions.push(`cp.workflow_id = $${params.length}`)
   }
 
   if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ')

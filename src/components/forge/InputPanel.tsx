@@ -8,7 +8,12 @@ import AudienceSelector from './AudienceSelector'
 import LengthSelector from './LengthSelector'
 import TopicInput from './TopicInput'
 
-export default function InputPanel() {
+interface InputPanelProps {
+  hideWorkflowSelector?: boolean
+  workflowId?: string
+}
+
+export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
   const topic = useForgeStore((s) => s.input.topic)
   const output = useForgeStore((s) => s.output)
   const isProcessing = useForgeStore((s) => s.isProcessing)
@@ -25,7 +30,7 @@ export default function InputPanel() {
       </h2>
 
       <div className="space-y-6">
-        <WorkflowSelector />
+        {!hideWorkflowSelector && <WorkflowSelector />}
         <ContentTypeSelector />
         <ToneSelector />
         <AudienceSelector />

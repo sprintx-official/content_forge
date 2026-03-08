@@ -45,6 +45,45 @@ async function runMigrations(): Promise<void> {
   if (!videoCols.some((c) => c.column_name === 'clip_index')) {
     await exec("ALTER TABLE generated_videos ADD COLUMN clip_index INTEGER NOT NULL DEFAULT 0")
   }
+
+  // Migration: Add flows redesign columns to workflows
+  const workflowCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'workflows'`
+  )
+  if (!workflowCols.some((c) => c.column_name === 'type')) {
+    await exec("ALTER TABLE workflows ADD COLUMN type TEXT NOT NULL DEFAULT 'text'")
+  }
+  if (!workflowCols.some((c) => c.column_name === 'mode')) {
+    await exec("ALTER TABLE workflows ADD COLUMN mode TEXT NOT NULL DEFAULT 'manual'")
+  }
+  if (!workflowCols.some((c) => c.column_name === 'pipeline_agent_id')) {
+    await exec("ALTER TABLE workflows ADD COLUMN pipeline_agent_id TEXT REFERENCES agents(id) ON DELETE SET NULL")
+  }
+
+  // Migration: Add workflow_id to history
+  const historyCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'history'`
+  )
+  if (!historyCols.some((c) => c.column_name === 'workflow_id')) {
+    await exec("ALTER TABLE history ADD COLUMN workflow_id TEXT REFERENCES workflows(id) ON DELETE SET NULL")
+  }
+
+  // Migration: Add workflow_id to coverage_posts
+  const coverageCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'coverage_posts'`
+  )
+  if (!coverageCols.some((c) => c.column_name === 'workflow_id')) {
+    await exec("ALTER TABLE coverage_posts ADD COLUMN workflow_id TEXT REFERENCES workflows(id) ON DELETE SET NULL")
+  }
+
+  // Create indexes for new workflow columns
+  await exec(`
+    CREATE INDEX IF NOT EXISTS idx_history_workflow_id ON history(workflow_id);
+    CREATE INDEX IF NOT EXISTS idx_coverage_posts_workflow_id ON coverage_posts(workflow_id);
+  `)
 }
 
 export async function initializeSchema(): Promise<void> {

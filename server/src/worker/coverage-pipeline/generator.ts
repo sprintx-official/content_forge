@@ -165,13 +165,23 @@ export async function generateCoveragePost(
   const postId = crypto.randomUUID()
   const imageUrl = articleRows.find(a => a.image_url)?.image_url ?? null
 
+  // Look up workflow_id for this agent if it has a pipeline agent setup
+  let workflowId: string | null = null
+  const workflowRow = await queryOne<{ id: string }>(
+    `SELECT id FROM workflows WHERE pipeline_agent_id = $1 AND mode IN ('automated', 'both') LIMIT 1`,
+    [agentId]
+  )
+  if (workflowRow) {
+    workflowId = workflowRow.id
+  }
+
   await execute(
     `INSERT INTO coverage_posts (
        id, agent_id, title, slug, summary, category, urgency, story_stage,
        confidence, fingerprint, key_facts, image_prompt,
        image_original, image_square, image_landscape,
-       image_headline, status, created_at, updated_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())`,
+       image_headline, status, workflow_id, created_at, updated_at
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW(), NOW())`,
     [
       postId,
       agentId,
@@ -190,6 +200,7 @@ export async function generateCoveragePost(
       imageLandscape,
       generated.image_headline ?? null,
       'draft',
+      workflowId,
     ],
   )
 

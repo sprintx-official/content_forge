@@ -10,6 +10,10 @@ export type UserRole = 'admin' | 'user'
 export type ForgeMode = 'content' | 'chat' | 'image' | 'video'
 export type WorkflowStepType = 'text' | 'image' | 'video'
 
+// ── Flows types ────────────────────────────────────────────
+export type FlowType = 'text' | 'chat' | 'image' | 'video'
+export type FlowMode = 'manual' | 'automated' | 'both'
+
 // ── Image generation types ─────────────────────────────────
 export interface ImageSize {
   width: number
@@ -196,6 +200,7 @@ export interface HistoryItem {
   input: ForgeInput
   output: ForgeOutput
   workflowName?: string
+  workflowId?: string
   userName?: string
   createdAt: string
 }
@@ -247,12 +252,26 @@ export interface Workflow {
   id: string
   name: string
   description: string
+  type: FlowType
+  mode: FlowMode
+  pipelineAgentId?: string | null
   steps: WorkflowStep[]
   isActive: boolean
   assignedUserIds?: string[]
   createdAt: string
   updatedAt: string
 }
+
+export interface SystemFlow {
+  id: 'system-write' | 'system-chat' | 'system-image' | 'system-video'
+  name: string
+  description: string
+  type: FlowType
+  mode: 'manual'
+  isSystem: true
+}
+
+export type AnyFlow = Workflow | SystemFlow
 
 export interface ProcessingStage {
   id: ProcessingStageId | string

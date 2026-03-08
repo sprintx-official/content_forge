@@ -47,6 +47,9 @@ export interface WorkflowRow {
   name: string
   description: string
   is_active: number
+  type: string
+  mode: string
+  pipeline_agent_id: string | null
   created_at: string
   updated_at: string
 }
@@ -76,6 +79,7 @@ export interface HistoryRow {
   input_json: string
   output_json: string
   workflow_name: string | null
+  workflow_id: string | null
   created_at: string
 }
 

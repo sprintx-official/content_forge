@@ -10,6 +10,7 @@ const historyPostSchema = z.object({
   input: z.object({}).passthrough(),
   output: z.object({}).passthrough(),
   workflowName: z.string().optional(),
+  workflowId: z.string().uuid().optional(),
 })
 
 const historyUpdateSchema = z.object({
@@ -18,6 +19,7 @@ const historyUpdateSchema = z.object({
 
 const searchQuerySchema = z.object({
   search: z.string().optional(),
+  workflowId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
@@ -30,6 +32,7 @@ function formatHistory(row: HistoryRowWithUser) {
     input: JSON.parse(row.input_json),
     output: JSON.parse(row.output_json),
     workflowName: row.workflow_name,
+    workflowId: row.workflow_id,
     userName: row.user_name,
     createdAt: row.created_at,
   }
@@ -39,6 +42,7 @@ function formatHistory(row: HistoryRowWithUser) {
 router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const isAdmin = req.user!.role === 'admin'
   const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
+  const workflowId = typeof req.query.workflowId === 'string' ? req.query.workflowId : undefined
   const page = typeof req.query.page === 'number' ? req.query.page : 1
   const limit = typeof req.query.limit === 'number' ? req.query.limit : 20
   const offset = (page - 1) * limit
@@ -47,14 +51,29 @@ router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: Auth
   let totalCount: number
 
   if (isAdmin) {
-    if (search) {
+    if (search || workflowId) {
+      const conditions: string[] = []
+      const params: unknown[] = []
+
+      if (search) {
+        conditions.push(`u.name ILIKE $${params.length + 1}`)
+        params.push(`%${search}%`)
+      }
+      if (workflowId) {
+        conditions.push(`h.workflow_id = $${params.length + 1}`)
+        params.push(workflowId)
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
       rows = await query<HistoryRowWithUser>(
-        'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1 ORDER BY h.created_at DESC LIMIT $2 OFFSET $3',
-        [`%${search}%`, limit, offset]
+        `SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id ${whereClause} ORDER BY h.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, offset]
       )
+
+      params.push(limit, offset)
       const countResult = await queryOne<{ count: string }>(
-        'SELECT COUNT(*) as count FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE u.name ILIKE $1',
-        [`%${search}%`]
+        `SELECT COUNT(*) as count FROM history h LEFT JOIN users u ON h.user_id = u.id ${whereClause}`,
+        params.slice(0, -2)
       )
       totalCount = parseInt(countResult?.count || '0', 10)
     } else {
@@ -66,14 +85,24 @@ router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: Auth
       totalCount = parseInt(countResult?.count || '0', 10)
     }
   } else {
-    rows = await query<HistoryRowWithUser>(
-      'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.user_id = $1 ORDER BY h.created_at DESC LIMIT $2 OFFSET $3',
-      [req.user!.userId, limit, offset]
-    )
-    const countResult = await queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM history WHERE user_id = $1',
-      [req.user!.userId]
-    )
+    let query_str = 'SELECT h.*, u.name AS user_name FROM history h LEFT JOIN users u ON h.user_id = u.id WHERE h.user_id = $1'
+    const params: unknown[] = [req.user!.userId]
+
+    if (workflowId) {
+      query_str += ` AND h.workflow_id = $${params.length + 1}`
+      params.push(workflowId)
+    }
+
+    query_str += ' ORDER BY h.created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2)
+    params.push(limit, offset)
+
+    rows = await query<HistoryRowWithUser>(query_str, params)
+
+    const countQuery = workflowId
+      ? 'SELECT COUNT(*) as count FROM history WHERE user_id = $1 AND workflow_id = $2'
+      : 'SELECT COUNT(*) as count FROM history WHERE user_id = $1'
+    const countParams = workflowId ? [req.user!.userId, workflowId] : [req.user!.userId]
+    const countResult = await queryOne<{ count: string }>(countQuery, countParams)
     totalCount = parseInt(countResult?.count || '0', 10)
   }
 
@@ -91,14 +120,14 @@ router.get('/', authenticate, validateQuery(searchQuerySchema), async (req: Auth
 
 // POST /api/history
 router.post('/', authenticate, validateBody(historyPostSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { input, output, workflowName } = req.body
+  const { input, output, workflowName, workflowId } = req.body
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
 
   await execute(
-    'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-    [id, req.user!.userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, now]
+    'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, workflow_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [id, req.user!.userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, workflowId || null, now]
   )
 
   const row = (await queryOne<HistoryRowWithUser>(

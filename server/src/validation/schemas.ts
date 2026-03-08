@@ -70,7 +70,10 @@ export const workflowStepSchema = z.object({
 export const createWorkflowSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional().default(''),
-  steps: z.array(workflowStepSchema).min(1, 'At least one step is required').max(20, 'Too many steps'),
+  steps: z.array(workflowStepSchema).min(0).max(20, 'Too many steps'),
+  type: z.enum(['text', 'chat', 'image', 'video']).optional().default('text'),
+  mode: z.enum(['manual', 'automated', 'both']).optional().default('manual'),
+  pipelineAgentId: z.string().uuid('Invalid agent ID').optional().nullable(),
   isActive: z.boolean().optional().default(true),
   assignedUserIds: z.array(z.string().uuid()).optional(),
 })

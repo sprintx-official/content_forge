@@ -416,6 +416,7 @@ export const useForgeStore = create<ForgeState>((set, get) => ({
             input: event.input,
             output: event.output,
             workflowName: event.workflowName,
+            workflowId: (event as any).workflowId,
             createdAt: event.createdAt,
           }
 

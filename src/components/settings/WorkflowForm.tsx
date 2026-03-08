@@ -10,7 +10,7 @@ import type { Workflow, WorkflowStep } from '@/types'
 
 interface WorkflowFormProps {
   workflow?: Workflow | null
-  onClose: () => void
+  onClose?: () => void
 }
 
 export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
@@ -21,6 +21,9 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
   const [steps, setSteps] = useState<WorkflowStep[]>([])
   const [isActive, setIsActive] = useState(true)
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [type, setType] = useState<'text' | 'chat' | 'image' | 'video'>('text')
+  const [mode, setMode] = useState<'manual' | 'automated' | 'both'>('manual')
+  const [pipelineAgentId, setPipelineAgentId] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -35,6 +38,9 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       setSteps(workflow.steps.map((s) => ({ ...s })))
       setIsActive(workflow.isActive)
       setSelectedUserIds(new Set(workflow.assignedUserIds ?? []))
+      setType(workflow.type)
+      setMode(workflow.mode)
+      setPipelineAgentId(workflow.pipelineAgentId || '')
     }
   }, [workflow])
 
@@ -82,8 +88,9 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       return
     }
 
-    if (steps.length === 0) {
-      setError('Add at least one step.')
+    // Only manual and both modes require steps
+    if ((mode === 'manual' || mode === 'both') && steps.length === 0) {
+      setError('Manual workflows require at least one step.')
       return
     }
 
@@ -98,6 +105,9 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       description: description.trim(),
       steps,
       isActive,
+      type,
+      mode,
+      pipelineAgentId: pipelineAgentId || null,
     }
 
     try {
@@ -107,7 +117,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       } else {
         await addWorkflow(data)
       }
-      onClose()
+      onClose?.()
     } catch {
       setError('Failed to save workflow.')
     }
@@ -122,13 +132,15 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         <h3 className="text-lg font-semibold text-[#f9fafb]">
           {workflow ? 'Edit Workflow' : 'New Workflow'}
         </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -154,6 +166,53 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         placeholder="What does this workflow do?"
         rows={2}
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="text-sm font-medium text-[#9ca3af]">Type</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as any)}
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
+          >
+            <option value="text">Text</option>
+            <option value="chat">Chat</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-[#9ca3af]">Mode</label>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as any)}
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
+          >
+            <option value="manual">Manual</option>
+            <option value="automated">Automated</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+      </div>
+
+      {(mode === 'automated' || mode === 'both') && (
+        <div>
+          <label className="text-sm font-medium text-[#9ca3af]">Pipeline Agent</label>
+          <select
+            value={pipelineAgentId}
+            onChange={(e) => setPipelineAgentId(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f9fafb] focus:outline-none focus:ring-1 focus:ring-[#00f0ff]"
+          >
+            <option value="">Select an agent...</option>
+            {agents.map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -240,9 +299,11 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
           <Save className="h-4 w-4" />
           {workflow ? 'Save Changes' : 'Create Workflow'}
         </Button>
-        <Button type="button" variant="ghost" size="md" onClick={onClose}>
-          Cancel
-        </Button>
+        {onClose && (
+          <Button type="button" variant="ghost" size="md" onClick={onClose}>
+            Cancel
+          </Button>
+        )}
       </div>
     </form>
   )
