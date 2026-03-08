@@ -75,19 +75,30 @@ function FlowDetailPage() {
   }, [])
 
   if (loading) {
-    return <div className="p-4 text-center">Loading flow...</div>
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading flow...</p>
+        </div>
+      </div>
+    )
   }
 
   if (error || !flow) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="text-red-600">Error: {error || 'Flow not found'}</div>
-        <button
-          onClick={() => navigate('/flows')}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Back to Flows
-        </button>
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="p-4 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg mb-4">
+            Error: {error || 'Flow not found'}
+          </div>
+          <button
+            onClick={() => navigate('/flows')}
+            className="px-4 py-2 bg-[#00f0ff] text-[#0a0e1a] font-medium rounded hover:bg-[#00f0ff]/90 transition-colors"
+          >
+            Back to Flows
+          </button>
+        </div>
       </div>
     )
   }
@@ -108,41 +119,41 @@ function FlowDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0e1a]">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <button
           onClick={() => navigate('/flows')}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+          className="flex items-center gap-2 text-[#00f0ff] hover:text-[#00f0ff]/80 mb-4 transition-colors"
         >
           <ArrowLeft size={16} />
           Back to Flows
         </button>
 
-        <div className="bg-white rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{flow.name}</h1>
-          <p className="text-gray-600 mb-4">{flow.description}</p>
+        <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg p-6 mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">{flow.name}</h1>
+          <p className="text-gray-400 mb-4">{flow.description}</p>
           <div className="flex gap-2">
-            <span className="px-3 py-1 text-sm rounded bg-blue-100 text-blue-700 font-medium">
+            <span className="px-3 py-1 text-sm rounded font-medium" style={{ backgroundColor: '#00f0ff' + '30', color: '#00f0ff' }}>
               {flow.type}
             </span>
-            <span className="px-3 py-1 text-sm rounded bg-gray-100 text-gray-700 font-medium">
+            <span className="px-3 py-1 text-sm rounded font-medium bg-white/10 text-white/70">
               {flow.mode}
             </span>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg">
-          <div className="border-b border-gray-200 flex gap-2 px-6">
+        <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg overflow-hidden">
+          <div className="border-b border-white/10 flex gap-2 px-6">
             {tabItems.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setSearchParams({ tab: t.id })}
                 className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
                   tab === t.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    ? 'border-[#00f0ff] text-[#00f0ff]'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
                 }`}
               >
                 {t.label}

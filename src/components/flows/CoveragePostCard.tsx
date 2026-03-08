@@ -15,9 +15,9 @@ interface CoveragePostCardProps {
 }
 
 const statusStyles: Record<string, { bg: string; text: string }> = {
-  draft: { bg: 'bg-gray-100', text: 'text-gray-700' },
-  published: { bg: 'bg-green-100', text: 'text-green-700' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-700' },
+  draft: { bg: 'bg-gray-500/20', text: 'text-gray-300' },
+  published: { bg: 'bg-green-500/20', text: 'text-green-400' },
+  rejected: { bg: 'bg-red-500/20', text: 'text-red-400' },
 }
 
 export function CoveragePostCard({ post }: CoveragePostCardProps) {
@@ -26,17 +26,17 @@ export function CoveragePostCard({ post }: CoveragePostCardProps) {
   return (
     <Link
       to={`/coverage/${post.id}`}
-      className="block p-4 border rounded-lg hover:shadow-md transition-shadow"
+      className="block p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
     >
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-semibold text-gray-900 flex-1">{post.title}</h4>
+        <h4 className="font-semibold text-white flex-1">{post.title}</h4>
         <span
           className={`px-2 py-1 text-xs rounded font-medium whitespace-nowrap ml-2 ${statusStyle.bg} ${statusStyle.text}`}
         >
           {post.status}
         </span>
       </div>
-      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{post.summary}</p>
+      <p className="text-sm text-gray-400 mb-2 line-clamp-2">{post.summary}</p>
       <div className="flex items-center justify-between text-xs text-gray-500">
         {post.agentName && <span>{post.agentName}</span>}
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>

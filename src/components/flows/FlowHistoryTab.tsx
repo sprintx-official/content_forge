@@ -61,32 +61,37 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   }, [flow, workflowId])
 
   if (loading) {
-    return <div className="p-4 text-center">Loading history...</div>
+    return (
+      <div className="p-4 text-center">
+        <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <p className="text-gray-400">Loading history...</p>
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="p-4 text-red-600">Error: {error}</div>
+    return <div className="p-4 bg-red-500/20 border border-red-500/50 text-red-400 rounded">Error: {error}</div>
   }
 
   const hasManualRuns = historyItems.length > 0
   const hasAutomatedPosts = coveragePosts.length > 0
 
   if (!hasManualRuns && !hasAutomatedPosts) {
-    return <div className="p-4 text-gray-500 text-center">No history yet</div>
+    return <div className="p-4 text-gray-400 text-center">No history yet</div>
   }
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6">
       {hasManualRuns && (
         <div>
-          <h3 className="font-semibold text-lg mb-3">Manual Runs</h3>
+          <h3 className="font-semibold text-lg text-white mb-3">Manual Runs</h3>
           <div className="space-y-2">
             {historyItems.map((item) => (
-              <div key={item.id} className="p-3 border rounded bg-gray-50">
-                <p className="font-medium text-sm">
+              <div key={item.id} className="p-3 border border-white/10 rounded bg-white/5">
+                <p className="font-medium text-sm text-white">
                   {item.output?.content?.slice(0, 100)}...
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   {new Date(item.createdAt).toLocaleString()}
                 </p>
               </div>
@@ -97,7 +102,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
 
       {hasAutomatedPosts && (
         <div>
-          <h3 className="font-semibold text-lg mb-3">Automated Posts</h3>
+          <h3 className="font-semibold text-lg text-white mb-3">Automated Posts</h3>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {coveragePosts.map((post) => (
               <CoveragePostCard key={post.id} post={post} />
