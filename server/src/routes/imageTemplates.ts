@@ -11,6 +11,7 @@ import('../services/imageCompositor.js')
   .then(m => { compositeFromTemplate = m.compositeFromTemplate })
   .catch(() => { console.warn('[ImageTemplates] canvas not available — preview disabled') })
 import type { AuthenticatedRequest } from '../types.js'
+import { getGemini, extractJson } from '../worker/coverage-pipeline/geminiClient.js'
 
 const router = Router()
 
@@ -181,6 +182,128 @@ router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Res
 
   const dataUrl = `data:image/png;base64,${composited.toString('base64')}`
   res.json({ preview: dataUrl })
+})
+
+// ---------------------------------------------------------------------------
+// POST /api/image-templates/analyze-image — AI analyzes uploaded image to create template
+// ---------------------------------------------------------------------------
+router.post('/analyze-image', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { image } = req.body as { image: string }
+
+  if (!image || !image.startsWith('data:image/')) {
+    res.status(400).json({ error: 'A valid image data URL is required' })
+    return
+  }
+
+  // Parse data URL
+  const match = image.match(/^data:([^;]+);base64,(.+)$/)
+  if (!match) {
+    res.status(400).json({ error: 'Invalid image data URL format' })
+    return
+  }
+
+  const [, mimeType, base64Data] = match
+
+  try {
+    const ai = await getGemini()
+
+    const analyzePrompt = `You are an expert at analyzing image layouts. Look at this image (a social media post, news graphic, or branded template) and reverse-engineer its visual layout into a structured JSON template.
+
+Output ONLY a valid JSON object with this exact structure:
+{
+  "name": "descriptive template name",
+  "elements": [
+    {
+      "id": "unique-id",
+      "type": "text" | "image" | "shape" | "gradient" | "qr-code",
+      "source": "static" | "ai-generated" | "agent-branding" | "post-derived",
+      "binding": "optional binding name",
+      "x": 0-100,
+      "y": 0-100,
+      "width": 0-100,
+      "height": 0-100,
+      "zIndex": 0+,
+      "visible": true,
+      "properties": { ... }
+    }
+  ]
+}
+
+RULES:
+- All x, y, width, height values are PERCENTAGES (0-100) relative to the full image canvas
+- Layer from back (zIndex 0) to front (higher zIndex)
+- The full background image should be: type "image", source "ai-generated", binding "background_image", x:0, y:0, width:100, height:100, zIndex:0
+- Dark/gradient overlays should be: type "gradient", source "static", with gradientStops array [{offset: 0-1, color: "rgba(...)"}], direction "vertical" or "horizontal"
+- Semi-transparent colored rectangles: type "shape", source "static", with fill (hex or rgba), opacity (0-1), borderRadius
+- Main headline text: type "text", source "ai-generated", binding "image_headline"
+- Category/label text: type "text", source "ai-generated", binding "category"
+- Logo areas: type "image", source "agent-branding", binding "logo"
+- QR codes: type "qr-code", source "post-derived", binding "qr_url"
+- Static text (watermarks, credits): type "text", source "static"
+
+TEXT properties: fontFamily (use "sans-serif", "serif", or "monospace"), fontSize (as percentage of canvas height, typically 2-12), fontWeight ("normal" or "bold"), color (hex), textAlign ("left", "center", "right"), lineHeight (number like 1.2-1.5), autoFit (true for headlines), highlightKeywords (true if text has highlighted/colored keywords), highlightColor (background color for highlighted words), highlightTextColor (text color for highlighted words)
+
+SHAPE properties: fill (hex or rgba), opacity (0-1), borderRadius (number, 0 for sharp corners), stroke (hex, optional), strokeWidth (number, optional)
+
+GRADIENT properties: gradientStops (array of {offset: 0-1, color: "rgba(r,g,b,a)"}), direction ("vertical" or "horizontal"), adaptToBackground (boolean)
+
+Analyze every visible layer carefully. Include ALL visual elements you can identify.`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data: base64Data } },
+            { text: analyzePrompt },
+          ],
+        },
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    })
+
+    const responseText = response.text ?? ''
+    const parsed = extractJson(responseText) as { name?: string; elements?: unknown[] } | null
+
+    if (!parsed || !Array.isArray(parsed.elements)) {
+      res.status(500).json({ error: 'AI failed to produce a valid template structure' })
+      return
+    }
+
+    // Build full ImageTemplate with defaults
+    const template = {
+      name: parsed.name || 'AI Generated Template',
+      squareWidth: 1080,
+      squareHeight: 1080,
+      landscapeWidth: 1200,
+      landscapeHeight: 627,
+      verticalWidth: 1080,
+      verticalHeight: 1350,
+      elements: (parsed.elements as any[]).map((el: any, i: number) => ({
+        id: el.id || `el-${i}`,
+        type: el.type || 'shape',
+        source: el.source || 'static',
+        binding: el.binding,
+        x: Number(el.x) || 0,
+        y: Number(el.y) || 0,
+        width: Number(el.width) || 10,
+        height: Number(el.height) || 10,
+        rotation: Number(el.rotation) || 0,
+        zIndex: Number(el.zIndex) ?? i,
+        visible: el.visible !== false,
+        properties: el.properties || {},
+      })),
+    }
+
+    res.json({ template })
+  } catch (err) {
+    console.error('[analyze-image] Error:', err)
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    res.status(500).json({ error: `Analysis failed: ${message}` })
+  }
 })
 
 // ---------------------------------------------------------------------------

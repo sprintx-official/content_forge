@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, LayoutTemplate } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Edit2, Trash2, LayoutTemplate, Upload, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useTemplatePreviews } from '@/hooks/useTemplatePreviews'
 import TemplateEditor from '@/components/template-editor/TemplateEditor'
 import type { ImageTemplate, TemplateElement } from '@/components/template-editor/templateTypes'
 import { createDefaultTemplate, createNewsOverlayTemplate } from '@/components/template-editor/templateTypes'
@@ -19,48 +20,9 @@ interface Preset {
   description: string
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  image: '#10b981',
-  gradient: '#6366f1',
-  text: '#f59e0b',
-  shape: '#ec4899',
-  'qr-code': '#94a3b8',
-}
-
-function renderElementSvg(element: TemplateElement, scale: number = 0.1): React.ReactNode {
-  const x = element.x * scale
-  const y = element.y * scale
-  const w = element.width * scale
-  const h = element.height * scale
-  const color = TYPE_COLORS[element.type] || '#9ca3af'
-
-  switch (element.type) {
-    case 'text':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.6" rx="2" />
-      )
-    case 'image':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.5" strokeDasharray="2" stroke={color} strokeWidth="0.2" />
-      )
-    case 'shape':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.7" rx="1" />
-      )
-    case 'gradient':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.4" />
-      )
-    case 'qr-code':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill="white" stroke={color} strokeWidth="0.2" />
-      )
-    default:
-      return null
-  }
-}
-
 export default function TemplatesTab() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [analyzing, setAnalyzing] = useState(false)
   const [templates, setTemplates] = useState<LibraryTemplate[]>([])
   const [presets, setPresets] = useState<Preset[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +30,8 @@ export default function TemplatesTab() {
   const [editingTemplate, setEditingTemplate] = useState<ImageTemplate | null>(null)
   const [editingId, setEditingId] = useState<string | undefined>()
   const [editingName, setEditingName] = useState('')
+
+  const { previews, invalidate: invalidatePreview } = useTemplatePreviews(templates)
 
   // Load data
   useEffect(() => {
@@ -157,10 +121,41 @@ export default function TemplatesTab() {
         }
         setTemplates((prev) => [newTemplate, ...prev])
       }
+      if (editingId) invalidatePreview(editingId)
       setIsEditorOpen(false)
       setEditingTemplate(null)
     } catch (e) {
       alert(`Save failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset input so same file can be re-selected
+    e.target.value = ''
+
+    setAnalyzing(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const res = await api.post<{ template: ImageTemplate }>('/api/image-templates/analyze-image', {
+        image: dataUrl,
+      })
+
+      setEditingTemplate(res.template)
+      setEditingId(undefined)
+      setEditingName(res.template.name || 'AI Generated Template')
+      setIsEditorOpen(true)
+    } catch (err) {
+      alert(`Analysis failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -202,13 +197,30 @@ export default function TemplatesTab() {
           </h2>
           <p className="text-sm text-[#cbd5e1] mt-1">Manage branded overlay templates</p>
         </div>
-        <button
-          onClick={handleNewTemplate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#10b981]/20 border border-[#10b981]/50 text-[#10b981] rounded-lg hover:bg-[#10b981]/30"
-        >
-          <Plus className="size-4" />
-          New Template
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={analyzing}
+            className="flex items-center gap-2 px-4 py-2 border border-[#6366f1]/50 text-[#6366f1] rounded-lg hover:bg-[#6366f1]/10 disabled:opacity-50"
+          >
+            {analyzing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            {analyzing ? 'Analyzing...' : 'Create from Image'}
+          </button>
+          <button
+            onClick={handleNewTemplate}
+            className="flex items-center gap-2 px-4 py-2 bg-[#10b981]/20 border border-[#10b981]/50 text-[#10b981] rounded-lg hover:bg-[#10b981]/30"
+          >
+            <Plus className="size-4" />
+            New Template
+          </button>
+        </div>
       </div>
 
       {/* Presets */}
@@ -253,12 +265,16 @@ export default function TemplatesTab() {
                 key={template.id}
                 className="bg-[#1e293b] border border-white/10 rounded-lg overflow-hidden hover:border-white/20 transition-colors"
               >
-                {/* SVG Thumbnail */}
-                <div className="aspect-square bg-[#0f172a] flex items-center justify-center">
-                  <svg viewBox="0 0 108 108" className="w-full h-full">
-                    <rect width="108" height="108" fill="#1a1a2e" />
-                    {template.elements.map((el) => renderElementSvg(el))}
-                  </svg>
+                {/* Preview Thumbnail */}
+                <div className="aspect-square bg-[#0f172a] flex items-center justify-center overflow-hidden">
+                  {previews[template.id] ? (
+                    <img src={previews[template.id]} alt={template.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/50">
+                      <Loader2 className="size-5 animate-spin" />
+                      <span className="text-xs">Generating preview...</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Info */}

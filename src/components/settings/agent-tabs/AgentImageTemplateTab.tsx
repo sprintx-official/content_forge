@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { Save, Settings } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, Settings, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useTemplatePreviews } from '@/hooks/useTemplatePreviews'
 import type { TemplateElement } from '@/components/template-editor/templateTypes'
 
 interface LibraryTemplate {
@@ -11,53 +12,13 @@ interface LibraryTemplate {
   updatedAt: string
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  image: '#10b981',
-  gradient: '#6366f1',
-  text: '#f59e0b',
-  shape: '#ec4899',
-  'qr-code': '#94a3b8',
-}
-
-function renderElementSvg(element: TemplateElement, scale: number = 0.1): React.ReactNode {
-  const x = element.x * scale
-  const y = element.y * scale
-  const w = element.width * scale
-  const h = element.height * scale
-  const color = TYPE_COLORS[element.type] || '#9ca3af'
-
-  switch (element.type) {
-    case 'text':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.6" rx="2" />
-      )
-    case 'image':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.5" strokeDasharray="2" stroke={color} strokeWidth="0.2" />
-      )
-    case 'shape':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.7" rx="1" />
-      )
-    case 'gradient':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill={color} opacity="0.4" />
-      )
-    case 'qr-code':
-      return (
-        <rect key={element.id} x={x} y={y} width={w} height={h} fill="white" stroke={color} strokeWidth="0.2" />
-      )
-    default:
-      return null
-  }
-}
-
 export default function AgentImageTemplateTab({ agentId }: { agentId: string }) {
   const [templates, setTemplates] = useState<LibraryTemplate[]>([])
   const [assignedIds, setAssignedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const { previews } = useTemplatePreviews(templates)
 
   // Load library and assignments
   useEffect(() => {
@@ -111,7 +72,7 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
           <Settings className="size-8 mx-auto text-[#cbd5e1] opacity-50 mb-2" />
           <p className="text-[#cbd5e1] text-sm mb-4">No templates available yet.</p>
           <a
-            href="/admin?activeTab=image-templates"
+            href="/settings?tab=image-templates"
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#10b981]/20 border border-[#10b981]/50 text-[#10b981] rounded-lg hover:bg-[#10b981]/30 text-sm"
           >
             Create Templates
@@ -142,12 +103,16 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
               }`}
               onClick={() => toggle(template.id)}
             >
-              {/* Thumbnail */}
-              <div className="aspect-square bg-[#0f172a] flex items-center justify-center">
-                <svg viewBox="0 0 108 108" className="w-full h-full">
-                  <rect width="108" height="108" fill="#1a1a2e" />
-                  {template.elements.map((el) => renderElementSvg(el))}
-                </svg>
+              {/* Preview Thumbnail */}
+              <div className="aspect-square bg-[#0f172a] flex items-center justify-center overflow-hidden">
+                {previews[template.id] ? (
+                  <img src={previews[template.id]} alt={template.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/50">
+                    <Loader2 className="size-5 animate-spin" />
+                    <span className="text-xs">Loading...</span>
+                  </div>
+                )}
               </div>
 
               {/* Info */}

@@ -3,7 +3,7 @@ import { getApiKey } from '../../services/apiKeyStore.js'
 let GoogleGenAI: any = null
 let client: any = null
 
-async function getGemini() {
+export async function getGemini() {
   if (!GoogleGenAI) {
     const mod = await import('@google/genai')
     GoogleGenAI = mod.GoogleGenAI
