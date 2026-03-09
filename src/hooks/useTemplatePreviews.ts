@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { api } from '@/lib/api'
 import type { ImageTemplate, TemplateElement } from '@/components/template-editor/templateTypes'
 
 // Module-level cache so previews persist across component re-mounts
 const previewCache = new Map<string, string>()
+// Track permanently failed previews so we don't retry endlessly
+const failedIds = new Set<string>()
 
 // Max concurrent preview requests
 const MAX_CONCURRENT = 3
@@ -19,6 +21,12 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
+  // Stable key derived from template IDs — only re-run when the actual list of IDs changes
+  const templateIds = useMemo(
+    () => templates.map((t) => t.id).join(','),
+    [templates],
+  )
+
   useEffect(() => {
     if (templates.length === 0) return
 
@@ -28,7 +36,7 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     for (const t of templates) {
       if (previewCache.has(t.id)) {
         cached[t.id] = previewCache.get(t.id)!
-      } else {
+      } else if (!failedIds.has(t.id)) {
         uncached.push(t)
       }
     }
@@ -37,7 +45,10 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
       setPreviews((prev) => ({ ...prev, ...cached }))
     }
 
-    if (uncached.length === 0) return
+    if (uncached.length === 0) {
+      setLoading(false)
+      return
+    }
 
     // Abort previous batch if still running
     abortRef.current?.abort()
@@ -83,6 +94,10 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
             const { id, preview } = result.value
             previewCache.set(id, preview)
             newPreviews[id] = preview
+          } else {
+            // Mark as failed so we don't retry endlessly
+            const batchItem = batch[results.indexOf(result)]
+            if (batchItem) failedIds.add(batchItem.id)
           }
         }
 
@@ -99,10 +114,12 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     return () => {
       controller.abort()
     }
-  }, [templates])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateIds])
 
   const invalidate = (id: string) => {
     previewCache.delete(id)
+    failedIds.delete(id)
     setPreviews((prev) => {
       const next = { ...prev }
       delete next[id]
@@ -110,5 +127,8 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     })
   }
 
-  return { previews, loading, invalidate }
+  // Check if a template's preview failed
+  const hasFailed = (id: string) => failedIds.has(id)
+
+  return { previews, loading, invalidate, hasFailed }
 }

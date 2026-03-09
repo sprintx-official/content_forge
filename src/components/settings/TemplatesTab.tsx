@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Plus, Edit2, Trash2, LayoutTemplate, Upload, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 import { useTemplatePreviews } from '@/hooks/useTemplatePreviews'
 import TemplateEditor from '@/components/template-editor/TemplateEditor'
 import type { ImageTemplate, TemplateElement } from '@/components/template-editor/templateTypes'
@@ -31,7 +32,8 @@ export default function TemplatesTab() {
   const [editingId, setEditingId] = useState<string | undefined>()
   const [editingName, setEditingName] = useState('')
 
-  const { previews, invalidate: invalidatePreview } = useTemplatePreviews(templates)
+  const toast = useToast()
+  const { previews, invalidate: invalidatePreview, hasFailed } = useTemplatePreviews(templates)
 
   // Load data
   useEffect(() => {
@@ -77,12 +79,12 @@ export default function TemplatesTab() {
   }
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this template?')) return
+    if (!window.confirm('Are you sure you want to delete this template?')) return
     try {
       await api.delete(`/api/image-templates/library/${id}`)
       setTemplates((prev) => prev.filter((t) => t.id !== id))
     } catch (e) {
-      alert(`Delete failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+      toast('error', `Delete failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
     }
   }
 
@@ -125,7 +127,7 @@ export default function TemplatesTab() {
       setIsEditorOpen(false)
       setEditingTemplate(null)
     } catch (e) {
-      alert(`Save failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+      toast('error', `Save failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
     }
   }
 
@@ -153,7 +155,7 @@ export default function TemplatesTab() {
       setEditingName(res.template.name || 'AI Generated Template')
       setIsEditorOpen(true)
     } catch (err) {
-      alert(`Analysis failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      toast('error', `Analysis failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setAnalyzing(false)
     }
@@ -269,6 +271,12 @@ export default function TemplatesTab() {
                 <div className="aspect-square bg-[#0f172a] flex items-center justify-center overflow-hidden">
                   {previews[template.id] ? (
                     <img src={previews[template.id]} alt={template.name} className="w-full h-full object-cover" />
+                  ) : hasFailed(template.id) ? (
+                    <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/30 p-4">
+                      <LayoutTemplate className="size-8" />
+                      <span className="text-xs">{template.name}</span>
+                      <span className="text-[10px]">{template.elements.length} elements</span>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/50">
                       <Loader2 className="size-5 animate-spin" />

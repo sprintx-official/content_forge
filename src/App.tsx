@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
 import { ToastProvider } from '@/components/ui/Toast'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import AuthGuard from '@/components/auth/AuthGuard'
 import AdminGuard from '@/components/auth/AdminGuard'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -65,6 +66,7 @@ export default function App() {
             <CommandPalette />
           </Suspense>
         )}
+        <ErrorBoundary>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Public routes - redirect to dashboard if already logged in */}
@@ -165,6 +167,7 @@ export default function App() {
             />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </Layout>
       </ToastProvider>
     </BrowserRouter>

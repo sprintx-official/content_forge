@@ -47,7 +47,16 @@ export default function ContentTypeGrid() {
           return (
             <button
               key={type.id}
-              onClick={() => navigate(`/forge?type=${type.id}`)}
+              onClick={() => {
+                const flowMap: Record<string, string> = {
+                  text: 'system-write',
+                  chat: 'system-chat',
+                  image: 'system-image',
+                  video: 'system-video',
+                }
+                const flowId = flowMap[type.id] || 'system-write'
+                navigate(`/flows/${flowId}`)
+              }}
               className={cn(
                 'group text-left',
                 'bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6',

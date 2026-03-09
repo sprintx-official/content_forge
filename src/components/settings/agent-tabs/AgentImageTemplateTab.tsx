@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Save, Settings, Loader2, Square, RectangleHorizontal, RectangleVertical, Eye, X } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Save, Settings, Loader2, Square, RectangleHorizontal, RectangleVertical, Eye, X, LayoutTemplate } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useToast } from '@/components/ui/Toast'
 import { useTemplatePreviews } from '@/hooks/useTemplatePreviews'
 import type { TemplateElement } from '@/components/template-editor/templateTypes'
 import type { ImageTemplate } from '@/components/template-editor/templateTypes'
@@ -51,8 +52,10 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
   const [previewFormat, setPreviewFormat] = useState<ImageFormat>('square')
   const [previewTemplateName, setPreviewTemplateName] = useState('')
 
-  // Combine presets + library into a single displayable list
-  const allTemplates: DisplayTemplate[] = [
+  const toast = useToast()
+
+  // Combine presets + library — memoize to avoid recreating on every render
+  const allTemplates: DisplayTemplate[] = useMemo(() => [
     ...PRESET_TEMPLATES.map((p) => ({
       id: p.id,
       name: p.name,
@@ -66,9 +69,9 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
       elements: t.elements,
       isPreset: false,
     })),
-  ]
+  ], [libraryTemplates])
 
-  const { previews } = useTemplatePreviews(allTemplates)
+  const { previews, hasFailed } = useTemplatePreviews(allTemplates)
 
   // Load library and assignments
   useEffect(() => {
@@ -153,7 +156,7 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
       setPreviewImage(res.preview)
     } catch (err) {
       setPreviewImage(null)
-      alert(`Preview failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      toast('error', `Preview failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setPreviewLoading(false)
     }
@@ -222,6 +225,12 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
                 >
                   {previews[template.id] ? (
                     <img src={previews[template.id]} alt={template.name} className="w-full h-full object-cover" />
+                  ) : hasFailed(template.id) ? (
+                    <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/30 p-4">
+                      <LayoutTemplate className="size-8" />
+                      <span className="text-xs">{template.name}</span>
+                      <span className="text-[10px]">{template.elements.length} elements</span>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-[#cbd5e1]/50">
                       <Loader2 className="size-5 animate-spin" />

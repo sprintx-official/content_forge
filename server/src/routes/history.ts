@@ -190,7 +190,13 @@ router.put('/:id', authenticate, validateParams(idParamSchema), validateBody(his
     return
   }
 
-  const outputData = JSON.parse(existing.output_json)
+  let outputData: Record<string, unknown>
+  try {
+    outputData = JSON.parse(existing.output_json)
+  } catch {
+    res.status(500).json({ error: 'Failed to parse stored output data' })
+    return
+  }
   outputData.content = content
   await execute(
     'UPDATE history SET output_json = $1 WHERE id = $2',
