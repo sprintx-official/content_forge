@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
-import { Save, Settings, Loader2 } from 'lucide-react'
+import { Save, Settings, Loader2, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useTemplatePreviews } from '@/hooks/useTemplatePreviews'
 import type { TemplateElement } from '@/components/template-editor/templateTypes'
+
+type ImageFormat = 'square' | 'landscape' | 'vertical'
+
+const FORMAT_OPTIONS: { id: ImageFormat; label: string; icon: typeof Square; desc: string }[] = [
+  { id: 'square', label: 'Square', icon: Square, desc: '1080x1080' },
+  { id: 'landscape', label: 'Landscape', icon: RectangleHorizontal, desc: '1200x627' },
+  { id: 'vertical', label: 'Vertical', icon: RectangleVertical, desc: '1080x1350' },
+]
 
 interface LibraryTemplate {
   id: string
@@ -15,6 +23,7 @@ interface LibraryTemplate {
 export default function AgentImageTemplateTab({ agentId }: { agentId: string }) {
   const [templates, setTemplates] = useState<LibraryTemplate[]>([])
   const [assignedIds, setAssignedIds] = useState<string[]>([])
+  const [formats, setFormats] = useState<ImageFormat[]>(['square', 'landscape'])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -27,9 +36,10 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
         const [libRes, assignRes] = await Promise.all([
           api.get('/api/image-templates/library'),
           api.get(`/api/image-templates/${agentId}/assignments`),
-        ]) as unknown as [{ templates: LibraryTemplate[] }, { templateIds: string[] }]
+        ]) as unknown as [{ templates: LibraryTemplate[] }, { templateIds: string[]; formats: ImageFormat[] }]
         setTemplates(libRes.templates || [])
         setAssignedIds(assignRes.templateIds || [])
+        if (assignRes.formats?.length) setFormats(assignRes.formats)
       } catch (e) {
         console.error('Failed to load templates:', e)
       } finally {
@@ -45,12 +55,24 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
     )
   }
 
+  const toggleFormat = (fmt: ImageFormat) => {
+    setFormats((prev) => {
+      if (prev.includes(fmt)) {
+        // Don't allow deselecting all formats
+        if (prev.length <= 1) return prev
+        return prev.filter((f) => f !== fmt)
+      }
+      return [...prev, fmt]
+    })
+  }
+
   const save = async () => {
     setSaving(true)
     setMessage('')
     try {
       await api.put(`/api/image-templates/${agentId}/assignments`, {
         templateIds: assignedIds,
+        formats,
       })
       setMessage('Templates saved successfully')
       setTimeout(() => setMessage(''), 3000)
@@ -87,6 +109,34 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
       {/* Badge */}
       <div className="inline-block px-3 py-1 bg-[#10b981]/20 border border-[#10b981]/50 text-[#10b981] rounded text-xs font-medium">
         {assignedIds.length} template{assignedIds.length !== 1 ? 's' : ''} assigned
+      </div>
+
+      {/* Output Format Selection */}
+      <div>
+        <h4 className="text-sm font-medium text-[#f8fafc] mb-2">Output Dimensions</h4>
+        <p className="text-xs text-[#cbd5e1] mb-3">Choose which image sizes to generate for each post</p>
+        <div className="flex gap-2">
+          {FORMAT_OPTIONS.map(({ id, label, icon: Icon, desc }) => {
+            const active = formats.includes(id)
+            return (
+              <button
+                key={id}
+                onClick={() => toggleFormat(id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-all ${
+                  active
+                    ? 'border-[#10b981]/50 bg-[#10b981]/10 text-[#10b981]'
+                    : 'border-white/10 bg-[#1e293b] text-[#cbd5e1] hover:border-white/20'
+                }`}
+              >
+                <Icon className="size-4" />
+                <div className="text-left">
+                  <div className="font-medium">{label}</div>
+                  <div className="text-[10px] opacity-70">{desc}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Grid */}

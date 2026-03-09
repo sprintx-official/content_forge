@@ -307,26 +307,38 @@ Analyze every visible layer carefully. Include ALL visual elements you can ident
 })
 
 // ---------------------------------------------------------------------------
-// GET /api/image-templates/:agentId/assignments — Get agent's assigned templates
+// GET /api/image-templates/:agentId/assignments — Get agent's assigned templates + formats
 // ---------------------------------------------------------------------------
 router.get('/:agentId/assignments', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const row = await queryOne<{ value: string }>(
-    `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
-    [req.params.agentId],
-  )
+  const [idsRow, formatsRow] = await Promise.all([
+    queryOne<{ value: string }>(
+      `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
+      [req.params.agentId],
+    ),
+    queryOne<{ value: string }>(
+      `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'image_output_formats'`,
+      [req.params.agentId],
+    ),
+  ])
   let templateIds: string[] = []
-  if (row) {
-    try { templateIds = JSON.parse(row.value) as string[] } catch { /* corrupted data */ }
+  let formats: string[] = ['square', 'landscape']
+  if (idsRow) {
+    try { templateIds = JSON.parse(idsRow.value) as string[] } catch { /* corrupted data */ }
   }
-  res.json({ templateIds })
+  if (formatsRow) {
+    try { formats = JSON.parse(formatsRow.value) as string[] } catch { /* corrupted data */ }
+  }
+  res.json({ templateIds, formats })
 })
 
 // ---------------------------------------------------------------------------
-// PUT /api/image-templates/:agentId/assignments — Set agent's assigned templates
+// PUT /api/image-templates/:agentId/assignments — Set agent's assigned templates + formats
 // ---------------------------------------------------------------------------
 router.put('/:agentId/assignments', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { templateIds } = req.body as { templateIds: string[] }
+  const { templateIds, formats } = req.body as { templateIds: string[]; formats?: string[] }
   const agentId = req.params.agentId
+
+  // Save template IDs
   const existing = await queryOne<{ id: string }>(
     `SELECT id FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
     [agentId],
@@ -339,6 +351,24 @@ router.put('/:agentId/assignments', authenticate, requireAdmin, async (req: Auth
       [crypto.randomUUID(), agentId, JSON.stringify(templateIds)],
     )
   }
+
+  // Save formats if provided
+  if (formats) {
+    const validFormats = formats.filter(f => ['square', 'landscape', 'vertical'].includes(f))
+    const fmtRow = await queryOne<{ id: string }>(
+      `SELECT id FROM agent_settings WHERE agent_id = $1 AND key = 'image_output_formats'`,
+      [agentId],
+    )
+    if (fmtRow) {
+      await execute(`UPDATE agent_settings SET value = $1 WHERE id = $2`, [JSON.stringify(validFormats), fmtRow.id])
+    } else {
+      await execute(
+        `INSERT INTO agent_settings (id, agent_id, key, value) VALUES ($1, $2, 'image_output_formats', $3)`,
+        [crypto.randomUUID(), agentId, JSON.stringify(validFormats)],
+      )
+    }
+  }
+
   res.json({ success: true })
 })
 

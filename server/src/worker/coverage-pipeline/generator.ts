@@ -119,16 +119,51 @@ export async function generateCoveragePost(
 
   let imageSquare: string | null = null
   let imageLandscape: string | null = null
+  let imageVertical: string | null = null
 
   if (generated.image_prompt) {
-    console.log(`  [Generate] Generating images with ${imageModel}...`)
-    const [squareBuf, landscapeBuf] = await Promise.all([
-      geminiGenerateImage(imageModel, generated.image_prompt, '1:1', imageSystemPrompt),
-      geminiGenerateImage(imageModel, generated.image_prompt, '16:9', imageSystemPrompt),
-    ])
+    // Load agent's preferred output formats (default: square + landscape)
+    const formatsRow = await queryOne<{ value: string }>(
+      `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'image_output_formats'`,
+      [agentId],
+    )
+    let outputFormats: string[] = ['square', 'landscape']
+    if (formatsRow) {
+      try { outputFormats = JSON.parse(formatsRow.value) as string[] } catch { /* use defaults */ }
+    }
+
+    const wantSquare = outputFormats.includes('square')
+    const wantLandscape = outputFormats.includes('landscape')
+    const wantVertical = outputFormats.includes('vertical')
+
+    console.log(`  [Generate] Generating images (${outputFormats.join(', ')}) with ${imageModel}...`)
+
+    const imagePromises: Promise<Buffer | null>[] = []
+    const formatKeys: string[] = []
+
+    if (wantSquare) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '1:1', imageSystemPrompt))
+      formatKeys.push('square')
+    }
+    if (wantLandscape) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '16:9', imageSystemPrompt))
+      formatKeys.push('landscape')
+    }
+    if (wantVertical) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '3:4', imageSystemPrompt))
+      formatKeys.push('vertical')
+    }
+
+    const buffers = await Promise.all(imagePromises)
+    const bufferMap: Record<string, Buffer | null> = {}
+    formatKeys.forEach((key, i) => { bufferMap[key] = buffers[i] })
+
+    const squareBuf = bufferMap.square ?? null
+    const landscapeBuf = bufferMap.landscape ?? null
+    const verticalBuf = bufferMap.vertical ?? null
 
     // Apply image template compositing if headline is available and compositor loaded
-    if (compositeAllFormats && generated.image_headline && (squareBuf || landscapeBuf)) {
+    if (compositeAllFormats && generated.image_headline && (squareBuf || landscapeBuf || verticalBuf)) {
       try {
         // Load agent's custom template or use default
         const templateRow = await queryOne<{ value: string }>(
@@ -145,20 +180,24 @@ export async function generateCoveragePost(
           landscapeBuf,
           generated.image_headline,
           generated.category,
+          null,
+          verticalBuf,
         )
 
         if (composited.square) imageSquare = `data:image/png;base64,${composited.square.toString('base64')}`
         if (composited.landscape) imageLandscape = `data:image/png;base64,${composited.landscape.toString('base64')}`
+        if (composited.vertical) imageVertical = `data:image/png;base64,${composited.vertical.toString('base64')}`
         console.log(`  [Generate] Composited images with template "${template.name}"`)
       } catch (err) {
         console.error('  [Generate] Compositor failed, using raw images:', err)
-        // Fallback to raw images
         if (squareBuf) imageSquare = `data:image/png;base64,${squareBuf.toString('base64')}`
         if (landscapeBuf) imageLandscape = `data:image/png;base64,${landscapeBuf.toString('base64')}`
+        if (verticalBuf) imageVertical = `data:image/png;base64,${verticalBuf.toString('base64')}`
       }
     } else {
       if (squareBuf) imageSquare = `data:image/png;base64,${squareBuf.toString('base64')}`
       if (landscapeBuf) imageLandscape = `data:image/png;base64,${landscapeBuf.toString('base64')}`
+      if (verticalBuf) imageVertical = `data:image/png;base64,${verticalBuf.toString('base64')}`
     }
   }
 
@@ -179,9 +218,9 @@ export async function generateCoveragePost(
     `INSERT INTO coverage_posts (
        id, agent_id, title, slug, summary, category, urgency, story_stage,
        confidence, fingerprint, key_facts, image_prompt,
-       image_original, image_square, image_landscape,
+       image_original, image_square, image_landscape, image_vertical,
        image_headline, status, workflow_id, created_at, updated_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW(), NOW())`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())`,
     [
       postId,
       agentId,
@@ -198,6 +237,7 @@ export async function generateCoveragePost(
       imageUrl,
       imageSquare,
       imageLandscape,
+      imageVertical,
       generated.image_headline ?? null,
       'draft',
       workflowId,

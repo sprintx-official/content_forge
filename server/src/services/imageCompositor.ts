@@ -443,7 +443,7 @@ export async function compositeFromTemplate(
   return canvas.toBuffer('image/png')
 }
 
-// Convenience: composite all three sizes and return buffers
+// Convenience: composite all sizes and return buffers
 export async function compositeAllFormats(
   template: ImageTemplate,
   squareBg: Buffer | null,
@@ -451,7 +451,8 @@ export async function compositeAllFormats(
   headline: string,
   category?: string | null,
   qrUrl?: string | null,
-): Promise<{ square: Buffer | null; landscape: Buffer | null }> {
+  verticalBg?: Buffer | null,
+): Promise<{ square: Buffer | null; landscape: Buffer | null; vertical: Buffer | null }> {
   const data = {
     headline,
     category: category ?? null,
@@ -461,6 +462,7 @@ export async function compositeAllFormats(
 
   let square: Buffer | null = null
   let landscape: Buffer | null = null
+  let vertical: Buffer | null = null
 
   if (squareBg) {
     square = await compositeFromTemplate(template, 'square', { ...data, backgroundBuffer: squareBg })
@@ -468,6 +470,9 @@ export async function compositeAllFormats(
   if (landscapeBg) {
     landscape = await compositeFromTemplate(template, 'landscape', { ...data, backgroundBuffer: landscapeBg })
   }
+  if (verticalBg) {
+    vertical = await compositeFromTemplate(template, 'vertical', { ...data, backgroundBuffer: verticalBg })
+  }
 
-  return { square, landscape }
+  return { square, landscape, vertical }
 }
