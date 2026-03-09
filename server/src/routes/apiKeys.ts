@@ -176,17 +176,24 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
         })
         if (!res.ok) return []
         const data = await res.json() as { data: { id: string }[] }
+        // Separate image models (dall-e, gpt-image) — no chat validation needed
+        const imageModels = data.data
+          .filter((m) => /^(dall-e|gpt-image|chatgpt-image)/i.test(m.id))
+          .filter((m) => !/-\d{4}-\d{2}-\d{2}/.test(m.id))
+          .map((m) => ({ id: m.id, name: formatOpenAIName(m.id), provider }))
+
+        // Chat/text models
         const candidates = data.data
           .filter((m) => {
-            // Include chat models only
+            // Include chat-capable model families
             if (!/^(gpt-|o\d|chatgpt-)/i.test(m.id)) return false
-            // Exclude non-chat model types
-            if (/embedding|whisper|dall-e|tts|moderation|babbage|davinci/i.test(m.id)) return false
+            // Exclude image, embedding, audio, and other non-chat types
+            if (/embedding|whisper|dall-e|tts|moderation|babbage|davinci|gpt-image|chatgpt-image/i.test(m.id)) return false
             // Exclude date-stamped variants (e.g. gpt-4o-2024-11-20)
             if (/-\d{4}-\d{2}-\d{2}/.test(m.id)) return false
-            // Exclude audio/realtime/search variants
-            if (/audio|realtime|search/i.test(m.id)) return false
-            // Exclude known non-chat patterns (instruct, completions-only)
+            // Exclude audio/realtime/search/transcribe variants
+            if (/audio|realtime|search|transcribe/i.test(m.id)) return false
+            // Exclude known non-chat patterns
             if (/instruct/i.test(m.id)) return false
             return true
           })
@@ -199,10 +206,11 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
           }))
         )
 
-        return validationResults
+        const chatModels = validationResults
           .filter((r) => r.isChat)
           .map((r) => ({ id: r.model.id, name: formatOpenAIName(r.model.id), provider }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+
+        return [...chatModels, ...imageModels].sort((a, b) => a.name.localeCompare(b.name))
       }
 
       case 'anthropic': {
@@ -256,11 +264,26 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
           }[]
         }
 
-        // Text models — must support generateContent
+        // Text models — must support generateContent, exclude non-useful variants
+        const EXCLUDED_TEXT = /tts|robotics|embedding|aqa|retrieval|attribution|bisheng|computer-use|learnlm/i
         const geminiModels = (data.models || [])
           .filter((m) => {
             if (!m.supportedGenerationMethods?.includes('generateContent')) return false
             if (!/gemini/i.test(m.name)) return false
+            // Exclude TTS, robotics, embedding, computer-use, and other non-content models
+            if (EXCLUDED_TEXT.test(m.name) || EXCLUDED_TEXT.test(m.displayName || '')) return false
+            return true
+          })
+          .map((m) => ({
+            id: m.name.replace('models/', ''),
+            name: m.displayName || m.name.replace('models/', ''),
+            provider,
+          }))
+
+        // Nano Banana models — image generation (not text!)
+        const nanoBananaModels = (data.models || [])
+          .filter((m) => {
+            if (!/nano-banana/i.test(m.name)) return false
             return true
           })
           .map((m) => ({
@@ -297,7 +320,7 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
             provider,
           }))
 
-        return [...geminiModels, ...imagenModels, ...veoModels].sort((a, b) => a.name.localeCompare(b.name))
+        return [...geminiModels, ...nanoBananaModels, ...imagenModels, ...veoModels].sort((a, b) => a.name.localeCompare(b.name))
       }
 
       default:
@@ -305,6 +328,96 @@ async function fetchProviderModels(provider: string, apiKey: string): Promise<Pr
     }
   } catch {
     return []
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Provider health check — test if quota/credits are available
+// ────────────────────────────────────────────────────────────
+
+interface HealthResult {
+  status: 'healthy' | 'quota_exceeded' | 'invalid' | 'error'
+  message: string
+}
+
+async function checkProviderHealth(provider: string, apiKey: string): Promise<HealthResult> {
+  try {
+    switch (provider) {
+      case 'openai': {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini', max_completion_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
+        })
+        if (res.status === 401) return { status: 'invalid', message: 'API key is invalid' }
+        if (res.status === 402) return { status: 'quota_exceeded', message: 'Insufficient credits. Add billing at platform.openai.com' }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({})) as { error?: { message?: string } }
+          const msg = body.error?.message || 'Rate limited'
+          if (/quota|billing|exceeded/i.test(msg)) return { status: 'quota_exceeded', message: 'Quota exceeded. Check billing at platform.openai.com' }
+          return { status: 'healthy', message: 'Active (rate limited temporarily)' }
+        }
+        return { status: 'healthy', message: 'Active and working' }
+      }
+
+      case 'anthropic': {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-3-5-20241022', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
+        })
+        if (res.status === 401 || res.status === 403) return { status: 'invalid', message: 'API key is invalid' }
+        if (res.status === 402) return { status: 'quota_exceeded', message: 'Insufficient credits. Add billing at console.anthropic.com' }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({})) as { error?: { message?: string } }
+          const msg = body.error?.message || ''
+          if (/credit|billing|budget/i.test(msg)) return { status: 'quota_exceeded', message: 'Credits exhausted. Check billing at console.anthropic.com' }
+          return { status: 'healthy', message: 'Active (rate limited temporarily)' }
+        }
+        return { status: 'healthy', message: 'Active and working' }
+      }
+
+      case 'xai': {
+        const res = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'grok-3-mini', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
+        })
+        if (res.status === 401) return { status: 'invalid', message: 'API key is invalid' }
+        if (res.status === 402) return { status: 'quota_exceeded', message: 'Insufficient credits. Check your xAI billing' }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({})) as { error?: { message?: string } }
+          const msg = body.error?.message || ''
+          if (/quota|billing|exceeded/i.test(msg)) return { status: 'quota_exceeded', message: 'Quota exceeded. Check your xAI billing' }
+          return { status: 'healthy', message: 'Active (rate limited temporarily)' }
+        }
+        return { status: 'healthy', message: 'Active and working' }
+      }
+
+      case 'google': {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } }),
+          }
+        )
+        if (res.status === 400 || res.status === 403) return { status: 'invalid', message: 'API key is invalid' }
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({})) as { error?: { message?: string } }
+          const msg = body.error?.message || ''
+          if (/quota|exceeded|free.*tier/i.test(msg)) return { status: 'quota_exceeded', message: 'Quota exceeded. Check billing at console.cloud.google.com' }
+          return { status: 'healthy', message: 'Active (rate limited temporarily)' }
+        }
+        return { status: 'healthy', message: 'Active and working' }
+      }
+
+      default:
+        return { status: 'error', message: 'Unknown provider' }
+    }
+  } catch (err) {
+    return { status: 'error', message: `Health check failed: ${err instanceof Error ? err.message : 'network error'}` }
   }
 }
 
@@ -395,6 +508,20 @@ router.get('/:provider/models', authenticate, validateParams(providerParamSchema
   const models = await fetchProviderModels(provider, row.api_key)
   const enrichedModels = enrichModelsWithCatalog(models)
   res.json(enrichedModels)
+})
+
+// GET /api/keys/health — Check quota/health status for all active providers
+router.get('/health', authenticate, requireAdmin, async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const rows = await getActiveKeyPairs()
+
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const status = await checkProviderHealth(row.provider, row.api_key)
+      return { provider: row.provider, ...status }
+    })
+  )
+
+  res.json(results)
 })
 
 // POST /api/keys — Add or update key (upsert by provider)

@@ -163,13 +163,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   editWorkflow: async (id, data) => {
-    try {
-      const workflow = await workflowService.updateWorkflow(id, data)
-      await get().loadWorkflows()
-      return workflow
-    } catch {
-      return null
-    }
+    const workflow = await workflowService.updateWorkflow(id, data)
+    await get().loadWorkflows()
+    return workflow
   },
 
   deleteWorkflow: async (id) => {

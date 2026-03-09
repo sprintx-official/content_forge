@@ -17,6 +17,7 @@ const FlowsPage = lazy(() => import('@/pages/FlowsPage'))
 const CreateFlowPage = lazy(() => import('@/pages/CreateFlowPage'))
 const FlowDetailPage = lazy(() => import('@/pages/FlowDetailPage'))
 const MonitoringPage = lazy(() => import('@/pages/MonitoringPage'))
+const HistoryPage = lazy(() => import('@/pages/HistoryPage'))
 
 function LoadingFallback() {
   return (
@@ -143,7 +144,7 @@ export default function App() {
               path="/history"
               element={
                 <AuthGuard>
-                  <Navigate to="/flows/system-write?tab=history" replace />
+                  <HistoryPage />
                 </AuthGuard>
               }
             />

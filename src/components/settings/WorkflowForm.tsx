@@ -136,8 +136,8 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         await addWorkflow(data)
       }
       onClose?.()
-    } catch {
-      setError('Failed to save workflow.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save workflow.')
     } finally {
       setSaving(false)
     }

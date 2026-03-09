@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Zap, RotateCcw, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
+import { useAdminStore } from '@/stores/useAdminStore'
 import WorkflowSelector from './WorkflowSelector'
 import ContentTypeSelector from './ContentTypeSelector'
 import ToneSelector from './ToneSelector'
@@ -14,13 +16,37 @@ interface InputPanelProps {
   workflowId?: string
 }
 
-export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
+export default function InputPanel({ hideWorkflowSelector, workflowId }: InputPanelProps) {
+  const navigate = useNavigate()
   const topic = useForgeStore((s) => s.input.topic)
   const output = useForgeStore((s) => s.output)
   const isProcessing = useForgeStore((s) => s.isProcessing)
   const error = useForgeStore((s) => s.error)
   const generate = useForgeStore((s) => s.generate)
   const reset = useForgeStore((s) => s.reset)
+  const setWorkflow = useForgeStore((s) => s.setWorkflow)
+  const selectedWorkflow = useForgeStore((s) => s.selectedWorkflow)
+
+  // When workflowId prop is provided, load and set the workflow in the store
+  const workflows = useAdminStore((s) => s.workflows)
+  const loadWorkflows = useAdminStore((s) => s.loadWorkflows)
+
+  useEffect(() => {
+    if (workflowId && !selectedWorkflow) {
+      loadWorkflows().then(() => {
+        const wf = useAdminStore.getState().workflows.find((w) => w.id === workflowId)
+        if (wf) setWorkflow(wf)
+      })
+    }
+  }, [workflowId, selectedWorkflow, loadWorkflows, setWorkflow])
+
+  // Also sync if workflows already loaded
+  useEffect(() => {
+    if (workflowId && !selectedWorkflow && workflows.length > 0) {
+      const wf = workflows.find((w) => w.id === workflowId)
+      if (wf) setWorkflow(wf)
+    }
+  }, [workflowId, selectedWorkflow, workflows, setWorkflow])
 
   const isDisabled = topic.trim().length === 0 || isProcessing
 
@@ -52,9 +78,20 @@ export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
         <TopicInput />
 
         {error && (
-          <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
+          <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+            {/quota|credit|billing|balance|exhausted|No other AI provider/i.test(error) && (
+              <button
+                type="button"
+                onClick={() => { navigate('/settings'); useAdminStore.getState().setActiveTab('api-keys') }}
+                className="ml-6 text-xs text-[#10b981] hover:text-[#10b981]/80 underline underline-offset-2"
+              >
+                Go to API Keys settings to check provider status or add more providers
+              </button>
+            )}
           </div>
         )}
 

@@ -9,29 +9,29 @@ export interface AutoRouteResult {
 // Task-type to optimal provider mapping (ordered by preference)
 const TASK_PREFERENCES: Record<string, { provider: string; model: string }[]> = {
   'text-writing': [
-    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    { provider: 'anthropic', model: 'claude-sonnet-4-6-20250217' },
     { provider: 'openai', model: 'gpt-4o' },
+    { provider: 'google', model: 'gemini-2.5-flash' },
     { provider: 'xai', model: 'grok-3-mini' },
-    { provider: 'google', model: 'gemini-2.0-flash' },
   ],
   'text-chat': [
     { provider: 'openai', model: 'gpt-4o-mini' },
-    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
-    { provider: 'xai', model: 'grok-3-mini' },
+    { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
     { provider: 'google', model: 'gemini-2.0-flash' },
+    { provider: 'xai', model: 'grok-3-mini' },
   ],
   image: [
-    { provider: 'openai', model: 'dall-e-3' },
+    { provider: 'openai', model: 'gpt-image-1' },
     { provider: 'google', model: 'imagen-3.0-generate-002' },
   ],
   video: [
     { provider: 'google', model: 'veo-3.0-generate-001' },
   ],
   code: [
-    { provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    { provider: 'anthropic', model: 'claude-sonnet-4-6-20250217' },
     { provider: 'openai', model: 'gpt-4o' },
+    { provider: 'google', model: 'gemini-2.5-flash' },
     { provider: 'xai', model: 'grok-3-mini' },
-    { provider: 'google', model: 'gemini-2.0-flash' },
   ],
 }
 
@@ -68,9 +68,9 @@ export async function autoRoute(taskType: string, excludeProviders?: string[]): 
   // Fallback: first available provider with a sensible model
   const fallbackModels: Record<string, string> = {
     openai: 'gpt-4o-mini',
-    anthropic: 'claude-sonnet-4-20250514',
+    anthropic: 'claude-sonnet-4-6-20250217',
     xai: 'grok-3-mini',
-    google: 'gemini-2.0-flash',
+    google: 'gemini-2.5-flash',
   }
 
   const availableKeys = activeKeys.filter((k) => !excluded.has(k.provider))

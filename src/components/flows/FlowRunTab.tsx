@@ -1,5 +1,8 @@
 import type { AnyFlow } from '../../types'
+import { useForgeStore } from '@/stores/useForgeStore'
 import InputPanel from '../forge/InputPanel'
+import { ProcessingView } from '../processing/ProcessingView'
+import OutputPanel from '../output/OutputPanel'
 import { ChatView } from '../chat/ChatView'
 import { ImageView } from '../image/ImageView'
 import { VideoView } from '../video/VideoView'
@@ -10,10 +13,21 @@ interface FlowRunTabProps {
 }
 
 export function FlowRunTab({ flow, workflowId }: FlowRunTabProps) {
-  // For system flows, we use the legacy components but skip the workflow selector
-  // For database flows, we show the appropriate component based on type
+  const isProcessing = useForgeStore((s) => s.isProcessing)
+  const output = useForgeStore((s) => s.output)
 
   if (flow.type === 'text') {
+    // Show processing view during generation
+    if (isProcessing) {
+      return <ProcessingView />
+    }
+
+    // Show output when generation is complete
+    if (output) {
+      return <OutputPanel />
+    }
+
+    // Show input form when idle
     return <InputPanel hideWorkflowSelector workflowId={workflowId} />
   }
 

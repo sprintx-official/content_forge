@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Activity,
   LayoutDashboard,
+  Clock,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useForgeStore } from '@/stores/useForgeStore'
@@ -20,6 +21,7 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, section: 'main' },
   { to: '/flows', label: 'Flows', icon: Workflow, section: 'main' },
+  { to: '/history', label: 'History', icon: Clock, section: 'main' },
   { to: '/monitoring', label: 'Monitoring', icon: Activity, section: 'main' },
 ]
 

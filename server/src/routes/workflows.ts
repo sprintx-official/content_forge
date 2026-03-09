@@ -177,6 +177,8 @@ router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema),
 
     const workflowId = crypto.randomUUID()
     const now = new Date().toISOString()
+    const effectiveMode = mode || 'manual'
+    const effectiveFrequency = (effectiveMode === 'automated' || effectiveMode === 'both') ? (frequency || 1440) : null
 
     await execute(
       'INSERT INTO workflows (id, name, description, is_active, type, mode, frequency, pipeline_agent_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
@@ -186,8 +188,8 @@ router.post('/', authenticate, requireAdmin, validateBody(createWorkflowSchema),
         (description || '').trim(),
         isActive !== false ? 1 : 0,
         type || 'text',
-        mode || 'manual',
-        frequency || 1440,
+        effectiveMode,
+        effectiveFrequency,
         pipelineAgentId || null,
         now,
         now,
@@ -234,6 +236,10 @@ router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), va
 
     const { name, description, steps, isActive, type, mode, frequency, pipelineAgentId } = req.body
     const now = new Date().toISOString()
+    const effectiveMode = mode ?? existing.mode
+    const effectiveFrequency = (effectiveMode === 'automated' || effectiveMode === 'both')
+      ? (frequency ?? existing.frequency ?? 1440)
+      : null
 
     await execute(
       'UPDATE workflows SET name = $1, description = $2, is_active = $3, type = $4, mode = $5, frequency = $6, pipeline_agent_id = $7, updated_at = $8 WHERE id = $9',
@@ -242,8 +248,8 @@ router.put('/:id', authenticate, requireAdmin, validateParams(idParamSchema), va
         (description ?? existing.description).trim(),
         isActive !== undefined ? (isActive ? 1 : 0) : existing.is_active,
         type ?? existing.type,
-        mode ?? existing.mode,
-        frequency ?? existing.frequency ?? 1440,
+        effectiveMode,
+        effectiveFrequency,
         pipelineAgentId !== undefined ? pipelineAgentId : existing.pipeline_agent_id,
         now,
         req.params.id,

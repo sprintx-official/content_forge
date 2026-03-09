@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Check, Sparkles, AlertCircle, Loader2, BarChart3, RefreshCw } from 'lucide-react'
+import { Trash2, Check, Sparkles, AlertCircle, Loader2, BarChart3, RefreshCw, Type, ImageIcon, Video, ChevronDown, ChevronRight, Zap, ShieldAlert, ShieldCheck, Activity } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
-import { getProviderModels } from '@/services/apiKeyService'
+import { getProviderModels, checkProviderHealth, type ProviderHealth } from '@/services/apiKeyService'
 import { getUsageStats } from '@/services/usageService'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,12 +10,30 @@ import Loader from '@/components/ui/Loader'
 import { getTagVariant } from '@/lib/modelTagColors'
 import type { AiProvider, AiModel, ProviderUsageSummary } from '@/types'
 
-const PROVIDERS: { id: AiProvider; name: string }[] = [
-  { id: 'openai', name: 'OpenAI' },
-  { id: 'anthropic', name: 'Anthropic' },
-  { id: 'xai', name: 'xAI' },
-  { id: 'google', name: 'Google' },
+const PROVIDERS: { id: AiProvider; name: string; icon: string }[] = [
+  { id: 'openai', name: 'OpenAI', icon: 'O' },
+  { id: 'anthropic', name: 'Anthropic', icon: 'A' },
+  { id: 'xai', name: 'xAI', icon: 'X' },
+  { id: 'google', name: 'Google', icon: 'G' },
 ]
+
+type ModelCategory = 'text' | 'image' | 'video'
+
+function categorizeModel(model: AiModel): ModelCategory {
+  const tags = model.tags || []
+  if (tags.some((t) => t.includes('Image'))) return 'image'
+  if (tags.some((t) => t.includes('Video'))) return 'video'
+  // Check by model ID patterns
+  if (/dall-e|imagen|gpt-image|chatgpt-image|nano-banana/i.test(model.id)) return 'image'
+  if (/veo/i.test(model.id)) return 'video'
+  return 'text'
+}
+
+const CATEGORY_META: Record<ModelCategory, { label: string; icon: typeof Type; color: string }> = {
+  text: { label: 'Text & Chat', icon: Type, color: '#10b981' },
+  image: { label: 'Image Generation', icon: ImageIcon, color: '#6366f1' },
+  video: { label: 'Video Generation', icon: Video, color: '#f59e0b' },
+}
 
 export default function ApiKeysTab() {
   const { apiKeys, loading, loadApiKeys, saveApiKey, deleteApiKey } = useAdminStore()
@@ -28,6 +46,8 @@ export default function ApiKeysTab() {
   const [usageByProvider, setUsageByProvider] = useState<Record<string, ProviderUsageSummary>>({})
   const [initialLoad, setInitialLoad] = useState(true)
   const [confirmingDeleteProvider, setConfirmingDeleteProvider] = useState<string | null>(null)
+  const [healthByProvider, setHealthByProvider] = useState<Record<string, ProviderHealth>>({})
+  const [checkingHealth, setCheckingHealth] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -45,6 +65,21 @@ export default function ApiKeysTab() {
         }),
     ]).then(() => setInitialLoad(false))
   }, [loadApiKeys])
+
+  // Auto-check health when keys are loaded
+  useEffect(() => {
+    const connectedProviders = apiKeys.filter((k) => k.isActive)
+    if (connectedProviders.length === 0) return
+    setCheckingHealth(true)
+    checkProviderHealth()
+      .then((results) => {
+        const map: Record<string, ProviderHealth> = {}
+        for (const r of results) map[r.provider] = r
+        setHealthByProvider(map)
+      })
+      .catch((err) => console.error('Health check failed:', err))
+      .finally(() => setCheckingHealth(false))
+  }, [apiKeys])
 
   // Fetch models for each connected provider
   useEffect(() => {
@@ -125,17 +160,66 @@ export default function ApiKeysTab() {
     return <Loader label="Loading API keys..." />
   }
 
+  const handleCheckHealth = async () => {
+    setCheckingHealth(true)
+    try {
+      const results = await checkProviderHealth()
+      const map: Record<string, ProviderHealth> = {}
+      for (const r of results) map[r.provider] = r
+      setHealthByProvider(map)
+    } catch (err) {
+      console.error('Health check failed:', err)
+    } finally {
+      setCheckingHealth(false)
+    }
+  }
+
+  const unhealthyProviders = Object.values(healthByProvider).filter(
+    (h) => h.status === 'quota_exceeded' || h.status === 'invalid'
+  )
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-[#f8fafc] mb-1">
-          AI Provider API Keys
-        </h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-lg font-semibold text-[#f8fafc]">
+            AI Provider API Keys
+          </h3>
+          <button
+            onClick={handleCheckHealth}
+            disabled={checkingHealth}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-white/10 text-[#cbd5e1] hover:bg-white/5 disabled:opacity-50 transition-colors"
+          >
+            <Activity className={`h-3.5 w-3.5 ${checkingHealth ? 'animate-pulse' : ''}`} />
+            {checkingHealth ? 'Checking...' : 'Check Health'}
+          </button>
+        </div>
         <p className="text-sm text-[#cbd5e1]">
           Configure API keys to enable AI models for content generation.
           Keys are validated before saving.
         </p>
       </div>
+
+      {/* Health warning banner */}
+      {unhealthyProviders.length > 0 && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-red-400 font-medium text-sm">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            {unhealthyProviders.length === 1
+              ? '1 provider has issues'
+              : `${unhealthyProviders.length} providers have issues`}
+          </div>
+          {unhealthyProviders.map((h) => (
+            <div key={h.provider} className="flex items-start gap-2 text-xs text-red-300/80 ml-6">
+              <span className="font-medium capitalize">{h.provider}:</span>
+              <span>{h.message}</span>
+            </div>
+          ))}
+          <p className="text-xs text-red-300/60 ml-6">
+            Content generation will fail for these providers. Add credits or configure additional providers as fallback.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         {PROVIDERS.map((provider) => {
@@ -145,11 +229,16 @@ export default function ApiKeysTab() {
           const models = providerModels[provider.id]
           const isLoadingModels = loadingModels[provider.id]
           const usage = usageByProvider[provider.id]
+          const health = healthByProvider[provider.id]
 
           return (
             <div
               key={provider.id}
-              className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-4"
+              className={`rounded-xl border p-5 space-y-4 ${
+                health?.status === 'quota_exceeded' ? 'border-red-500/30 bg-red-500/5' :
+                health?.status === 'invalid' ? 'border-red-500/30 bg-red-500/5' :
+                'border-white/10 bg-white/5'
+              }`}
             >
               {/* Header */}
               <div className="flex items-center justify-between">
@@ -166,16 +255,48 @@ export default function ApiKeysTab() {
                     )}
                   </div>
                 </div>
-                <Badge variant={isConnected ? 'green' : 'outline'}>
-                  {isConnected ? (
-                    <span className="flex items-center gap-1">
-                      <Check className="h-3 w-3" /> Connected
-                    </span>
-                  ) : (
-                    'Not configured'
+                <div className="flex items-center gap-2">
+                  {isConnected && health && (
+                    <Badge variant={health.status === 'healthy' ? 'green' : 'rose'}>
+                      <span className="flex items-center gap-1">
+                        {health.status === 'healthy' ? (
+                          <><ShieldCheck className="h-3 w-3" /> Healthy</>
+                        ) : health.status === 'quota_exceeded' ? (
+                          <><ShieldAlert className="h-3 w-3" /> Quota Exceeded</>
+                        ) : health.status === 'invalid' ? (
+                          <><ShieldAlert className="h-3 w-3" /> Invalid Key</>
+                        ) : (
+                          <><AlertCircle className="h-3 w-3" /> Error</>
+                        )}
+                      </span>
+                    </Badge>
                   )}
-                </Badge>
+                  {isConnected && checkingHealth && !health && (
+                    <Badge variant="outline">
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Checking...
+                      </span>
+                    </Badge>
+                  )}
+                  <Badge variant={isConnected ? 'green' : 'outline'}>
+                    {isConnected ? (
+                      <span className="flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Connected
+                      </span>
+                    ) : (
+                      'Not configured'
+                    )}
+                  </Badge>
+                </div>
               </div>
+
+              {/* Health warning */}
+              {health && health.status !== 'healthy' && (
+                <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{health.message}</span>
+                </div>
+              )}
 
               {/* Key Input */}
               <div className="flex gap-2">
@@ -245,24 +366,47 @@ export default function ApiKeysTab() {
 
               {/* Usage stats */}
               {isConnected && usage && (
-                <div className="flex items-center gap-4 text-xs text-[#cbd5e1] bg-white/5 rounded-lg px-3 py-2">
-                  <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-                  <span>{usage.generation_count} generations</span>
-                  <span>{usage.total_tokens.toLocaleString()} tokens</span>
-                  <span className="text-emerald-400">${usage.total_cost_usd.toFixed(4)}</span>
+                <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-[#cbd5e1]">
+                    <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="font-medium text-[#f8fafc]">Usage Summary</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-[#f8fafc]">{usage.generation_count}</p>
+                      <p className="text-[10px] text-[#94a3b8]">Generations</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-[#f8fafc]">{(usage.total_tokens / 1000).toFixed(1)}k</p>
+                      <p className="text-[10px] text-[#94a3b8]">Tokens used</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-emerald-400">${usage.total_cost_usd.toFixed(4)}</p>
+                      <p className="text-[10px] text-[#94a3b8]">Total spent</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Models — dynamically fetched when connected */}
+              {isConnected && !usage && (
+                <div className="flex items-center gap-2 text-xs text-[#94a3b8] bg-white/[0.03] rounded-lg px-3 py-2">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>No usage yet — start generating to see stats</span>
+                </div>
+              )}
+
+              {/* Models — grouped by category */}
               {isConnected && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-[#cbd5e1]">Available models</p>
+                    <p className="text-xs text-[#cbd5e1]">
+                      Available models {models?.length ? `(${models.length})` : ''}
+                    </p>
                     <button
                       type="button"
                       onClick={() => handleRefreshModels(provider.id)}
                       disabled={isLoadingModels}
-                      className="flex items-center gap-1 text-xs text-[#cbd5e1] hover:text-[#22d3ee] transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 text-xs text-[#cbd5e1] hover:text-[#10b981] transition-colors disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3 w-3 ${isLoadingModels ? 'animate-spin' : ''}`} />
                       Refresh
@@ -274,34 +418,7 @@ export default function ApiKeysTab() {
                       Loading models...
                     </div>
                   ) : models && models.length > 0 ? (
-                    <div className="space-y-2">
-                      {models.map((model) => (
-                        <div
-                          key={model.id}
-                          className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 space-y-1"
-                        >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-[#f8fafc]">
-                              {model.name}
-                            </span>
-                            {model.tags?.map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant={getTagVariant(tag)}
-                                className="text-[10px] px-1.5 py-0"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                          {model.description && (
-                            <p className="text-xs text-[#94a3b8] leading-relaxed">
-                              {model.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <ModelCategoryList models={models} />
                   ) : (
                     <p className="text-xs text-[#94a3b8]">No models found</p>
                   )}
@@ -311,6 +428,62 @@ export default function ApiKeysTab() {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function ModelCategoryList({ models }: { models: AiModel[] }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ text: true })
+
+  // Group by category
+  const grouped: Record<ModelCategory, AiModel[]> = { text: [], image: [], video: [] }
+  for (const m of models) {
+    grouped[categorizeModel(m)].push(m)
+  }
+
+  const categories = (['text', 'image', 'video'] as ModelCategory[]).filter((c) => grouped[c].length > 0)
+
+  return (
+    <div className="space-y-2">
+      {categories.map((cat) => {
+        const meta = CATEGORY_META[cat]
+        const Icon = meta.icon
+        const isOpen = expanded[cat] ?? false
+        const catModels = grouped[cat]
+
+        return (
+          <div key={cat} className="rounded-lg border border-white/[0.06] overflow-hidden">
+            <button
+              onClick={() => setExpanded((prev) => ({ ...prev, [cat]: !prev[cat] }))}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/[0.03] transition-colors"
+            >
+              {isOpen ? <ChevronDown className="h-3 w-3 text-[#94a3b8]" /> : <ChevronRight className="h-3 w-3 text-[#94a3b8]" />}
+              <Icon className="h-3.5 w-3.5" style={{ color: meta.color }} />
+              <span className="font-medium text-[#f8fafc]">{meta.label}</span>
+              <span className="text-[#94a3b8] ml-auto">{catModels.length} model{catModels.length !== 1 ? 's' : ''}</span>
+            </button>
+            {isOpen && (
+              <div className="border-t border-white/[0.06] divide-y divide-white/[0.04]">
+                {catModels.map((model) => (
+                  <div key={model.id} className="px-3 py-2 space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-[#f8fafc]">{model.name}</span>
+                      {model.tags?.map((tag) => (
+                        <Badge key={tag} variant={getTagVariant(tag)} className="text-[10px] px-1.5 py-0">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    {model.description && (
+                      <p className="text-xs text-[#94a3b8] leading-relaxed">{model.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

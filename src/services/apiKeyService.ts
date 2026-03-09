@@ -21,3 +21,13 @@ export async function getAvailableModels(refresh = false): Promise<AiModel[]> {
 export async function getProviderModels(provider: AiProvider): Promise<AiModel[]> {
   return api.get<AiModel[]>(`/api/keys/${provider}/models`)
 }
+
+export interface ProviderHealth {
+  provider: string
+  status: 'healthy' | 'quota_exceeded' | 'invalid' | 'error'
+  message: string
+}
+
+export async function checkProviderHealth(): Promise<ProviderHealth[]> {
+  return api.get<ProviderHealth[]>('/api/keys/health')
+}

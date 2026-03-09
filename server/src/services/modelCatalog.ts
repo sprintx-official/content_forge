@@ -3,8 +3,7 @@
  * Uses longest-prefix matching (same approach as costCalculator.ts) so that
  * "gpt-4o-mini" matches before "gpt-4o" for model ID "gpt-4o-mini".
  *
- * To add a new model: append an entry with the model ID prefix, a short
- * description, and an array of relevant tags.
+ * Last updated: March 2026
  */
 
 export type ModelTag =
@@ -30,6 +29,130 @@ export interface ModelCatalogEntry {
 export const MODEL_CATALOG: ModelCatalogEntry[] = [
   // ── OpenAI ──────────────────────────────────────────────────
 
+  // GPT-5.4 family (latest — March 2026)
+  {
+    pattern: 'gpt-5.4-pro',
+    description:
+      'OpenAI\'s most capable model. Highest-tier for demanding professional and enterprise work.',
+    tags: ['Most Capable', 'Best for Writing', 'Reasoning'],
+  },
+  {
+    pattern: 'gpt-5.4-thinking',
+    description:
+      'Extended reasoning model for difficult, real-world professional tasks and longer workflows.',
+    tags: ['Most Capable', 'Reasoning', 'Best for Analysis'],
+  },
+  {
+    pattern: 'gpt-5.4',
+    description:
+      'Latest GPT-5 generation with native computer-use and 1M token context. State-of-the-art.',
+    tags: ['Most Capable', 'Best for Writing', 'Long Context'],
+  },
+
+  // GPT-5.3 family
+  {
+    pattern: 'gpt-5.3-instant',
+    description:
+      'Fast, everyday model optimized for speed. Great for quick tasks and high-volume workloads.',
+    tags: ['Fast & Cheap', 'Best for Chat'],
+  },
+  {
+    pattern: 'gpt-5.3-codex-spark',
+    description:
+      'High-speed coding model on Cerebras hardware. Blazing fast code generation.',
+    tags: ['Fast & Cheap', 'Best for Code'],
+  },
+  {
+    pattern: 'gpt-5.3-codex',
+    description:
+      'Purpose-built for software engineering. Strong agentic coding capabilities.',
+    tags: ['Best for Code', 'Balanced'],
+  },
+  {
+    pattern: 'gpt-5.3',
+    description:
+      'Solid all-around GPT-5 model. Good balance of capability and performance.',
+    tags: ['Balanced', 'Best for Writing'],
+  },
+
+  // GPT-5.2 family
+  {
+    pattern: 'gpt-5.2-codex',
+    description:
+      'GPT-5.2 agentic coding model. Specialized for software engineering tasks.',
+    tags: ['Best for Code'],
+  },
+  {
+    pattern: 'gpt-5.2-thinking',
+    description:
+      'GPT-5.2 with extended reasoning. Being retired June 2026.',
+    tags: ['Reasoning', 'Best for Analysis'],
+  },
+  {
+    pattern: 'gpt-5.2',
+    description:
+      'Previous GPT-5 generation. Strong writing and reasoning capabilities.',
+    tags: ['Balanced', 'Best for Writing'],
+  },
+
+  // GPT-5.1 family
+  {
+    pattern: 'gpt-5.1-codex-mini',
+    description:
+      'Compact code-focused variant. Fast and affordable for coding tasks.',
+    tags: ['Fast & Cheap', 'Best for Code'],
+  },
+  {
+    pattern: 'gpt-5.1-codex-max',
+    description:
+      'Maximum capability code model for complex programming and architecture.',
+    tags: ['Most Capable', 'Best for Code'],
+  },
+  {
+    pattern: 'gpt-5.1-codex',
+    description:
+      'GPT-5.1 specialized for code generation with enhanced programming capabilities.',
+    tags: ['Best for Code'],
+  },
+  {
+    pattern: 'gpt-5.1',
+    description:
+      'Earlier GPT-5 generation. Good general-purpose model.',
+    tags: ['Balanced'],
+  },
+
+  // GPT-5 base
+  {
+    pattern: 'gpt-5-nano',
+    description:
+      'Ultralight GPT-5 variant for the fastest, cheapest inference on simple tasks.',
+    tags: ['Fast & Cheap'],
+  },
+  {
+    pattern: 'gpt-5-mini',
+    description:
+      'Compact GPT-5 balancing capability and cost. Great for everyday use.',
+    tags: ['Fast & Cheap', 'Best for Chat'],
+  },
+  {
+    pattern: 'gpt-5-pro',
+    description:
+      'Enhanced GPT-5 with deeper reasoning and stronger writing.',
+    tags: ['Most Capable', 'Reasoning', 'Best for Writing'],
+  },
+  {
+    pattern: 'gpt-5-codex',
+    description:
+      'GPT-5 variant specialized for code generation.',
+    tags: ['Best for Code'],
+  },
+  {
+    pattern: 'gpt-5',
+    description:
+      'OpenAI\'s GPT-5 base model. Significant improvements in reasoning and generation quality.',
+    tags: ['Most Capable', 'Best for Writing', 'Reasoning'],
+  },
+
   // ChatGPT models
   {
     pattern: 'chatgpt-4o-latest',
@@ -46,67 +169,43 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
 
   // GPT-4o family
   {
-    pattern: 'gpt-4o-mini-transcribe',
-    description:
-      'Compact audio transcription model. Fast and affordable speech-to-text.',
-    tags: ['Fast & Cheap', 'Multimodal'],
-  },
-  {
     pattern: 'gpt-4o-mini',
     description:
-      'Compact and cost-efficient GPT-4o. Great for everyday tasks where speed and low cost matter more than peak capability.',
+      'Compact and cost-efficient GPT-4o. Great for everyday tasks where speed and low cost matter.',
     tags: ['Fast & Cheap', 'Best for Chat'],
-  },
-  {
-    pattern: 'gpt-4o-transcribe',
-    description:
-      'Audio transcription model based on GPT-4o. Converts speech to text.',
-    tags: ['Multimodal'],
   },
   {
     pattern: 'gpt-4o',
     description:
-      'OpenAI\'s flagship multimodal model with strong performance across writing, code, and analysis.',
-    tags: ['Most Capable', 'Best for Writing', 'Multimodal'],
+      'GPT-4o multimodal model. Strong performance across writing, code, and analysis.',
+    tags: ['Balanced', 'Best for Writing', 'Multimodal'],
   },
 
   // GPT-4.1 family
   {
     pattern: 'gpt-4.1-nano',
     description:
-      'The smallest and fastest GPT model. Best for high-volume, low-complexity tasks where speed is paramount.',
+      'Smallest and fastest GPT model for high-volume, low-complexity tasks.',
     tags: ['Fast & Cheap'],
   },
   {
     pattern: 'gpt-4.1-mini',
     description:
-      'Fast, affordable model for quick tasks. Ideal for chat, summarization, and lightweight coding.',
+      'Fast, affordable model for chat, summarization, and lightweight coding.',
     tags: ['Fast & Cheap', 'Best for Chat'],
   },
   {
     pattern: 'gpt-4.1',
     description:
-      'Latest generation GPT with improved instruction following and coding ability. Strong general-purpose performer.',
-    tags: ['Most Capable', 'Best for Code', 'Best for Writing'],
+      'GPT-4.1 with improved instruction following and coding ability.',
+    tags: ['Balanced', 'Best for Code'],
   },
 
-  // GPT-4 Turbo / preview
+  // GPT-4 legacy
   {
     pattern: 'gpt-4-turbo',
     description:
-      'Previous generation GPT-4 with faster response times. Solid all-around model.',
-    tags: ['Balanced'],
-  },
-  {
-    pattern: 'gpt-4-1106-preview',
-    description:
-      'GPT-4 preview snapshot. Previous generation model, reliable for general tasks.',
-    tags: ['Balanced'],
-  },
-  {
-    pattern: 'gpt-4-0125-preview',
-    description:
-      'GPT-4 preview snapshot with improvements. Previous generation model.',
+      'Previous generation GPT-4 with faster response times.',
     tags: ['Balanced'],
   },
   {
@@ -116,123 +215,21 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
     tags: ['Balanced'],
   },
 
-  // GPT-3.5 family
-  {
-    pattern: 'gpt-3.5-turbo-instruct',
-    description:
-      'GPT-3.5 instruction-tuned variant. Good for completion-style tasks.',
-    tags: ['Fast & Cheap'],
-  },
+  // GPT-3.5 legacy
   {
     pattern: 'gpt-3.5-turbo',
     description:
-      'Legacy fast and affordable model. Good for simple chat and text generation tasks.',
+      'Legacy fast model. Good for simple chat and text generation.',
     tags: ['Fast & Cheap', 'Best for Chat'],
   },
   {
     pattern: 'gpt-3.5',
     description:
-      'Legacy GPT model. Suitable for basic text generation and simple tasks.',
+      'Legacy GPT model. Suitable for basic text generation.',
     tags: ['Fast & Cheap'],
   },
 
-  // GPT-5 family
-  {
-    pattern: 'gpt-5-nano',
-    description:
-      'Ultralight GPT-5 variant for the fastest, cheapest inference on simple tasks.',
-    tags: ['Fast & Cheap'],
-  },
-  {
-    pattern: 'gpt-5-mini',
-    description:
-      'Compact GPT-5 model balancing capability and cost. Great for everyday use.',
-    tags: ['Fast & Cheap', 'Best for Chat'],
-  },
-  {
-    pattern: 'gpt-5-pro',
-    description:
-      'Enhanced GPT-5 with deeper reasoning and stronger writing. Premium tier.',
-    tags: ['Most Capable', 'Reasoning', 'Best for Writing'],
-  },
-  {
-    pattern: 'gpt-5-chat-latest',
-    description:
-      'Latest GPT-5 variant optimized for conversational interactions.',
-    tags: ['Best for Chat'],
-  },
-  {
-    pattern: 'gpt-5-codex',
-    description:
-      'GPT-5 variant specialized for code generation and programming tasks.',
-    tags: ['Best for Code'],
-  },
-  {
-    pattern: 'gpt-5',
-    description:
-      'OpenAI\'s next-generation model with significant improvements in reasoning and generation quality.',
-    tags: ['Most Capable', 'Best for Writing', 'Reasoning'],
-  },
-
-  // GPT-5.1 family
-  {
-    pattern: 'gpt-5.1-codex-mini',
-    description:
-      'Compact code-focused variant of GPT-5.1. Fast and affordable for coding tasks.',
-    tags: ['Fast & Cheap', 'Best for Code'],
-  },
-  {
-    pattern: 'gpt-5.1-codex-max',
-    description:
-      'Maximum capability code model. Best for complex programming and architecture tasks.',
-    tags: ['Most Capable', 'Best for Code'],
-  },
-  {
-    pattern: 'gpt-5.1-codex',
-    description:
-      'GPT-5.1 specialized for code generation with enhanced programming capabilities.',
-    tags: ['Best for Code'],
-  },
-  {
-    pattern: 'gpt-5.1-chat-latest',
-    description:
-      'Latest GPT-5.1 optimized for conversational interactions.',
-    tags: ['Best for Chat'],
-  },
-  {
-    pattern: 'gpt-5.1',
-    description:
-      'Incremental improvement over GPT-5 with better instruction following and accuracy.',
-    tags: ['Most Capable', 'Best for Writing'],
-  },
-
-  // GPT-5.2 family
-  {
-    pattern: 'gpt-5.2-codex',
-    description:
-      'GPT-5.2 code-specialized model with latest programming capabilities.',
-    tags: ['Best for Code'],
-  },
-  {
-    pattern: 'gpt-5.2-chat-latest',
-    description:
-      'Latest GPT-5.2 optimized for conversational use.',
-    tags: ['Best for Chat'],
-  },
-  {
-    pattern: 'gpt-5.2-pro',
-    description:
-      'Premium GPT-5.2 variant with enhanced reasoning and generation quality.',
-    tags: ['Most Capable', 'Reasoning'],
-  },
-  {
-    pattern: 'gpt-5.2',
-    description:
-      'Latest in the GPT-5 series with continued improvements in capability.',
-    tags: ['Most Capable', 'Best for Writing'],
-  },
-
-  // Image generation models
+  // OpenAI Image generation
   {
     pattern: 'gpt-image-1',
     description:
@@ -245,302 +242,405 @@ export const MODEL_CATALOG: ModelCatalogEntry[] = [
       'OpenAI image generation model. Creates images from text descriptions.',
     tags: ['Best for Image Generation'],
   },
+  {
+    pattern: 'dall-e-3',
+    description:
+      'DALL-E 3 image generation. Creates detailed, accurate images from text descriptions.',
+    tags: ['Best for Image Generation', 'Balanced'],
+  },
+  {
+    pattern: 'dall-e',
+    description:
+      'OpenAI DALL-E image generation model.',
+    tags: ['Best for Image Generation'],
+  },
 
   // Reasoning models (o-series)
   {
     pattern: 'o4-mini',
     description:
-      'Compact reasoning model that thinks before answering. Good for math, logic, and structured problem-solving.',
-    tags: ['Reasoning', 'Fast & Cheap'],
+      'Latest small reasoning model. Efficient for coding and visual tasks with high throughput.',
+    tags: ['Reasoning', 'Fast & Cheap', 'Best for Code'],
+  },
+  {
+    pattern: 'o3-pro',
+    description:
+      'Enhanced o3 with more compute for the most challenging analytical problems.',
+    tags: ['Reasoning', 'Most Capable', 'Best for Analysis'],
   },
   {
     pattern: 'o3-mini',
     description:
-      'Efficient reasoning model for STEM tasks. Balances chain-of-thought depth with speed.',
+      'Efficient reasoning model for STEM tasks. Balances depth with speed.',
     tags: ['Reasoning', 'Fast & Cheap'],
   },
   {
     pattern: 'o3',
     description:
-      'Advanced reasoning model with deep chain-of-thought capabilities for complex analytical tasks.',
+      'Most powerful reasoning model. 20% fewer major errors than o1 on real-world tasks.',
     tags: ['Reasoning', 'Most Capable', 'Best for Analysis'],
-  },
-  {
-    pattern: 'o1-pro',
-    description:
-      'Enhanced reasoning model with more compute for the most challenging problems.',
-    tags: ['Reasoning', 'Most Capable'],
   },
   {
     pattern: 'o1',
     description:
-      'OpenAI\'s first-generation reasoning model. Excels at multi-step math, science, and coding.',
+      'First-generation reasoning model. Excels at multi-step math, science, and coding.',
     tags: ['Reasoning', 'Best for Analysis'],
   },
 
   // ── Anthropic ───────────────────────────────────────────────
-  // New naming convention: claude-{tier}-{version}
 
-  // Opus family (most capable)
+  // 4.6 generation (latest — Feb 2026)
   {
-    pattern: 'claude-opus-4.5',
+    pattern: 'claude-opus-4-6',
     description:
-      'Anthropic\'s latest and most capable model. Superior at creative writing, nuanced analysis, and complex reasoning.',
+      'Anthropic\'s latest and most capable model (Feb 2026). Superior writing, analysis, and agent capabilities.',
     tags: ['Most Capable', 'Best for Writing', 'Best for Analysis'],
   },
   {
-    pattern: 'claude-opus-4.1',
+    pattern: 'claude-sonnet-4-6',
     description:
-      'Improved Opus with enhanced reasoning and instruction following. Exceptional for complex tasks.',
-    tags: ['Most Capable', 'Best for Writing', 'Best for Analysis'],
-  },
-  {
-    pattern: 'claude-opus-4',
-    description:
-      'Anthropic\'s most powerful model. Exceptional at nuanced writing, complex analysis, and long-form content.',
-    tags: ['Most Capable', 'Best for Writing', 'Best for Analysis'],
+      'Latest Sonnet (Feb 2026). Full upgrade across coding, computer use, and reasoning. 1M context.',
+    tags: ['Best for Writing', 'Best for Code', 'Balanced', 'Long Context'],
   },
 
-  // Sonnet family (balanced)
+  // 4.5 generation
   {
-    pattern: 'claude-sonnet-4.5',
+    pattern: 'claude-opus-4-5',
     description:
-      'Latest Sonnet with top-tier coding and writing. Best all-around choice for most tasks.',
+      'Previous Opus generation (Nov 2025). Exceptional at creative writing and complex analysis.',
+    tags: ['Most Capable', 'Best for Writing', 'Best for Analysis'],
+  },
+  {
+    pattern: 'claude-sonnet-4-5',
+    description:
+      'Sonnet 4.5 with top-tier coding and writing. Best all-around for most tasks.',
     tags: ['Best for Writing', 'Best for Code', 'Balanced'],
   },
+  {
+    pattern: 'claude-haiku-4-5',
+    description:
+      'Fast Haiku model (Oct 2025). Great for chat, summarization, and quick tasks at very low cost.',
+    tags: ['Fast & Cheap', 'Best for Chat'],
+  },
+
+  // Sonnet 4 family
   {
     pattern: 'claude-sonnet-4',
     description:
-      'Excellent balance of capability and speed. Recommended for most tasks including writing and code.',
+      'Excellent balance of capability and speed. Recommended for writing and code.',
     tags: ['Best for Writing', 'Best for Code', 'Balanced'],
   },
-  {
-    pattern: 'claude-sonnet-3.7',
-    description:
-      'Previous-generation Sonnet with strong coding and writing skills. Reliable all-around performer.',
-    tags: ['Best for Code', 'Best for Writing', 'Balanced'],
-  },
 
-  // Haiku family (fast & cheap)
-  {
-    pattern: 'claude-haiku-4.5',
-    description:
-      'Latest fast Haiku model. Great for chat, summarization, and quick tasks at very low cost.',
-    tags: ['Fast & Cheap', 'Best for Chat'],
-  },
-  {
-    pattern: 'claude-haiku-3.5',
-    description:
-      'Fast and affordable Claude for everyday tasks. Great for chat, summarization, and quick drafts.',
-    tags: ['Fast & Cheap', 'Best for Chat'],
-  },
-  {
-    pattern: 'claude-haiku-3-5',
-    description:
-      'Fast and affordable Claude for everyday tasks. Great for chat, summarization, and quick drafts.',
-    tags: ['Fast & Cheap', 'Best for Chat'],
-  },
-
-  // Legacy naming (claude-3-x-y)
+  // Legacy Claude 3.x naming
   {
     pattern: 'claude-3-5-sonnet',
     description:
-      'Previous-generation Sonnet with strong coding and writing skills. Reliable all-around performer.',
+      'Previous-generation Sonnet. Strong coding and writing skills.',
     tags: ['Best for Code', 'Best for Writing', 'Balanced'],
   },
   {
     pattern: 'claude-3-5-haiku',
     description:
-      'Fast and affordable Claude for everyday tasks. Great for chat, summarization, and quick drafts.',
+      'Fast and affordable Claude for everyday tasks.',
     tags: ['Fast & Cheap', 'Best for Chat'],
   },
   {
     pattern: 'claude-3-opus',
     description:
-      'Previous-generation flagship with deep analytical and creative writing capabilities.',
+      'Previous-generation flagship. Deep analytical and creative writing capabilities.',
     tags: ['Most Capable', 'Best for Writing'],
   },
   {
     pattern: 'claude-3-sonnet',
     description:
-      'Previous-generation balanced model. Solid performance for writing and general tasks.',
+      'Previous-generation balanced model.',
     tags: ['Balanced'],
   },
   {
     pattern: 'claude-3-haiku',
     description:
-      'Ultra-fast and cost-effective. Ideal for high-volume tasks where speed matters most.',
+      'Ultra-fast and cost-effective for high-volume tasks.',
     tags: ['Fast & Cheap'],
   },
 
   // ── xAI (Grok) ─────────────────────────────────────────────
+
+  // Grok 4.x family (latest)
+  {
+    pattern: 'grok-4-1-fast-reasoning',
+    description:
+      'Grok 4.1 with fast reasoning mode. Efficient deep thinking for complex tasks.',
+    tags: ['Reasoning', 'Fast & Cheap'],
+  },
+  {
+    pattern: 'grok-4.1-fast',
+    description:
+      'Latest Grok 4.1 optimized for speed. Fast responses with strong capabilities.',
+    tags: ['Fast & Cheap', 'Best for Chat'],
+  },
+  {
+    pattern: 'grok-4.1',
+    description:
+      'xAI\'s latest fully available API model. Strong reasoning and real-time knowledge.',
+    tags: ['Most Capable', 'Reasoning', 'Best for Analysis'],
+  },
+  {
+    pattern: 'grok-4-heavy',
+    description:
+      'Maximum capability Grok for the most demanding tasks.',
+    tags: ['Most Capable', 'Reasoning', 'Best for Analysis'],
+  },
+  {
+    pattern: 'grok-4-fast',
+    description:
+      'Speed-optimized Grok 4. Good balance of speed and capability.',
+    tags: ['Fast & Cheap', 'Balanced'],
+  },
+  {
+    pattern: 'grok-4',
+    description:
+      'xAI Grok 4 base model. Strong general-purpose performance.',
+    tags: ['Most Capable', 'Best for Writing', 'Reasoning'],
+  },
+  {
+    pattern: 'grok-code-fast',
+    description:
+      'Grok model specialized for fast code generation.',
+    tags: ['Fast & Cheap', 'Best for Code'],
+  },
+
+  // Grok 3.x family
   {
     pattern: 'grok-3-mini',
     description:
-      'Compact and fast Grok model. Good for chat, quick analysis, and cost-sensitive workloads.',
+      'Compact Grok model for chat, quick analysis, and cost-sensitive workloads.',
     tags: ['Fast & Cheap', 'Best for Chat'],
   },
   {
     pattern: 'grok-3',
     description:
-      'xAI\'s most capable model with strong reasoning and real-time knowledge.',
-    tags: ['Most Capable', 'Best for Analysis', 'Reasoning'],
+      'Grok 3 with strong reasoning. Generally available via API.',
+    tags: ['Balanced', 'Reasoning'],
   },
   {
     pattern: 'grok-2',
     description:
-      'Previous-generation Grok with solid general performance across writing and chat.',
+      'Previous-generation Grok with solid general performance.',
     tags: ['Balanced'],
   },
 
-  // ── Google (Gemini) ─────────────────────────────────────────
+  // ── Google (Gemini — text) ─────────────────────────────────
+
+  // Gemini 3.1 family (latest — March 2026)
   {
-    pattern: 'gemini-2.5-pro-preview',
+    pattern: 'gemini-3.1-pro-preview-custom-tools',
     description:
-      'Preview of Gemini 2.5 Pro with latest improvements. Powerful reasoning and large context.',
-    tags: ['Most Capable', 'Reasoning', 'Long Context'],
+      'Gemini 3.1 Pro with custom tool support. Advanced agentic capabilities.',
+    tags: ['Most Capable', 'Reasoning'],
   },
   {
-    pattern: 'gemini-2.5-pro',
+    pattern: 'gemini-3.1-pro-preview',
     description:
-      'Google\'s most capable model with built-in reasoning and a massive context window.',
+      'Gemini 3.1 Pro preview. Google\'s most advanced model. 77% on ARC-AGI-2, 1M context.',
     tags: ['Most Capable', 'Reasoning', 'Long Context', 'Best for Analysis'],
   },
   {
-    pattern: 'gemini-2.5-flash-lite',
+    pattern: 'gemini-3.1-pro',
     description:
-      'Ultra-lightweight Gemini model. Fastest and cheapest option for simple tasks.',
+      'Google\'s most capable model (March 2026). Double the reasoning of 3 Pro. $2/M input tokens.',
+    tags: ['Most Capable', 'Reasoning', 'Long Context', 'Best for Analysis'],
+  },
+  {
+    pattern: 'gemini-3.1-flash-lite-preview',
+    description:
+      'Preview of Gemini 3.1 Flash-Lite. 2.5x faster, 45% more output speed than 2.5 Flash.',
     tags: ['Fast & Cheap'],
   },
   {
-    pattern: 'gemini-2.5-flash-preview',
+    pattern: 'gemini-3.1-flash-lite',
     description:
-      'Preview of Gemini 2.5 Flash with upcoming improvements. Fast with thinking capabilities.',
-    tags: ['Fast & Cheap', 'Reasoning'],
-  },
-  {
-    pattern: 'gemini-2.5-flash',
-    description:
-      'Fast Gemini model with thinking capabilities. Great balance of speed, cost, and intelligence.',
-    tags: ['Fast & Cheap', 'Reasoning', 'Balanced'],
-  },
-  {
-    pattern: 'gemini-2.5-computer-use',
-    description:
-      'Gemini model designed for computer use and agentic tasks. Can interact with UIs.',
-    tags: ['Multimodal', 'Most Capable'],
-  },
-  {
-    pattern: 'gemini-2.0-flash-lite',
-    description:
-      'Ultra-lightweight Gemini 2.0 model for the fastest, cheapest inference.',
+      'Google\'s fastest and cheapest Gemini 3 model. $0.25/M input tokens. Great for high-volume.',
     tags: ['Fast & Cheap'],
   },
-  {
-    pattern: 'gemini-2.0-flash',
-    description:
-      'Speedy multimodal model for high-throughput tasks. Handles text, images, and code.',
-    tags: ['Fast & Cheap', 'Multimodal', 'Best for Chat'],
-  },
+
+  // Gemini 3 family
   {
     pattern: 'gemini-3-pro',
     description:
-      'Next-generation Gemini Pro with significant improvements across all capabilities.',
+      'Gemini 3 Pro. Powerful reasoning and analysis across text, images, audio, and code.',
     tags: ['Most Capable', 'Reasoning', 'Best for Analysis'],
   },
   {
     pattern: 'gemini-3-flash',
     description:
-      'Next-generation Gemini Flash model. Fast, capable, and cost-effective.',
+      'Gemini 3 Flash. Fast, capable, and cost-effective multimodal model.',
     tags: ['Fast & Cheap', 'Balanced'],
   },
+
+  // Gemini 2.5 family
   {
-    pattern: 'gemini-flash-latest',
+    pattern: 'gemini-2.5-pro-preview',
     description:
-      'Latest Gemini Flash model. Fast and affordable for everyday tasks.',
+      'Preview of Gemini 2.5 Pro. Strong reasoning and 1M token context.',
+    tags: ['Most Capable', 'Reasoning', 'Long Context'],
+  },
+  {
+    pattern: 'gemini-2.5-pro',
+    description:
+      'Gemini 2.5 Pro with built-in reasoning and massive context window.',
+    tags: ['Most Capable', 'Reasoning', 'Long Context', 'Best for Analysis'],
+  },
+  {
+    pattern: 'gemini-2.5-flash-lite',
+    description:
+      'Ultra-lightweight Gemini 2.5 model. Fastest and cheapest.',
     tags: ['Fast & Cheap'],
   },
   {
-    pattern: 'gemini-flash-lite-latest',
+    pattern: 'gemini-2.5-flash',
     description:
-      'Latest ultra-lightweight Gemini model for the fastest inference.',
+      'Fast Gemini 2.5 with thinking capabilities. Great speed, cost, and intelligence balance.',
+    tags: ['Fast & Cheap', 'Reasoning', 'Balanced'],
+  },
+
+  // Gemini 2.0 family
+  {
+    pattern: 'gemini-2.0-flash-lite',
+    description:
+      'Ultra-lightweight Gemini 2.0 for the fastest, cheapest inference.',
     tags: ['Fast & Cheap'],
   },
   {
-    pattern: 'gemini-pro-latest',
+    pattern: 'gemini-2.0-flash',
     description:
-      'Latest Gemini Pro model with best-in-class capabilities.',
-    tags: ['Most Capable'],
+      'Speedy multimodal Gemini 2.0. Handles text, images, and code.',
+    tags: ['Fast & Cheap', 'Multimodal', 'Best for Chat'],
   },
+
+  // Gemini 1.5 legacy
   {
     pattern: 'gemini-1.5-pro',
     description:
-      'Previous-generation Gemini with a very large context window. Good for long document analysis.',
+      'Previous-generation Gemini with very large context window for long documents.',
     tags: ['Long Context', 'Balanced'],
   },
   {
     pattern: 'gemini-1.5-flash',
     description:
-      'Lightweight Gemini for fast, cost-effective processing of simple tasks.',
+      'Lightweight Gemini 1.5 for fast, cost-effective processing.',
     tags: ['Fast & Cheap'],
+  },
+
+  // Gemini latest aliases
+  {
+    pattern: 'gemini-flash-latest',
+    description:
+      'Latest Gemini Flash model. Fast and affordable.',
+    tags: ['Fast & Cheap'],
+  },
+  {
+    pattern: 'gemini-flash-lite-latest',
+    description:
+      'Latest ultra-lightweight Gemini. Fastest inference.',
+    tags: ['Fast & Cheap'],
+  },
+  {
+    pattern: 'gemini-pro-latest',
+    description:
+      'Latest Gemini Pro. Best-in-class capabilities.',
+    tags: ['Most Capable'],
+  },
+
+  // Gemini catch-all (fallback for unmatched gemini-* IDs)
+  {
+    pattern: 'gemini',
+    description:
+      'Google Gemini AI model. Multimodal with general capabilities.',
+    tags: ['Multimodal', 'Balanced'],
+  },
+
+  // ── Google (Nano Banana — image generation) ─────────────────
+  {
+    pattern: 'nano-banana-pro',
+    description:
+      'Nano Banana Pro (Gemini 3 Pro Image). Advanced image generation with text rendering and world knowledge.',
+    tags: ['Best for Image Generation', 'Most Capable'],
+  },
+  {
+    pattern: 'nano-banana-2',
+    description:
+      'Nano Banana 2 (Feb 2026). Fast, high-quality image generation built on Gemini 3.1 Flash Image.',
+    tags: ['Best for Image Generation', 'Balanced'],
   },
   {
     pattern: 'nano-banana',
     description:
-      'Experimental Google nano model for ultra-fast lightweight tasks.',
-    tags: ['Fast & Cheap'],
-  },
-  {
-    pattern: 'gemini-robotics',
-    description:
-      'Specialized Gemini model for robotics and embodied AI applications.',
-    tags: ['Multimodal'],
-  },
-  {
-    pattern: 'gemini-experimental',
-    description:
-      'Experimental Gemini model with cutting-edge features in preview.',
-    tags: ['Most Capable'],
-  },
-  {
-    pattern: 'gemini',
-    description:
-      'Google\'s Gemini AI model family. Multimodal with strong general capabilities.',
-    tags: ['Multimodal', 'Balanced'],
+      'Google Nano Banana image generation model. Creates images from text prompts.',
+    tags: ['Best for Image Generation'],
   },
 
   // ── Google (Imagen — image generation) ─────────────────────────
   {
-    pattern: 'imagen-3.0-generate-002',
+    pattern: 'imagen-4-ultra',
     description:
-      'Google Imagen 3.0 image generation. Creates high-quality images from text prompts.',
+      'Imagen 4 Ultra. Highest detail and prompt alignment. $0.06/image.',
+    tags: ['Best for Image Generation', 'Most Capable'],
+  },
+  {
+    pattern: 'imagen-4-fast',
+    description:
+      'Imagen 4 Fast. Rapid image generation for high-volume tasks. $0.02/image.',
+    tags: ['Best for Image Generation', 'Fast & Cheap'],
+  },
+  {
+    pattern: 'imagen-4',
+    description:
+      'Google Imagen 4. Advanced text-to-image with up to 2K resolution and precision text rendering.',
     tags: ['Best for Image Generation', 'Balanced'],
   },
   {
-    pattern: 'imagen-3.0-fast-generate-001',
+    pattern: 'imagen-3.0-generate',
     description:
-      'Fast Imagen 3.0 image generation. Quick turnaround for image creation.',
+      'Imagen 3.0 image generation. High-quality images from text prompts.',
+    tags: ['Best for Image Generation', 'Balanced'],
+  },
+  {
+    pattern: 'imagen-3.0-fast',
+    description:
+      'Fast Imagen 3.0. Quick turnaround for image creation.',
     tags: ['Best for Image Generation', 'Fast & Cheap'],
+  },
+  {
+    pattern: 'imagen',
+    description:
+      'Google Imagen image generation model.',
+    tags: ['Best for Image Generation'],
   },
 
   // ── Google (Veo — video generation) ──────────────────────────
   {
-    pattern: 'veo-3.1-fast-generate-preview',
+    pattern: 'veo-3.1-fast-generate',
     description:
-      'Fast Veo 3.1 video generation. Quick turnaround for short video clips.',
+      'Veo 3.1 Fast. 2x faster at 1/5th the cost, 4K upscaling, vertical video support.',
     tags: ['Best for Video Generation', 'Fast & Cheap'],
   },
   {
-    pattern: 'veo-3.1-generate-preview',
+    pattern: 'veo-3.1-generate',
     description:
-      'High-quality Veo 3.1 video generation. Creates detailed video from text prompts.',
+      'Veo 3.1 (Jan 2026). Professional-grade 4K video, scene extension 60s+, native audio.',
     tags: ['Best for Video Generation', 'Most Capable'],
   },
   {
-    pattern: 'veo-3.0-generate-001',
+    pattern: 'veo-3.0-generate',
     description:
-      'Google Veo 3.0 video generation. Produces high-quality video from text descriptions.',
+      'Veo 3.0 video generation. High-quality video from text descriptions.',
     tags: ['Best for Video Generation', 'Balanced'],
+  },
+  {
+    pattern: 'veo',
+    description:
+      'Google Veo video generation model.',
+    tags: ['Best for Video Generation'],
   },
 ]
 

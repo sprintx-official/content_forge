@@ -4,8 +4,17 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Load .env.local from project root
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') })
+// Load .env.local from project root — try multiple paths since __dirname
+// resolves differently when running compiled JS vs tsx watch
+const envPaths = [
+  path.resolve(__dirname, '../../.env.local'),   // compiled: server/dist/ → project root
+  path.resolve(__dirname, '.env.local'),          // tsx watch from project root
+  path.resolve(process.cwd(), '.env.local'),      // fallback: cwd
+]
+for (const p of envPaths) {
+  const result = dotenv.config({ path: p })
+  if (!result.error) break
+}
 
 const isProduction = process.env.NODE_ENV === 'production'
 
