@@ -26,9 +26,8 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     const cached: Record<string, string> = {}
     const uncached: TemplatePreviewInput[] = []
     for (const t of templates) {
-      const key = t.id
-      if (previewCache.has(key)) {
-        cached[key] = previewCache.get(key)!
+      if (previewCache.has(t.id)) {
+        cached[t.id] = previewCache.get(t.id)!
       } else {
         uncached.push(t)
       }
@@ -48,7 +47,6 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     setLoading(true)
 
     const generatePreviews = async () => {
-      // Process in batches of MAX_CONCURRENT
       for (let i = 0; i < uncached.length; i += MAX_CONCURRENT) {
         if (controller.signal.aborted) return
 
@@ -68,7 +66,8 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
 
             const res = await api.post<{ preview: string }>('/api/image-templates/preview', {
               template: fullTemplate,
-              headline: 'Preview Headline Text',
+              headline: 'Breaking: Global Summit Reaches Historic Climate Agreement',
+              category: 'World News',
               format: 'square',
             })
 
@@ -102,7 +101,6 @@ export function useTemplatePreviews(templates: TemplatePreviewInput[]) {
     }
   }, [templates])
 
-  // Invalidate a specific template's cache (e.g., after edit)
   const invalidate = (id: string) => {
     previewCache.delete(id)
     setPreviews((prev) => {

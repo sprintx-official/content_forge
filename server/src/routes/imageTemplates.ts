@@ -121,11 +121,12 @@ router.delete('/library/:id', authenticate, requireAdmin, async (req: Authentica
 // (Must be before /:agentId catch-all routes)
 // ---------------------------------------------------------------------------
 router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { template, headline, format, backgroundUrl } = req.body as {
+  const { template, headline, format, backgroundUrl, category } = req.body as {
     template: ImageTemplate
     headline: string
-    format?: 'square' | 'landscape'
+    format?: 'square' | 'landscape' | 'vertical'
     backgroundUrl?: string
+    category?: string
   }
 
   if (!template || !headline) {
@@ -144,23 +145,69 @@ router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Res
       const response = await fetch(backgroundUrl)
       backgroundBuffer = Buffer.from(await response.arrayBuffer())
     } catch {
-      // Generate a solid gradient background as fallback
+      // Fall through to generated background
     }
   }
 
-  // Fallback: create a dark gradient background
+  // Generate a realistic-looking sample background with photo-like elements
   if (!backgroundBuffer) {
     try {
       const { createCanvas: cc } = await import('canvas')
       const w = format === 'landscape' ? 1200 : 1080
-      const h = format === 'landscape' ? 627 : 1080
+      const h = format === 'landscape' ? 627 : format === 'vertical' ? 1350 : 1080
       const c = cc(w, h)
       const cx = c.getContext('2d')
-      const grad = cx.createLinearGradient(0, 0, w, h)
-      grad.addColorStop(0, '#1a1a2e')
-      grad.addColorStop(1, '#16213e')
-      cx.fillStyle = grad
+
+      // Rich gradient background simulating a cityscape/landscape photo
+      const bgGrad = cx.createLinearGradient(0, 0, 0, h)
+      bgGrad.addColorStop(0, '#0c1445')
+      bgGrad.addColorStop(0.3, '#1a237e')
+      bgGrad.addColorStop(0.5, '#283593')
+      bgGrad.addColorStop(0.7, '#1565c0')
+      bgGrad.addColorStop(1, '#0d47a1')
+      cx.fillStyle = bgGrad
       cx.fillRect(0, 0, w, h)
+
+      // Add subtle geometric shapes to simulate a real photo scene
+      cx.globalAlpha = 0.15
+      // Horizon line
+      cx.fillStyle = '#4fc3f7'
+      cx.fillRect(0, h * 0.55, w, 2)
+      // Building silhouettes
+      const buildings = [
+        { x: w * 0.05, w: w * 0.08, h: h * 0.35 },
+        { x: w * 0.15, w: w * 0.06, h: h * 0.45 },
+        { x: w * 0.23, w: w * 0.1, h: h * 0.3 },
+        { x: w * 0.38, w: w * 0.07, h: h * 0.5 },
+        { x: w * 0.48, w: w * 0.12, h: h * 0.38 },
+        { x: w * 0.63, w: w * 0.05, h: h * 0.55 },
+        { x: w * 0.7, w: w * 0.09, h: h * 0.42 },
+        { x: w * 0.82, w: w * 0.07, h: h * 0.48 },
+        { x: w * 0.91, w: w * 0.08, h: h * 0.33 },
+      ]
+      cx.fillStyle = '#1a1a2e'
+      for (const b of buildings) {
+        cx.fillRect(b.x, h * 0.55 - b.h, b.w, b.h + h * 0.45)
+      }
+
+      // Faint window lights
+      cx.fillStyle = '#ffd54f'
+      cx.globalAlpha = 0.08
+      for (const b of buildings) {
+        const bTop = h * 0.55 - b.h
+        for (let wy = bTop + 8; wy < h * 0.55; wy += 12) {
+          for (let wx = b.x + 4; wx < b.x + b.w - 4; wx += 8) {
+            if (Math.random() > 0.5) cx.fillRect(wx, wy, 4, 4)
+          }
+        }
+      }
+
+      // Ground reflection
+      cx.globalAlpha = 0.1
+      cx.fillStyle = '#1565c0'
+      cx.fillRect(0, h * 0.55, w, h * 0.45)
+
+      cx.globalAlpha = 1.0
       backgroundBuffer = c.toBuffer('image/png')
     } catch {
       res.status(503).json({ error: 'Canvas not available for fallback background' })
@@ -174,7 +221,7 @@ router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Res
     {
       backgroundBuffer,
       headline,
-      category: null,
+      category: category ?? null,
       slug: 'preview',
       qrUrl: null,
     },
