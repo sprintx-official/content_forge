@@ -48,7 +48,9 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
   const [editingAgent, setEditingAgent] = useState<AgentConfig | null>(agent ?? null)
 
   useEffect(() => {
-    getAvailableModels().then(setAvailableModels).catch(() => {})
+    getAvailableModels().then(setAvailableModels).catch((err) => {
+      console.error('Failed to load available models:', err)
+    })
   }, [])
 
   const handleRefreshModels = async () => {
@@ -56,8 +58,8 @@ export default function AgentForm({ agent, onClose }: AgentFormProps) {
     try {
       const models = await getAvailableModels(true)
       setAvailableModels(models)
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Failed to refresh models:', err)
     } finally {
       setRefreshingModels(false)
     }

@@ -287,6 +287,51 @@ export async function callProvider(req: GenerationRequest): Promise<GenerationRe
   }
 }
 
+/**
+ * Call a provider with automatic fallback on credit/quota errors (401, 402, 429).
+ * Uses the auto-router to find alternative providers.
+ */
+export async function callProviderWithFallback(
+  req: GenerationRequest,
+  taskType: string = 'text-writing',
+): Promise<GenerationResponse & { usedProvider?: string; usedModel?: string }> {
+  const { autoRoute, isRetryableProviderError } = await import('./autoRouter.js')
+  const excludedProviders: string[] = []
+
+  let currentReq = { ...req }
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const result = await callProvider(currentReq)
+      return {
+        ...result,
+        usedProvider: currentReq.provider,
+        usedModel: currentReq.model,
+      }
+    } catch (err) {
+      if (err instanceof ProviderError && isRetryableProviderError(err.statusCode)) {
+        console.warn(`Provider ${currentReq.provider} failed with ${err.statusCode}: ${err.message}. Trying next provider...`)
+        excludedProviders.push(currentReq.provider)
+        try {
+          const fallback = await autoRoute(taskType, excludedProviders)
+          currentReq = { ...req, provider: fallback.provider, model: fallback.model, apiKey: fallback.apiKey }
+        } catch {
+          // No more providers available — throw the original error with helpful message
+          throw new ProviderError(
+            err.provider,
+            err.statusCode,
+            `${err.provider} failed (${err.message}). No other AI providers are available as fallback. Please check your API key balances in Settings or configure additional providers.`,
+          )
+        }
+      } else {
+        throw err
+      }
+    }
+  }
+
+  throw new ProviderError(req.provider, 500, 'All available AI providers failed. Please check your API keys and account balances.')
+}
+
 // ---------------------------------------------------------------------------
 // Streaming support
 // ---------------------------------------------------------------------------
@@ -554,4 +599,45 @@ export async function callProviderStream(req: GenerationRequest, callbacks: Stre
     default:
       throw new ProviderError(req.provider, 400, `Unsupported provider: ${req.provider}`)
   }
+}
+
+/**
+ * Stream with automatic fallback on credit/quota errors.
+ * If the initial provider fails with 401/402/429 before streaming starts,
+ * retries with the next available provider from auto-router.
+ */
+export async function callProviderStreamWithFallback(
+  req: GenerationRequest,
+  callbacks: StreamCallbacks,
+  taskType: string = 'text-writing',
+): Promise<void> {
+  const { autoRoute, isRetryableProviderError } = await import('./autoRouter.js')
+  const excludedProviders: string[] = []
+  let currentReq = { ...req }
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await callProviderStream(currentReq, callbacks)
+      return
+    } catch (err) {
+      if (err instanceof ProviderError && isRetryableProviderError(err.statusCode)) {
+        console.warn(`Stream: Provider ${currentReq.provider} failed with ${err.statusCode}: ${err.message}. Trying next provider...`)
+        excludedProviders.push(currentReq.provider)
+        try {
+          const fallback = await autoRoute(taskType, excludedProviders)
+          currentReq = { ...req, provider: fallback.provider, model: fallback.model, apiKey: fallback.apiKey }
+        } catch {
+          throw new ProviderError(
+            err.provider,
+            err.statusCode,
+            `${err.provider} failed (${err.message}). No other AI providers are available as fallback. Please check your API key balances in Settings or configure additional providers.`,
+          )
+        }
+      } else {
+        throw err
+      }
+    }
+  }
+
+  throw new ProviderError(req.provider, 500, 'All available AI providers failed. Please check your API keys and account balances.')
 }

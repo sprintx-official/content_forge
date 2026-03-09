@@ -16,6 +16,7 @@ export default function TeamTab() {
   const { toast } = useToast()
   const [adminCount, setAdminCount] = useState(0)
   const [initialLoad, setInitialLoad] = useState(true)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     loadTeam().then(() => setInitialLoad(false))
@@ -50,15 +51,14 @@ export default function TeamTab() {
       return
     }
 
-    if (window.confirm(`Remove ${member?.name}? This cannot be undone.`)) {
-      const success = await removeMember(userId)
-      if (success) {
-        toast('success', `${member?.name} removed`)
-        const count = await getAdminCount()
-        setAdminCount(count)
-      } else {
-        toast('error', `Failed to remove ${member?.name}`)
-      }
+    setConfirmingDeleteId(null)
+    const success = await removeMember(userId)
+    if (success) {
+      toast('success', `${member?.name} removed`)
+      const count = await getAdminCount()
+      setAdminCount(count)
+    } else {
+      toast('error', `Failed to remove ${member?.name}`)
     }
   }
 
@@ -125,14 +125,31 @@ export default function TeamTab() {
                       >
                         {member.role === 'admin' ? 'Demote' : 'Promote'}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemove(member.id)}
-                        className="text-white/30 hover:text-red-400 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {confirmingDeleteId === member.id ? (
+                        <span className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleRemove(member.id)}
+                            className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmingDeleteId(member.id)}
+                          className="text-white/30 hover:text-red-400 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>

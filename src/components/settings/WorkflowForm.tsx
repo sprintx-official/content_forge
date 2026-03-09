@@ -27,6 +27,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
   const [frequency, setFrequency] = useState<number>(1440)
   const [customFrequency, setCustomFrequency] = useState<string>('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadAgents()
@@ -126,6 +127,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       frequency: (mode === 'automated' || mode === 'both') ? finalFrequency : undefined,
     }
 
+    setSaving(true)
     try {
       if (workflow) {
         await editWorkflow(workflow.id, data)
@@ -136,6 +138,8 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       onClose?.()
     } catch {
       setError('Failed to save workflow.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -353,9 +357,9 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" variant="default" size="md">
+        <Button type="submit" variant="default" size="md" loading={saving} disabled={saving}>
           <Save className="h-4 w-4" />
-          {workflow ? 'Save Changes' : 'Create Workflow'}
+          {saving ? 'Saving...' : workflow ? 'Save Changes' : 'Create Workflow'}
         </Button>
         {onClose && (
           <Button type="button" variant="ghost" size="md" onClick={onClose}>

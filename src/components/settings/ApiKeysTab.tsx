@@ -27,6 +27,7 @@ export default function ApiKeysTab() {
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({})
   const [usageByProvider, setUsageByProvider] = useState<Record<string, ProviderUsageSummary>>({})
   const [initialLoad, setInitialLoad] = useState(true)
+  const [confirmingDeleteProvider, setConfirmingDeleteProvider] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -39,7 +40,9 @@ export default function ApiKeysTab() {
           }
           setUsageByProvider(map)
         })
-        .catch(() => {}),
+        .catch((err) => {
+          console.error('Failed to load usage stats:', err)
+        }),
     ]).then(() => setInitialLoad(false))
   }, [loadApiKeys])
 
@@ -53,7 +56,8 @@ export default function ApiKeysTab() {
         .then((models) => {
           setProviderModels((prev) => ({ ...prev, [provider]: models }))
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error(`Failed to load models for ${provider}:`, err)
           setProviderModels((prev) => ({ ...prev, [provider]: [] }))
         })
         .finally(() => {
@@ -97,16 +101,15 @@ export default function ApiKeysTab() {
     try {
       const models = await getProviderModels(provider)
       setProviderModels((prev) => ({ ...prev, [provider]: models }))
-    } catch {
-      // silent fail
+    } catch (err) {
+      console.error(`Failed to refresh models for ${provider}:`, err)
     } finally {
       setLoadingModels((prev) => ({ ...prev, [provider]: false }))
     }
   }
 
   const handleDelete = async (provider: AiProvider) => {
-    if (!confirm(`Remove the API key for ${PROVIDERS.find((p) => p.id === provider)?.name}?`)) return
-
+    setConfirmingDeleteProvider(null)
     setDeleting(provider)
     await deleteApiKey(provider)
     setDeleting(null)
@@ -203,15 +206,32 @@ export default function ApiKeysTab() {
                   Save
                 </Button>
                 {isConnected && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(provider.id)}
-                    loading={deleting === provider.id}
-                    className="shrink-0"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  confirmingDeleteProvider === provider.id ? (
+                    <span className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => handleDelete(provider.id)}
+                        className="px-2 py-1 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteProvider(null)}
+                        className="px-2 py-1 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setConfirmingDeleteProvider(provider.id)}
+                      loading={deleting === provider.id}
+                      className="shrink-0"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )
                 )}
               </div>
 

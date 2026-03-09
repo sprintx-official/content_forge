@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useToast } from '@/components/ui/Toast'
 import * as chatService from '@/services/chatService'
 import * as imageService from '@/services/imageService'
 import Loader from '@/components/ui/Loader'
@@ -49,6 +50,7 @@ export default function HistoryList() {
   const removeItem = useHistoryStore((s) => s.removeItem)
   const clearHistory = useHistoryStore((s) => s.clearHistory)
   const isAdmin = useAuthStore((s) => s.isAdmin)
+  const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState<HistoryTab>('all')
   const [chatConversations, setChatConversations] = useState<ChatConversation[]>([])
@@ -62,6 +64,7 @@ export default function HistoryList() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [confirmingClearAll, setConfirmingClearAll] = useState(false)
 
   // Debounce search input
   useEffect(() => {
@@ -88,7 +91,10 @@ export default function HistoryList() {
     chatService
       .getConversations()
       .then(setChatConversations)
-      .catch(() => setChatConversations([]))
+      .catch((err) => {
+        console.error('Failed to load chat conversations:', err)
+        setChatConversations([])
+      })
       .finally(() => setLoadingChat(false))
   }, [])
 
@@ -98,23 +104,25 @@ export default function HistoryList() {
     imageService
       .getImages()
       .then(setImages)
-      .catch(() => setImages([]))
+      .catch((err) => {
+        console.error('Failed to load images:', err)
+        setImages([])
+      })
       .finally(() => setLoadingImages(false))
   }, [])
 
   const handleClearAll = () => {
-    const confirmed = window.confirm(
-      'Are you sure you want to clear all content history? This action cannot be undone.',
-    )
-    if (confirmed) clearHistory()
+    setConfirmingClearAll(false)
+    clearHistory()
   }
 
   const handleDeleteChat = async (id: string) => {
     try {
       await chatService.deleteConversation(id)
       setChatConversations((prev) => prev.filter((c) => c.id !== id))
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to delete chat conversation:', err)
+      toast('error', 'Failed to delete conversation. Please try again.')
     }
   }
 
@@ -122,8 +130,9 @@ export default function HistoryList() {
     try {
       await imageService.deleteImage(id)
       setImages((prev) => prev.filter((img) => img.id !== id))
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to delete image:', err)
+      toast('error', 'Failed to delete image. Please try again.')
     }
   }
 
@@ -295,16 +304,34 @@ export default function HistoryList() {
             </div>
           )}
           {isAdmin && (
-            <button
-              onClick={handleClearAll}
-              className={cn(
-                'inline-flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300',
-                'transition-colors cursor-pointer',
-              )}
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear All
-            </button>
+            confirmingClearAll ? (
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-[#cbd5e1]">Clear all history?</span>
+                <button
+                  onClick={handleClearAll}
+                  className="px-2 py-1 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setConfirmingClearAll(false)}
+                  className="px-2 py-1 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmingClearAll(true)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300',
+                  'transition-colors cursor-pointer',
+                )}
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All
+              </button>
+            )
           )}
         </div>
       </div>

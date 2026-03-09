@@ -52,7 +52,7 @@ export default function AgentImageTemplateTab({ agentId }: { agentId: string }) 
   const [previewFormat, setPreviewFormat] = useState<ImageFormat>('square')
   const [previewTemplateName, setPreviewTemplateName] = useState('')
 
-  const toast = useToast()
+  const { toast } = useToast()
 
   // Combine presets + library — memoize to avoid recreating on every render
   const allTemplates: DisplayTemplate[] = useMemo(() => [

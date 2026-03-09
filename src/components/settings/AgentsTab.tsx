@@ -27,6 +27,7 @@ export default function AgentsTab() {
   const { toast } = useToast()
   const [feedbackInfo, setFeedbackInfo] = useState<Record<string, AgentFeedbackInfo>>({})
   const [initialLoad, setInitialLoad] = useState(true)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     loadAgents().then(() => setInitialLoad(false))
@@ -55,14 +56,22 @@ export default function AgentsTab() {
       toast('error', `"${agent.name}" is used in a workflow and cannot be deleted.`)
       return
     }
-    if (window.confirm(`Delete agent "${agent.name}"? This cannot be undone.`)) {
-      const success = await deleteAgent(agent.id)
-      if (success) {
-        toast('success', `Agent "${agent.name}" deleted`)
-      } else {
-        toast('error', `Failed to delete "${agent.name}"`)
-      }
+    setConfirmingDeleteId(null)
+    const success = await deleteAgent(agent.id)
+    if (success) {
+      toast('success', `Agent "${agent.name}" deleted`)
+    } else {
+      toast('error', `Failed to delete "${agent.name}"`)
     }
+  }
+
+  const requestDelete = async (agent: AgentConfig) => {
+    const inUse = await isAgentInUse(agent.id)
+    if (inUse) {
+      toast('error', `"${agent.name}" is used in a workflow and cannot be deleted.`)
+      return
+    }
+    setConfirmingDeleteId(agent.id)
   }
 
   if (initialLoad && loading) {
@@ -179,14 +188,31 @@ export default function AgentsTab() {
                   <Brain className="h-3.5 w-3.5" />
                   Memory
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(agent)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {confirmingDeleteId === agent.id ? (
+                  <span className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleDelete(agent)}
+                      className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDeleteId(null)}
+                      className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => requestDelete(agent)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
           )

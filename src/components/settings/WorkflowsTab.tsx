@@ -18,19 +18,19 @@ export default function WorkflowsTab() {
   const [editing, setEditing] = useState<Workflow | null>(null)
   const [creating, setCreating] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([loadWorkflows(), loadAgents(), loadTeam()]).then(() => setInitialLoad(false))
   }, [loadWorkflows, loadAgents, loadTeam])
 
   const handleDelete = async (workflow: Workflow) => {
-    if (window.confirm(`Delete workflow "${workflow.name}"? This cannot be undone.`)) {
-      const success = await deleteWorkflow(workflow.id)
-      if (success) {
-        toast('success', `Workflow "${workflow.name}" deleted`)
-      } else {
-        toast('error', `Failed to delete "${workflow.name}"`)
-      }
+    setConfirmingDeleteId(null)
+    const success = await deleteWorkflow(workflow.id)
+    if (success) {
+      toast('success', `Workflow "${workflow.name}" deleted`)
+    } else {
+      toast('error', `Failed to delete "${workflow.name}"`)
     }
   }
 
@@ -138,14 +138,31 @@ export default function WorkflowsTab() {
                 <Edit2 className="h-3.5 w-3.5" />
                 Edit
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(workflow)}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {confirmingDeleteId === workflow.id ? (
+                <span className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleDelete(workflow)}
+                    className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDeleteId(null)}
+                    className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmingDeleteId(workflow.id)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           </div>
         ))}

@@ -10,8 +10,8 @@ const router = Router()
 // ---------------------------------------------------------------------------
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { feedId, agentId, search, relevant } = req.query
-  const limit = Math.min(parseInt(String(req.query.limit || '50'), 10), 200)
-  const offset = parseInt(String(req.query.offset || '0'), 10)
+  const limit = Math.max(0, Math.min(parseInt(String(req.query.limit || '50'), 10), 200))
+  const offset = Math.max(0, parseInt(String(req.query.offset || '0'), 10))
 
   let sql = `SELECT a.*, f.title as feed_title FROM articles a JOIN feeds f ON f.id = a.feed_id`
   const params: unknown[] = []

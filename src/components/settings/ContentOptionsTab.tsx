@@ -104,6 +104,7 @@ export default function ContentOptionsTab() {
   // CRUD in-flight states
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   // Form states
   const [showAddForm, setShowAddForm] = useState(false)
@@ -257,7 +258,7 @@ export default function ContentOptionsTab() {
   }
 
   const handleDelete = async (option: RawOption) => {
-    if (!confirm(`Delete "${option.label}"? This action cannot be undone.`)) return
+    setConfirmingDeleteId(null)
     setDeletingId(option.id)
     setError('')
     try {
@@ -454,19 +455,36 @@ export default function ContentOptionsTab() {
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={() => handleDelete(option)}
-              disabled={isDeleting}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#cbd5e1] hover:text-red-400 hover:bg-white/10 transition-colors disabled:opacity-50"
-              title="Delete"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {confirmingDeleteId === option.id ? (
+              <span className="flex items-center gap-1">
+                <button
+                  onClick={() => handleDelete(option)}
+                  className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setConfirmingDeleteId(null)}
+                  className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingDeleteId(option.id)}
+                disabled={isDeleting}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#cbd5e1] hover:text-red-400 hover:bg-white/10 transition-colors disabled:opacity-50"
+                title="Delete"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

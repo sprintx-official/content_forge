@@ -27,6 +27,7 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
   const [genericForm, setGenericForm] = useState({ accessToken: '', platformUserId: '' })
   const [testing, setTesting] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -72,7 +73,7 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
   }
 
   const remove = async (id: string) => {
-    if (!confirm('Remove this account?')) return
+    setConfirmingDeleteId(null)
     await api.delete(`/api/social-accounts/${id}`)
     await load()
   }
@@ -157,9 +158,26 @@ export default function AgentSocialTab({ agentId }: { agentId: string }) {
             <button onClick={() => test(a.id)} disabled={testing === a.id} className="text-[#cbd5e1] hover:text-[#10b981] p-1 disabled:opacity-50">
               <Zap className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => remove(a.id)} className="text-[#cbd5e1] hover:text-red-400 p-1">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            {confirmingDeleteId === a.id ? (
+              <span className="flex items-center gap-1">
+                <button
+                  onClick={() => remove(a.id)}
+                  className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setConfirmingDeleteId(null)}
+                  className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button onClick={() => setConfirmingDeleteId(a.id)} className="text-[#cbd5e1] hover:text-red-400 p-1">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
       ))}

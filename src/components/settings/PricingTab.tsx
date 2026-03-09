@@ -111,9 +111,10 @@ export default function PricingTab() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this pricing entry?')) return
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
+  const handleDelete = async (id: string) => {
+    setConfirmingDeleteId(null)
     setDeleting(id)
     await deletePricing(id)
     setDeleting(null)
@@ -294,14 +295,31 @@ export default function PricingTab() {
                       >
                         Edit
                       </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(pricing.id)}
-                        loading={deleting === pricing.id}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {confirmingDeleteId === pricing.id ? (
+                        <span className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDelete(pricing.id)}
+                            className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setConfirmingDeleteId(pricing.id)}
+                          loading={deleting === pricing.id}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

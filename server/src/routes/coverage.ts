@@ -20,8 +20,8 @@ const router = Router()
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { agentId, status, urgency, search, workflowId } = req.query
-    const limit = Math.min(parseInt(String(req.query.limit || '20'), 10), 100)
-    const offset = parseInt(String(req.query.offset || '0'), 10)
+    const limit = Math.max(0, Math.min(parseInt(String(req.query.limit || '20'), 10), 100))
+    const offset = Math.max(0, parseInt(String(req.query.offset || '0'), 10))
 
     let sql = `SELECT cp.*,
       a.name as agent_name,

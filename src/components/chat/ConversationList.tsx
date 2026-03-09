@@ -21,6 +21,7 @@ export function ConversationList({
   isLoading,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   const filtered = searchQuery
     ? conversations.filter((c) =>
@@ -103,16 +104,33 @@ export function ConversationList({
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (confirm('Delete this conversation?')) onDelete(conv.id)
-                  }}
-                  className="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3 h-3 text-red-400/50 hover:text-red-400" />
-                </button>
+                {confirmingDeleteId === conv.id ? (
+                  <span className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => { setConfirmingDeleteId(null); onDelete(conv.id) }}
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDeleteId(null)}
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setConfirmingDeleteId(conv.id)
+                    }}
+                    className="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-400/50 hover:text-red-400" />
+                  </button>
+                )}
               </div>
             </button>
           )

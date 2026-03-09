@@ -34,6 +34,7 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [avgRating, setAvgRating] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -51,7 +52,7 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
   }, [agentId])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this feedback?')) return
+    setConfirmingDeleteId(null)
     await feedbackService.deleteFeedback(id)
     const feedback = await feedbackService.getFeedbackByAgentId(agentId)
     setItems(feedback)
@@ -108,14 +109,31 @@ export default function AgentFeedbackPanel({ agentId, agentName, onClose }: Agen
                   </div>
                   <div className="flex items-center gap-2">
                     <StarDisplay rating={item.rating} />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(item.id)}
-                      className="text-[#cbd5e1] hover:text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {confirmingDeleteId === item.id ? (
+                      <span className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmingDeleteId(item.id)}
+                        className="text-[#cbd5e1] hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-[#d1d5db]">{item.text}</p>

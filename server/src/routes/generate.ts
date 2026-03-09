@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateBody, generateSchema, codeGenerateSchema } from '../validation/index.js'
-import { callProvider, callProviderStream, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
+import { callProvider, callProviderWithFallback, callProviderStream, callProviderStreamWithFallback, ProviderError, type GenerationResponse, type MessageContent } from '../services/aiProvider.js'
 import { buildSystemPrompt, buildSingleAgentSystemPrompt, buildUserPrompt, getMaxTokens, buildCodeSystemPrompt, buildImagePromptFromContext, buildVideoPromptFromContext, buildSocialPostsPrompt, type AgentContext } from '../services/promptBuilder.js'
 import { generateImage } from '../services/imageProvider.js'
 import { generateVideo } from '../services/videoProvider.js'
@@ -630,15 +630,17 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
           // Code step: use code-specific system prompt
           const codeSystemPrompt = buildCodeSystemPrompt()
           const agentUserPrompt = buildAgentUserPrompt(i, currentInput, ctx, input, isLastAgent)
-          const agentResponse = await callProvider({
+          const agentResponse = await callProviderWithFallback({
             provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
             systemPrompt: codeSystemPrompt,
             userPrompt: agentUserPrompt,
             maxTokens: 8192,
-          })
+          }, 'code')
 
           agentOutput = agentResponse.content
-          agentCost = await calculateCost(agentProvider, agentModelId, agentResponse.inputTokens, agentResponse.outputTokens, agentResponse.cachedInputTokens)
+          const effectiveAgentProvider = agentResponse.usedProvider || agentProvider
+          const effectiveAgentModel = agentResponse.usedModel || agentModelId
+          agentCost = await calculateCost(effectiveAgentProvider, effectiveAgentModel, agentResponse.inputTokens, agentResponse.outputTokens, agentResponse.cachedInputTokens)
           agentTokens = {
             inputTokens: agentResponse.inputTokens,
             cachedInputTokens: agentResponse.cachedInputTokens,
@@ -653,15 +655,17 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
           // Text step: original behavior
           const agentSystemPrompt = buildSingleAgentSystemPrompt(ctx)
           const agentUserPrompt = buildAgentUserPrompt(i, currentInput, ctx, input, isLastAgent)
-          const agentResponse = await callProvider({
+          const agentResponse = await callProviderWithFallback({
             provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
             systemPrompt: agentSystemPrompt,
             userPrompt: agentUserPrompt,
             maxTokens,
-          })
+          }, 'text-writing')
 
           agentOutput = agentResponse.content
-          agentCost = await calculateCost(agentProvider, agentModelId, agentResponse.inputTokens, agentResponse.outputTokens, agentResponse.cachedInputTokens)
+          const effectiveAgentProvider2 = agentResponse.usedProvider || agentProvider
+          const effectiveAgentModel2 = agentResponse.usedModel || agentModelId
+          agentCost = await calculateCost(effectiveAgentProvider2, effectiveAgentModel2, agentResponse.inputTokens, agentResponse.outputTokens, agentResponse.cachedInputTokens)
           agentTokens = {
             inputTokens: agentResponse.inputTokens,
             cachedInputTokens: agentResponse.cachedInputTokens,
@@ -698,7 +702,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
       }
     } else {
       const systemPrompt = buildSystemPrompt()
-      const aiResponse = await callProvider({
+      const aiResponse = await callProviderWithFallback({
         provider,
         model: resolvedModelId,
         apiKey: keyRow.api_key,
@@ -706,13 +710,15 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
         userPrompt: initialUserPrompt,
         userContent,
         maxTokens,
-      })
+      }, 'text-writing')
 
+      const effectiveProvider = aiResponse.usedProvider || provider
+      const effectiveModel = aiResponse.usedModel || resolvedModelId
       finalContent = aiResponse.content
       totalInputTokens = aiResponse.inputTokens
       totalCachedInputTokens = aiResponse.cachedInputTokens
       totalOutputTokens = aiResponse.outputTokens
-      totalCostUsd = await calculateCost(provider, resolvedModelId, aiResponse.inputTokens, aiResponse.outputTokens, aiResponse.cachedInputTokens)
+      totalCostUsd = await calculateCost(effectiveProvider, effectiveModel, aiResponse.inputTokens, aiResponse.outputTokens, aiResponse.cachedInputTokens)
     }
 
     const { historyId, output, now } = await saveResults(
@@ -910,7 +916,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
 
           // Always stream — last agent sends tokens to client, others send progress ticks
           const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-            callProviderStream({
+            callProviderStreamWithFallback({
               provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
               systemPrompt: codeSystemPrompt, userPrompt: agentUserPrompt, maxTokens: 8192,
             }, {
@@ -919,7 +925,6 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
                 if (isLastAgent) {
                   sendSSE(res, 'token', { chunk })
                 } else {
-                  // Send progress ticks so the frontend stays alive (throttled)
                   if (agentStreamedTokens % 10 === 0) {
                     sendSSE(res, 'agent:progress', { agentIndex: i, tokens: agentStreamedTokens })
                   }
@@ -927,7 +932,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
               },
               onDone: (response) => resolve(response),
               signal: abortController.signal,
-            }).catch(reject)
+            }, 'code').catch(reject)
           })
           agentOutput = agentResponse.content
           agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
@@ -939,7 +944,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
 
           // Always stream — last agent sends tokens to client, others send progress ticks
           const agentResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-            callProviderStream({
+            callProviderStreamWithFallback({
               provider: agentProvider, model: agentModelId, apiKey: agentApiKey,
               systemPrompt: agentSystemPrompt, userPrompt: agentUserPrompt, maxTokens,
             }, {
@@ -948,7 +953,6 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
                 if (isLastAgent) {
                   sendSSE(res, 'token', { chunk })
                 } else {
-                  // Send progress ticks so the frontend stays alive (throttled)
                   if (agentStreamedTokens % 10 === 0) {
                     sendSSE(res, 'agent:progress', { agentIndex: i, tokens: agentStreamedTokens })
                   }
@@ -956,7 +960,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
               },
               onDone: (response) => resolve(response),
               signal: abortController.signal,
-            }).catch(reject)
+            }, 'text-writing').catch(reject)
           })
           agentOutput = agentResponse.content
           agentTokens = { inputTokens: agentResponse.inputTokens, cachedInputTokens: agentResponse.cachedInputTokens, outputTokens: agentResponse.outputTokens, totalTokens: agentResponse.totalTokens }
@@ -1012,7 +1016,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
 
       const systemPrompt = buildSystemPrompt()
       const aiResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-        callProviderStream({
+        callProviderStreamWithFallback({
           provider,
           model: resolvedModelId,
           apiKey: keyRow.api_key,
@@ -1026,7 +1030,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
           },
           onDone: (response) => resolve(response),
           signal: abortController.signal,
-        }).catch(reject)
+        }, 'text-writing').catch(reject)
       })
 
       finalContent = aiResponse.content
@@ -1154,7 +1158,7 @@ router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req:
 
   try {
     const aiResponse = await new Promise<GenerationResponse>((resolve, reject) => {
-      callProviderStream({
+      callProviderStreamWithFallback({
         provider,
         model: modelId!,
         apiKey: apiKey!,
@@ -1168,7 +1172,7 @@ router.post('/code', authenticate, validateBody(codeGenerateSchema), async (req:
         },
         onDone: (response) => resolve(response),
         signal: abortController.signal,
-      }).catch(reject)
+      }, 'code').catch(reject)
     })
 
     const costUsd = await calculateCost(provider, modelId, aiResponse.inputTokens, aiResponse.outputTokens, aiResponse.cachedInputTokens)

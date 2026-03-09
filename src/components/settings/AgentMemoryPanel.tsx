@@ -15,6 +15,8 @@ interface AgentMemoryPanelProps {
 export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentMemoryPanelProps) {
   const [items, setItems] = useState<AgentMemoryItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [confirmingClearAll, setConfirmingClearAll] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -31,13 +33,13 @@ export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentM
   }, [agentId])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this memory entry?')) return
+    setConfirmingDeleteId(null)
     await memoryService.deleteMemoryEntry(id)
     load()
   }
 
   const handleClearAll = async () => {
-    if (!confirm(`Clear all memory for "${agentName}"? This cannot be undone.`)) return
+    setConfirmingClearAll(false)
     await memoryService.clearAgentMemory(agentId)
     load()
   }
@@ -63,10 +65,28 @@ export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentM
       <div className="flex items-center gap-3">
         <Badge variant="default">{items.length} entr{items.length !== 1 ? 'ies' : 'y'}</Badge>
         {items.length > 0 && (
-          <Button variant="outline" size="sm" onClick={handleClearAll} className="text-red-400 hover:text-red-300">
-            <Trash2 className="mr-1 h-3.5 w-3.5" />
-            Clear All Memory
-          </Button>
+          confirmingClearAll ? (
+            <span className="flex items-center gap-1">
+              <span className="text-xs text-[#cbd5e1] mr-1">Clear all memory?</span>
+              <button
+                onClick={handleClearAll}
+                className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setConfirmingClearAll(false)}
+                className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setConfirmingClearAll(true)} className="text-red-400 hover:text-red-300">
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              Clear All Memory
+            </Button>
+          )
         )}
       </div>
 
@@ -89,14 +109,31 @@ export default function AgentMemoryPanel({ agentId, agentName, onClose }: AgentM
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(item.id)}
-                      className="text-[#cbd5e1] hover:text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {confirmingDeleteId === item.id ? (
+                      <span className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmingDeleteId(item.id)}
+                        className="text-[#cbd5e1] hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-[#d1d5db]">{item.summary}</p>

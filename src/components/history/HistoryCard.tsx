@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Trash2,
   Eye,
@@ -26,6 +27,7 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default function HistoryCard({ item, onDelete, onView }: HistoryCardProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const { input, output, createdAt } = item
   const { metrics } = output
 
@@ -34,12 +36,6 @@ export default function HistoryCard({ item, onDelete, onView }: HistoryCardProps
     day: 'numeric',
     year: 'numeric',
   })
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const confirmed = window.confirm('Delete this content? This cannot be undone.')
-    if (confirmed) onDelete(item.id)
-  }
 
   return (
     <div
@@ -50,17 +46,37 @@ export default function HistoryCard({ item, onDelete, onView }: HistoryCardProps
       onClick={() => onView(item)}
     >
       {/* Delete button */}
-      <button
-        onClick={handleDelete}
-        className={cn(
-          'absolute top-4 right-4',
-          'text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100',
-          'transition-opacity cursor-pointer',
-        )}
-        aria-label="Delete item"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      {confirmingDelete ? (
+        <span
+          className="absolute top-4 right-4 flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => { setConfirmingDelete(false); onDelete(item.id) }}
+            className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setConfirmingDelete(false)}
+            className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+        </span>
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true) }}
+          className={cn(
+            'absolute top-4 right-4',
+            'text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100',
+            'transition-opacity cursor-pointer',
+          )}
+          aria-label="Delete item"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Top row: type badge + workflow badge + date */}
       <div className="flex items-center gap-3 mb-3">

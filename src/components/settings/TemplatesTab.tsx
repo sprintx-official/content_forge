@@ -32,8 +32,9 @@ export default function TemplatesTab() {
   const [editingId, setEditingId] = useState<string | undefined>()
   const [editingName, setEditingName] = useState('')
 
-  const toast = useToast()
+  const { toast } = useToast()
   const { previews, invalidate: invalidatePreview, hasFailed } = useTemplatePreviews(templates)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   // Load data
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function TemplatesTab() {
   }
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this template?')) return
+    setConfirmingDeleteId(null)
     try {
       await api.delete(`/api/image-templates/library/${id}`)
       setTemplates((prev) => prev.filter((t) => t.id !== id))
@@ -301,13 +302,30 @@ export default function TemplatesTab() {
                       <Edit2 className="size-3" />
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleDeleteTemplate(template.id)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-red-500/20 text-red-400 rounded hover:bg-red-500/10"
-                    >
-                      <Trash2 className="size-3" />
-                      Delete
-                    </button>
+                    {confirmingDeleteId === template.id ? (
+                      <span className="flex-1 flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="px-2 py-1 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="px-2 py-1 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteId(template.id)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-red-500/20 text-red-400 rounded hover:bg-red-500/10"
+                      >
+                        <Trash2 className="size-3" />
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

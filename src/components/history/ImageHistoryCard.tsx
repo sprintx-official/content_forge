@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Trash2, Eye, DollarSign } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { GeneratedImage } from '@/types'
@@ -9,17 +10,13 @@ interface ImageHistoryCardProps {
 }
 
 export default function ImageHistoryCard({ image, onDelete, onView }: ImageHistoryCardProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
   const formattedDate = new Date(image.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const confirmed = window.confirm('Delete this image? This cannot be undone.')
-    if (confirmed) onDelete(image.id)
-  }
 
   return (
     <div
@@ -30,17 +27,37 @@ export default function ImageHistoryCard({ image, onDelete, onView }: ImageHisto
       onClick={() => onView(image)}
     >
       {/* Delete button */}
-      <button
-        onClick={handleDelete}
-        className={cn(
-          'absolute top-4 right-4 z-10',
-          'text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100',
-          'transition-opacity cursor-pointer',
-        )}
-        aria-label="Delete image"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      {confirmingDelete ? (
+        <span
+          className="absolute top-4 right-4 z-10 flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => { setConfirmingDelete(false); onDelete(image.id) }}
+            className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setConfirmingDelete(false)}
+            className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+        </span>
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true) }}
+          className={cn(
+            'absolute top-4 right-4 z-10',
+            'text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100',
+            'transition-opacity cursor-pointer',
+          )}
+          aria-label="Delete image"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Image thumbnail */}
       <div className="relative aspect-video bg-white/[0.02] overflow-hidden">

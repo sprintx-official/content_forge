@@ -31,6 +31,7 @@ export default function BrandMonitorTab() {
   const [running, setRunning] = useState(false)
   const [message, setMessage] = useState('')
   const [viewResults, setViewResults] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -62,7 +63,7 @@ export default function BrandMonitorTab() {
   }
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this brand query?')) return
+    setConfirmingDeleteId(null)
     await api.delete(`/api/brand-monitor/queries/${id}`)
     await load()
   }
@@ -186,12 +187,29 @@ export default function BrandMonitorTab() {
                 >
                   {q.is_active ? <ToggleRight className="h-4 w-4 text-[#10b981]" /> : <ToggleLeft className="h-4 w-4" />}
                 </button>
-                <button
-                  onClick={() => remove(q.id)}
-                  className="text-[#cbd5e1] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {confirmingDeleteId === q.id ? (
+                  <span className="flex items-center gap-1">
+                    <button
+                      onClick={() => remove(q.id)}
+                      className="px-2 py-0.5 text-xs rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDeleteId(null)}
+                      className="px-2 py-0.5 text-xs rounded bg-white/5 text-[#cbd5e1] border border-white/10 hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingDeleteId(q.id)}
+                    className="text-[#cbd5e1] hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
             {viewResults === q.id && (
