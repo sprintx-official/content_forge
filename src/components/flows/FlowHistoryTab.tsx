@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import type { AnyFlow, HistoryItem } from '../../types'
 import { CoveragePostCard } from './CoveragePostCard'
 import { api } from '../../lib/api'
+import { Search, Clock, FileText } from 'lucide-react'
+import { timeAgo } from '@/lib/timeAgo'
 
 interface CoveragePost {
   id: string
@@ -23,6 +25,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const [coveragePosts, setCoveragePosts] = useState<CoveragePost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,19 +33,14 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
         setLoading(true)
         setError(null)
 
-        // Fetch history items for manual runs
         const historyData = await api.get<{ data: HistoryItem[]; pagination: unknown }>(
           `/api/history?workflowId=${workflowId}&limit=50`
         )
         setHistoryItems(historyData.data || [])
 
-        // Fetch coverage posts if it's an automated/both flow
-        if (
-          'mode' in flow &&
-          (flow.mode === 'automated' || flow.mode === 'both')
-        ) {
+        if ('mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')) {
           try {
-            const coverageData = await api.get<{ posts: any[] }>(
+            const coverageData = await api.get<{ posts: CoveragePost[] }>(
               `/api/coverage?workflowId=${workflowId}&limit=50`
             )
             setCoveragePosts(coverageData.posts || [])
@@ -60,11 +58,31 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     fetchData()
   }, [flow, workflowId])
 
+  const filteredHistory = useMemo(() => {
+    if (!search.trim()) return historyItems
+    const q = search.toLowerCase()
+    return historyItems.filter(
+      (item) =>
+        item.output?.content?.toLowerCase().includes(q) ||
+        item.input?.topic?.toLowerCase().includes(q)
+    )
+  }, [historyItems, search])
+
+  const filteredPosts = useMemo(() => {
+    if (!search.trim()) return coveragePosts
+    const q = search.toLowerCase()
+    return coveragePosts.filter(
+      (post) =>
+        post.title.toLowerCase().includes(q) ||
+        post.summary.toLowerCase().includes(q)
+    )
+  }, [coveragePosts, search])
+
   if (loading) {
     return (
-      <div className="p-4 text-center">
+      <div className="p-8 text-center">
         <div className="w-6 h-6 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-        <p className="text-gray-400">Loading history...</p>
+        <p className="text-[#cbd5e1]">Loading history...</p>
       </div>
     )
   }
@@ -77,37 +95,81 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const hasAutomatedPosts = coveragePosts.length > 0
 
   if (!hasManualRuns && !hasAutomatedPosts) {
-    return <div className="p-4 text-gray-400 text-center">No history yet</div>
+    return (
+      <div className="p-12 text-center">
+        <Clock className="size-10 text-[#cbd5e1]/30 mx-auto mb-3" />
+        <p className="text-[#cbd5e1] mb-1">No history yet</p>
+        <p className="text-sm text-[#cbd5e1]/60">Run this flow to see results here</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
+      {/* Search */}
+      {(historyItems.length > 3 || coveragePosts.length > 3) && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#cbd5e1]/50" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search history..."
+            className="w-full pl-9 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-[#f8fafc] placeholder:text-[#cbd5e1]/50 focus:outline-none focus:ring-1 focus:ring-[#10b981]/50"
+          />
+        </div>
+      )}
+
       {hasManualRuns && (
         <div>
-          <h3 className="font-semibold text-lg text-white mb-3">Manual Runs</h3>
-          <div className="space-y-2">
-            {historyItems.map((item) => (
-              <div key={item.id} className="p-3 border border-white/10 rounded bg-white/5">
-                <p className="font-medium text-sm text-white">
-                  {item.output?.content?.slice(0, 100)}...
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(item.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
+          <h3 className="font-semibold text-lg text-white mb-3 flex items-center gap-2">
+            <FileText className="size-4" />
+            Manual Runs
+            <span className="text-xs text-[#cbd5e1]/60 font-normal">({filteredHistory.length})</span>
+          </h3>
+          {filteredHistory.length === 0 ? (
+            <p className="text-sm text-[#cbd5e1]/60 py-4">No results match your search</p>
+          ) : (
+            <div className="space-y-2">
+              {filteredHistory.map((item) => (
+                <div key={item.id} className="p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
+                  <div className="flex items-start justify-between gap-4 mb-1">
+                    <p className="font-medium text-sm text-white line-clamp-1 flex-1">
+                      {item.input?.topic || 'Untitled'}
+                    </p>
+                    <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(item.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-[#cbd5e1] line-clamp-2">
+                    {item.output?.content?.slice(0, 200)}
+                  </p>
+                  {item.output?.metrics && (
+                    <div className="flex gap-3 mt-2 text-xs text-[#cbd5e1]/50">
+                      <span>{item.output.metrics.wordCount} words</span>
+                      <span>{item.output.metrics.readTimeMinutes}min read</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {hasAutomatedPosts && (
         <div>
-          <h3 className="font-semibold text-lg text-white mb-3">Automated Posts</h3>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            {coveragePosts.map((post) => (
-              <CoveragePostCard key={post.id} post={post} />
-            ))}
-          </div>
+          <h3 className="font-semibold text-lg text-white mb-3">
+            Automated Posts
+            <span className="text-xs text-[#cbd5e1]/60 font-normal ml-2">({filteredPosts.length})</span>
+          </h3>
+          {filteredPosts.length === 0 ? (
+            <p className="text-sm text-[#cbd5e1]/60 py-4">No results match your search</p>
+          ) : (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {filteredPosts.map((post) => (
+                <CoveragePostCard key={post.id} post={post} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -44,6 +44,11 @@ export function FlowCard({ flow }: FlowCardProps) {
             <span className="inline-block px-2 py-1 text-xs rounded font-medium bg-white/10 text-white/70">
               {flow.mode}
             </span>
+            {'isSystem' in flow && flow.isSystem && (
+              <span className="inline-block px-2 py-1 text-xs rounded font-medium bg-white/10 text-white/50">
+                system
+              </span>
+            )}
           </div>
         </div>
       </div>

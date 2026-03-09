@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AnyFlow } from '../../types'
 import { Play } from 'lucide-react'
+import { api } from '../../lib/api'
 
 interface PipelineRun {
   id: string
@@ -38,8 +39,10 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
       try {
         setLoading(true)
         setError(null)
-        // TODO: Implement pipeline runs endpoint if needed
-        setRuns([])
+        const res = await api.get<{ status: string; runs: PipelineRun[] }>(
+          `/api/pipeline/${flow.pipelineAgentId}`
+        )
+        setRuns(res.runs || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
@@ -55,15 +58,15 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
 
     try {
       setRunningManual(true)
-      // TODO: Implement manual pipeline trigger if needed
-      // await fetch(`/api/pipeline/trigger`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ agentId: flow.pipelineAgentId }),
-      // })
-      setRunningManual(false)
+      await api.post(`/api/pipeline/${flow.pipelineAgentId}`)
+      // Reload runs after trigger
+      const res = await api.get<{ status: string; runs: PipelineRun[] }>(
+        `/api/pipeline/${(flow as any).pipelineAgentId}`
+      )
+      setRuns(res.runs || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : 'Failed to trigger pipeline')
+    } finally {
       setRunningManual(false)
     }
   }

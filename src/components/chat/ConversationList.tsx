@@ -106,7 +106,7 @@ export function ConversationList({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    onDelete(conv.id)
+                    if (confirm('Delete this conversation?')) onDelete(conv.id)
                   }}
                   className="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
                   title="Delete"

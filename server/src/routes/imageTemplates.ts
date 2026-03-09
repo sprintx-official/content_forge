@@ -51,13 +51,23 @@ router.get('/library', authenticate, async (req: AuthenticatedRequest, res: Resp
   )
   res.json({
     templates: rows.map((r) => {
-      const parsed = JSON.parse(r.template_json) as ImageTemplate
-      return {
-        id: r.id,
-        name: r.name,
-        elements: parsed.elements,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
+      try {
+        const parsed = JSON.parse(r.template_json) as ImageTemplate
+        return {
+          id: r.id,
+          name: r.name,
+          elements: parsed.elements ?? [],
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        }
+      } catch {
+        return {
+          id: r.id,
+          name: r.name,
+          elements: [],
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        }
       }
     }),
   })
@@ -106,6 +116,74 @@ router.delete('/library/:id', authenticate, requireAdmin, async (req: Authentica
 })
 
 // ---------------------------------------------------------------------------
+// POST /api/image-templates/preview — Generate a preview composite
+// (Must be before /:agentId catch-all routes)
+// ---------------------------------------------------------------------------
+router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { template, headline, format, backgroundUrl } = req.body as {
+    template: ImageTemplate
+    headline: string
+    format?: 'square' | 'landscape'
+    backgroundUrl?: string
+  }
+
+  if (!template || !headline) {
+    res.status(400).json({ error: 'template and headline are required' })
+    return
+  }
+
+  if (!compositeFromTemplate) {
+    res.status(503).json({ error: 'Image compositing not available (canvas not installed)' })
+    return
+  }
+
+  let backgroundBuffer: Buffer | null = null
+  if (backgroundUrl) {
+    try {
+      const response = await fetch(backgroundUrl)
+      backgroundBuffer = Buffer.from(await response.arrayBuffer())
+    } catch {
+      // Generate a solid gradient background as fallback
+    }
+  }
+
+  // Fallback: create a dark gradient background
+  if (!backgroundBuffer) {
+    try {
+      const { createCanvas: cc } = await import('canvas')
+      const w = format === 'landscape' ? 1200 : 1080
+      const h = format === 'landscape' ? 627 : 1080
+      const c = cc(w, h)
+      const cx = c.getContext('2d')
+      const grad = cx.createLinearGradient(0, 0, w, h)
+      grad.addColorStop(0, '#1a1a2e')
+      grad.addColorStop(1, '#16213e')
+      cx.fillStyle = grad
+      cx.fillRect(0, 0, w, h)
+      backgroundBuffer = c.toBuffer('image/png')
+    } catch {
+      res.status(503).json({ error: 'Canvas not available for fallback background' })
+      return
+    }
+  }
+
+  const composited = await compositeFromTemplate(
+    template,
+    format || 'square',
+    {
+      backgroundBuffer,
+      headline,
+      category: null,
+      slug: 'preview',
+      qrUrl: null,
+    },
+  )
+
+  const dataUrl = `data:image/png;base64,${composited.toString('base64')}`
+  res.json({ preview: dataUrl })
+})
+
+// ---------------------------------------------------------------------------
 // GET /api/image-templates/:agentId/assignments — Get agent's assigned templates
 // ---------------------------------------------------------------------------
 router.get('/:agentId/assignments', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -113,7 +191,10 @@ router.get('/:agentId/assignments', authenticate, async (req: AuthenticatedReque
     `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
     [req.params.agentId],
   )
-  const templateIds = row ? (JSON.parse(row.value) as string[]) : []
+  let templateIds: string[] = []
+  if (row) {
+    try { templateIds = JSON.parse(row.value) as string[] } catch { /* corrupted data */ }
+  }
   res.json({ templateIds })
 })
 
@@ -202,73 +283,6 @@ router.delete('/:agentId', authenticate, requireAdmin, async (req: Authenticated
     [agentId],
   )
   res.json({ success: true })
-})
-
-// ---------------------------------------------------------------------------
-// POST /api/image-templates/preview — Generate a preview composite
-// ---------------------------------------------------------------------------
-router.post('/preview', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { template, headline, format, backgroundUrl } = req.body as {
-    template: ImageTemplate
-    headline: string
-    format?: 'square' | 'landscape'
-    backgroundUrl?: string
-  }
-
-  if (!template || !headline) {
-    res.status(400).json({ error: 'template and headline are required' })
-    return
-  }
-
-  if (!compositeFromTemplate) {
-    res.status(503).json({ error: 'Image compositing not available (canvas not installed)' })
-    return
-  }
-
-  let backgroundBuffer: Buffer | null = null
-  if (backgroundUrl) {
-    try {
-      const response = await fetch(backgroundUrl)
-      backgroundBuffer = Buffer.from(await response.arrayBuffer())
-    } catch {
-      // Generate a solid gradient background as fallback
-    }
-  }
-
-  // Fallback: create a dark gradient background
-  if (!backgroundBuffer) {
-    try {
-      const { createCanvas: cc } = await import('canvas')
-      const w = format === 'landscape' ? 1200 : 1080
-      const h = format === 'landscape' ? 627 : 1080
-      const c = cc(w, h)
-      const cx = c.getContext('2d')
-      const grad = cx.createLinearGradient(0, 0, w, h)
-      grad.addColorStop(0, '#1a1a2e')
-      grad.addColorStop(1, '#16213e')
-      cx.fillStyle = grad
-      cx.fillRect(0, 0, w, h)
-      backgroundBuffer = c.toBuffer('image/png')
-    } catch {
-      res.status(503).json({ error: 'Canvas not available for fallback background' })
-      return
-    }
-  }
-
-  const composited = await compositeFromTemplate(
-    template,
-    format || 'square',
-    {
-      backgroundBuffer,
-      headline,
-      category: null,
-      slug: 'preview',
-      qrUrl: null,
-    },
-  )
-
-  const dataUrl = `data:image/png;base64,${composited.toString('base64')}`
-  res.json({ preview: dataUrl })
 })
 
 export default router

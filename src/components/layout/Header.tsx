@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Zap,
   Hammer,
-  Clock,
   LogIn,
   LogOut,
   Menu,
@@ -17,9 +16,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { to: '/forge', label: 'Forge', icon: Hammer },
-  { to: '/newsroom', label: 'Newsroom', icon: Newspaper },
-  { to: '/history', label: 'History', icon: Clock },
+  { to: '/flows', label: 'Flows', icon: Hammer },
+  { to: '/monitoring', label: 'Monitoring', icon: Newspaper },
 ]
 
 export default function Header() {
@@ -34,7 +32,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0f172a]/80 backdrop-blur-xl border-b border-white/10">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link to={isAuthenticated ? '/forge' : '/login'} onClick={resetForge} className="flex items-center gap-2 group">
+        <Link to={isAuthenticated ? '/' : '/login'} onClick={resetForge} className="flex items-center gap-2 group">
           <Zap className="h-6 w-6 text-[#10b981] transition-transform duration-200 group-hover:scale-110" />
           <span
             className="text-xl font-bold bg-gradient-to-r from-[#10b981] to-[#6366f1] bg-clip-text text-transparent"

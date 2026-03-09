@@ -39,6 +39,7 @@
   --animate-fade-in: fade-in 0.4s ease-out both;
   --animate-particle-drift: particle-drift 12s linear infinite;
   --animate-spin-slow: spin-slow 8s linear infinite;
+  --animate-slide-in: slide-in 0.3s ease-out;
 }
 
 /* ============================================================
@@ -559,4 +560,15 @@ button {
   .shadow-glow-purple {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
+}
+
+/* ============================================================
+   Toast Slide-in Animation
+   ============================================================ */
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

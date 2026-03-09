@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Zap, RotateCcw, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
@@ -22,6 +23,19 @@ export default function InputPanel({ hideWorkflowSelector }: InputPanelProps) {
   const reset = useForgeStore((s) => s.reset)
 
   const isDisabled = topic.trim().length === 0 || isProcessing
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault()
+        if (!isDisabled) {
+          generate()
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isDisabled, generate])
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8">

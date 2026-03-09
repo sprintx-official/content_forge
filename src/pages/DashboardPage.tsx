@@ -4,6 +4,7 @@ import { Plus, Zap, Bot, GitBranch, ArrowRight } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/useAuthStore'
 import type { Workflow } from '@/types'
+import { timeAgo } from '@/lib/timeAgo'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -11,6 +12,11 @@ export default function DashboardPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [agentCount, setAgentCount] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    document.title = 'Dashboard — ContentForge'
+    return () => { document.title = 'ContentForge' }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,7 +147,8 @@ export default function DashboardPage() {
               >
                 <div className="flex-1 text-left">
                   <p className="font-medium text-white group-hover:text-[#10b981]">{workflow.name}</p>
-                  <p className="text-sm text-gray-500">{workflow.description}</p>
+                  <p className="text-sm text-gray-500 truncate">{workflow.description || 'No description'}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{timeAgo(workflow.updatedAt)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-1 text-xs bg-white/5 text-white/60 rounded">

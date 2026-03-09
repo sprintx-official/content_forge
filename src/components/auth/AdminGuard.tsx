@@ -9,7 +9,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   const isAdmin = useAuthStore((s) => s.isAdmin)
 
   if (!isAdmin) {
-    return <Navigate to="/forge" replace />
+    return <Navigate to="/flows" replace />
   }
 
   return <>{children}</>

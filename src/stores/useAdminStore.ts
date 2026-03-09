@@ -91,11 +91,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   removeMember: async (userId) => {
+    const prev = get().teamMembers
+    set({ teamMembers: prev.filter((m) => m.id !== userId) })
     try {
       await teamService.removeMember(userId)
-      await get().loadTeam()
       return true
     } catch {
+      set({ teamMembers: prev })
       return false
     }
   },
@@ -128,11 +130,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   deleteAgent: async (id) => {
+    const prev = get().agents
+    set({ agents: prev.filter((a) => a.id !== id) })
     try {
       await agentService.deleteAgent(id)
-      await get().loadAgents()
       return true
     } catch {
+      set({ agents: prev })
       return false
     }
   },
@@ -169,21 +173,26 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   deleteWorkflow: async (id) => {
+    const prev = get().workflows
+    set({ workflows: prev.filter((w) => w.id !== id) })
     try {
       await workflowService.deleteWorkflow(id)
-      await get().loadWorkflows()
       return true
     } catch {
+      set({ workflows: prev })
       return false
     }
   },
 
   toggleWorkflow: async (id) => {
+    const prev = get().workflows
+    set({ workflows: prev.map((w) => w.id === id ? { ...w, isActive: !w.isActive } : w) })
     try {
       const workflow = await workflowService.toggleWorkflowActive(id)
       await get().loadWorkflows()
       return workflow
     } catch {
+      set({ workflows: prev })
       return null
     }
   },

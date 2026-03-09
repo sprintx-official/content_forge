@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sparkles, FileText, Share2, Globe } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Sparkles, FileText, Share2, Globe, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useForgeStore } from '@/stores/useForgeStore'
 import { Badge } from '@/components/ui/badge'
@@ -64,6 +64,20 @@ export default function OutputPanel() {
     return editorRef.current?.getHTML() ?? output?.content ?? ''
   }, [output])
 
+  // Copy-to-clipboard state
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = useCallback(async () => {
+    const text = editorRef.current?.getText() ?? output?.content ?? ''
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Silently fail if clipboard API is unavailable
+    }
+  }, [output])
+
   // Resolve display names for badges (hooks must be called before any early return)
   const tones = useForgeOptionsStore((s) => s.tones)
   const audiences = useForgeOptionsStore((s) => s.audiences)
@@ -77,6 +91,14 @@ export default function OutputPanel() {
   const activeFile = parsedFiles[activeFileIndex] ?? null
   const activeContent = activeFile?.content ?? output.content
   const isCodeMode = activeFile?.extension === 'json'
+
+  // Word & character counts for active content
+  const contentStats = useMemo(() => {
+    const text = activeContent.trim()
+    const words = text ? text.split(/\s+/).length : 0
+    const characters = text.length
+    return { words, characters }
+  }, [activeContent])
 
   // Word count target props
   const targetWordCount =
@@ -186,6 +208,35 @@ export default function OutputPanel() {
               />
             </>
           )}
+
+          {/* Copy button & word/character count */}
+          <div className="flex items-center justify-between px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+            <span className="text-sm text-[#cbd5e1]">
+              {contentStats.words.toLocaleString()} words &middot; {contentStats.characters.toLocaleString()} characters
+            </span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
+                copied
+                  ? 'text-[#10b981] bg-[#10b981]/10'
+                  : 'text-[#cbd5e1] hover:text-white hover:bg-white/10',
+              )}
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Metrics */}
           <MetricsCards

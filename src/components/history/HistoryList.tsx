@@ -245,7 +245,7 @@ export default function HistoryList() {
           </p>
           {!hasSearch && (
             <Link
-              to="/forge"
+              to="/flows/system-write"
               className={cn(
                 'inline-flex items-center gap-2',
                 'bg-[#10b981] text-[#0f172a] font-semibold px-6 py-3 rounded-xl',

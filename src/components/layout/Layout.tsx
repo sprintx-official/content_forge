@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import Sidebar from '@/components/layout/Sidebar'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 interface LayoutProps {
@@ -36,7 +37,9 @@ export default function Layout({ children }: LayoutProps) {
         }}
       >
         <div className="mx-auto max-w-[1400px] px-6 py-6 lg:px-10 lg:py-8">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

@@ -62,7 +62,7 @@ export default function HeroSection() {
         {/* CTA buttons */}
         <div className="flex flex-wrap items-center justify-center gap-4 mt-4 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
           <button
-            onClick={() => navigate('/forge')}
+            onClick={() => navigate('/flows')}
             className={cn(
               'inline-flex items-center gap-2',
               'bg-[#10b981] text-[#0f172a] font-semibold px-8 py-4 rounded-xl text-lg',

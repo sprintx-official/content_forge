@@ -299,6 +299,7 @@ function fabricObjToElementUpdate(
     width: pxToPct(w, canvasW),
     height: pxToPct(h, canvasH),
     rotation: obj.angle ?? 0,
+    zIndex: existingElement.zIndex,
   }
 }
 

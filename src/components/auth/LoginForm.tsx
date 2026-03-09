@@ -21,7 +21,7 @@ export default function LoginForm() {
     const success = await login(email.trim().toLowerCase(), password)
 
     if (success) {
-      navigate('/forge')
+      navigate('/')
     } else {
       setError('Invalid email or password. Please try again.')
     }

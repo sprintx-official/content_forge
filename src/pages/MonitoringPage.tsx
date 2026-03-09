@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Activity, CheckCircle, AlertCircle, Zap } from 'lucide-react'
 import { api } from '@/lib/api'
+import { timeAgo } from '@/lib/timeAgo'
 import type { Workflow } from '@/types'
 
 interface FlowStatus {
@@ -32,6 +33,11 @@ export default function MonitoringPage() {
   const [selectedFlow, setSelectedFlow] = useState<string>('all')
 
   useEffect(() => {
+    document.title = 'Monitoring — ContentForge'
+    return () => { document.title = 'ContentForge' }
+  }, [])
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await api.get<Workflow[]>('/api/workflows').catch(() => [])
@@ -44,34 +50,73 @@ export default function MonitoringPage() {
     fetchData()
   }, [])
 
-  // Mock flow statuses based on workflows
-  const flowStatuses: FlowStatus[] = workflows
-    .filter((w) => w.mode === 'automated' || w.mode === 'both')
-    .map((w) => ({
-      id: w.id,
-      name: w.name,
-      status: Math.random() > 0.1 ? 'idle' : 'running',
-      lastRun: new Date(Date.now() - Math.random() * 3600000).toLocaleString(),
-      nextRun: new Date(Date.now() + Math.random() * 3600000).toLocaleString(),
-      totalRuns: Math.floor(Math.random() * 100) + 10,
-      successfulRuns: Math.floor(Math.random() * 95) + 5,
-      failedRuns: Math.floor(Math.random() * 10),
-    }))
+  const [pipelineData, setPipelineData] = useState<Record<string, { status: string; runs: any[] }>>({})
 
-  // Mock run history
-  const runHistory: RunHistory[] = [
-    ...flowStatuses.slice(0, 8).map((flow, idx) => ({
-      id: `${flow.id}-${idx}`,
-      flowName: flow.name,
-      flowId: flow.id,
-      startTime: new Date(Date.now() - idx * 600000).toLocaleString(),
-      duration: `${Math.floor(Math.random() * 60)}s`,
-      itemsProcessed: Math.floor(Math.random() * 100) + 10,
-      itemsSuccess: Math.floor(Math.random() * 95) + 5,
-      itemsFailed: Math.floor(Math.random() * 10),
-      status: (Math.random() > 0.15 ? 'done' : 'failed') as 'done' | 'failed',
-    })),
-  ]
+  useEffect(() => {
+    const fetchPipelineData = async () => {
+      const automated = workflows.filter((w) => w.mode === 'automated' || w.mode === 'both')
+      const data: Record<string, { status: string; runs: any[] }> = {}
+      for (const w of automated) {
+        if (w.pipelineAgentId) {
+          try {
+            const res = await api.get<{ status: string; runs: any[] }>(`/api/pipeline/${w.pipelineAgentId}`)
+            data[w.id] = res
+          } catch {
+            data[w.id] = { status: 'idle', runs: [] }
+          }
+        }
+      }
+      setPipelineData(data)
+    }
+    if (workflows.length > 0) fetchPipelineData()
+  }, [workflows])
+
+  const flowStatuses: FlowStatus[] = useMemo(() =>
+    workflows
+      .filter((w) => w.mode === 'automated' || w.mode === 'both')
+      .map((w) => {
+        const pd = pipelineData[w.id]
+        const runs = pd?.runs || []
+        const totalRuns = runs.length
+        const successfulRuns = runs.filter((r: any) => r.completedAt && !r.error).length
+        const failedRuns = runs.filter((r: any) => r.error).length
+        const lastRun = runs[0]
+        return {
+          id: w.id,
+          name: w.name,
+          status: (pd?.status === 'running' ? 'running' : totalRuns > 0 && failedRuns === totalRuns ? 'error' : 'idle') as 'running' | 'idle' | 'error',
+          lastRun: lastRun?.startedAt ? timeAgo(lastRun.startedAt) : 'Never',
+          nextRun: w.frequency ? `Every ${w.frequency}min` : 'Manual only',
+          totalRuns,
+          successfulRuns,
+          failedRuns,
+        }
+      }),
+    [workflows, pipelineData],
+  )
+
+  const runHistory: RunHistory[] = useMemo(() => {
+    const allRuns: RunHistory[] = []
+    for (const w of workflows.filter((w) => w.mode === 'automated' || w.mode === 'both')) {
+      const pd = pipelineData[w.id]
+      for (const run of (pd?.runs || [])) {
+        allRuns.push({
+          id: run.id,
+          flowName: w.name,
+          flowId: w.id,
+          startTime: run.startedAt ? timeAgo(run.startedAt) : '-',
+          duration: run.completedAt && run.startedAt
+            ? `${Math.round((new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)}s`
+            : run.completedAt ? '-' : 'Running...',
+          itemsProcessed: run.articlesFound ?? 0,
+          itemsSuccess: run.postsGenerated ?? 0,
+          itemsFailed: run.error ? 1 : 0,
+          status: !run.completedAt ? 'running' : run.error ? 'failed' : 'done',
+        })
+      }
+    }
+    return allRuns.sort((a, b) => b.id.localeCompare(a.id))
+  }, [workflows, pipelineData])
 
   const filteredHistory =
     selectedFlow === 'all' ? runHistory : runHistory.filter((h) => h.flowId === selectedFlow)
@@ -142,7 +187,7 @@ export default function MonitoringPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Success rate</span>
                     <span className="text-green-400">
-                      {Math.round((flow.successfulRuns / flow.totalRuns) * 100)}%
+                      {flow.totalRuns > 0 ? Math.round((flow.successfulRuns / flow.totalRuns) * 100) : 0}%
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-white/5">

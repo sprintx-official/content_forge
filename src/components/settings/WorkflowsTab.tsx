@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Toggle } from '@/components/ui/toggle'
 import Loader from '@/components/ui/Loader'
+import { useToast } from '@/components/ui/Toast'
 import { getIconComponent } from './IconPicker'
 import WorkflowForm from './WorkflowForm'
 import type { Workflow } from '@/types'
@@ -13,6 +14,7 @@ import type { Workflow } from '@/types'
 export default function WorkflowsTab() {
   const { workflows, agents, loading, loadWorkflows, loadAgents, loadTeam, deleteWorkflow, toggleWorkflow } =
     useAdminStore()
+  const { toast } = useToast()
   const [editing, setEditing] = useState<Workflow | null>(null)
   const [creating, setCreating] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
@@ -22,8 +24,13 @@ export default function WorkflowsTab() {
   }, [loadWorkflows, loadAgents, loadTeam])
 
   const handleDelete = async (workflow: Workflow) => {
-    if (confirm(`Delete workflow "${workflow.name}"? This cannot be undone.`)) {
-      await deleteWorkflow(workflow.id)
+    if (window.confirm(`Delete workflow "${workflow.name}"? This cannot be undone.`)) {
+      const success = await deleteWorkflow(workflow.id)
+      if (success) {
+        toast('success', `Workflow "${workflow.name}" deleted`)
+      } else {
+        toast('error', `Failed to delete "${workflow.name}"`)
+      }
     }
   }
 

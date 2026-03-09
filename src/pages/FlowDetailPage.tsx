@@ -8,7 +8,6 @@ import { FlowRunTab } from '../components/flows/FlowRunTab'
 import { FlowHistoryTab } from '../components/flows/FlowHistoryTab'
 import { FlowMonitorTab } from '../components/flows/FlowMonitorTab'
 import { FlowSettingsTab } from '../components/flows/FlowSettingsTab'
-import { ArrowLeft } from 'lucide-react'
 
 type TabName = 'run' | 'history' | 'monitor' | 'settings'
 
@@ -75,6 +74,13 @@ function FlowDetailPage() {
     fetchUser()
   }, [])
 
+  useEffect(() => {
+    if (flow) {
+      document.title = `${flow.name} — ContentForge`
+    }
+    return () => { document.title = 'ContentForge' }
+  }, [flow])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -122,14 +128,23 @@ function FlowDetailPage() {
   return (
     <div className="min-h-screen bg-[#0f172a]">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <button
-          onClick={() => navigate('/flows')}
-          className="flex items-center gap-2 text-[#10b981] hover:text-[#10b981]/80 mb-4 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back to Flows
-        </button>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm mb-4">
+          <button
+            onClick={() => navigate('/flows')}
+            className="text-[#cbd5e1] hover:text-white transition-colors"
+          >
+            Flows
+          </button>
+          <span className="text-[#cbd5e1]/40">/</span>
+          <span className="text-white font-medium truncate max-w-xs">{flow.name}</span>
+          {tab !== 'run' && (
+            <>
+              <span className="text-[#cbd5e1]/40">/</span>
+              <span className="text-[#10b981]">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+            </>
+          )}
+        </nav>
 
         <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg p-6 mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">{flow.name}</h1>
@@ -151,12 +166,12 @@ function FlowDetailPage() {
 
         {/* Tabs */}
         <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-lg overflow-hidden">
-          <div className="border-b border-white/10 flex gap-2 px-6">
+          <div className="border-b border-white/10 flex gap-2 px-6 overflow-x-auto">
             {tabItems.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setSearchParams({ tab: t.id })}
-                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
+                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
                   tab === t.id
                     ? 'border-[#10b981] text-[#10b981]'
                     : 'border-transparent text-gray-400 hover:text-gray-300'

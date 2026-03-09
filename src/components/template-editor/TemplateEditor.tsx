@@ -359,7 +359,7 @@ export default function TemplateEditor({
       </div>
 
       {/* Right panel: 280px wide */}
-      <div className="w-70 border-l border-white/10 overflow-y-auto bg-[#0f172a]">
+      <div className="w-[280px] border-l border-white/10 overflow-y-auto bg-[#0f172a]">
         <PropertiesPanel
           element={selectedElement}
           onUpdate={handleElementUpdate}

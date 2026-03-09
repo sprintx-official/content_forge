@@ -5,6 +5,7 @@ import { useAdminStore } from '@/stores/useAdminStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Loader from '@/components/ui/Loader'
+import { useToast } from '@/components/ui/Toast'
 import { getIconComponent } from './IconPicker'
 import AgentForm from './AgentForm'
 import AgentFeedbackPanel from './AgentFeedbackPanel'
@@ -23,6 +24,7 @@ export default function AgentsTab() {
   const [creating, setCreating] = useState(false)
   const [viewingFeedback, setViewingFeedback] = useState<AgentConfig | null>(null)
   const [viewingMemory, setViewingMemory] = useState<AgentConfig | null>(null)
+  const { toast } = useToast()
   const [feedbackInfo, setFeedbackInfo] = useState<Record<string, AgentFeedbackInfo>>({})
   const [initialLoad, setInitialLoad] = useState(true)
 
@@ -50,11 +52,16 @@ export default function AgentsTab() {
   const handleDelete = async (agent: AgentConfig) => {
     const inUse = await isAgentInUse(agent.id)
     if (inUse) {
-      alert(`"${agent.name}" is used in a workflow and cannot be deleted.`)
+      toast('error', `"${agent.name}" is used in a workflow and cannot be deleted.`)
       return
     }
-    if (confirm(`Delete agent "${agent.name}"? This cannot be undone.`)) {
-      await deleteAgent(agent.id)
+    if (window.confirm(`Delete agent "${agent.name}"? This cannot be undone.`)) {
+      const success = await deleteAgent(agent.id)
+      if (success) {
+        toast('success', `Agent "${agent.name}" deleted`)
+      } else {
+        toast('error', `Failed to delete "${agent.name}"`)
+      }
     }
   }
 

@@ -5,9 +5,8 @@ export type NavItem = { id: AdminTab; label: string; icon: LucideIcon }
 
 export const SETTINGS_NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'General',
+    label: 'Content',
     items: [
-      { id: 'team', label: 'Team', icon: Users },
       { id: 'agents', label: 'Agents', icon: Bot },
       { id: 'workflows', label: 'Workflows', icon: GitBranch },
       { id: 'image-templates', label: 'Templates', icon: LayoutTemplate },
@@ -27,6 +26,12 @@ export const SETTINGS_NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
       { id: 'notifications', label: 'Notifications', icon: Bell },
       { id: 'webhooks', label: 'Webhooks', icon: Webhook },
       { id: 'brand-monitor', label: 'Brand Monitor', icon: Eye },
+    ],
+  },
+  {
+    label: 'Team',
+    items: [
+      { id: 'team', label: 'Members', icon: Users },
     ],
   },
 ]

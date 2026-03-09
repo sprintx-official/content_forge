@@ -9,6 +9,7 @@ import {
   Command,
   ChevronDown,
   Activity,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useForgeStore } from '@/stores/useForgeStore'
@@ -17,6 +18,7 @@ import { SETTINGS_NAV_SECTIONS } from '@/constants/settingsNav'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, section: 'main' },
   { to: '/flows', label: 'Flows', icon: Workflow, section: 'main' },
   { to: '/monitoring', label: 'Monitoring', icon: Activity, section: 'main' },
 ]
@@ -30,14 +32,16 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cf_sidebar') === 'collapsed')
 
   // State for each admin group
-  const [expandedGroups, setExpandedGroups] = useState(() => ({
-    Content: localStorage.getItem('cf_content_expanded') === 'true',
-    Configuration: localStorage.getItem('cf_config_expanded') === 'true',
-    Integrations: localStorage.getItem('cf_integrations_expanded') === 'true',
-    Team: localStorage.getItem('cf_team_expanded') === 'true',
-  }))
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const groups: Record<string, boolean> = {}
+    for (const section of SETTINGS_NAV_SECTIONS) {
+      groups[section.label] = localStorage.getItem(`cf_${section.label.toLowerCase()}_expanded`) === 'true'
+    }
+    return groups
+  })
 
-  const isActive = (path: string) => location.pathname === path
+  const isActive = (path: string) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
 
   const toggle = () => {
     const next = !collapsed
@@ -47,8 +51,8 @@ export default function Sidebar() {
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => {
-      const next = { ...prev, [group]: !prev[group as keyof typeof prev] }
-      localStorage.setItem(`cf_${group.toLowerCase()}_expanded`, String(next[group as keyof typeof next]))
+      const next = { ...prev, [group]: !prev[group] }
+      localStorage.setItem(`cf_${group.toLowerCase()}_expanded`, String(next[group]))
       return next
     })
   }
@@ -127,176 +131,53 @@ export default function Sidebar() {
               {!collapsed && 'Admin'}
             </div>
 
-            {/* Admin groups */}
+            {/* Admin groups — driven by SETTINGS_NAV_SECTIONS */}
             <div className="space-y-1">
-              {/* Content group */}
-              <button
-                onClick={() => toggleGroup('Content')}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
-                  collapsed && 'justify-center px-0',
-                  'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
-                )}
-                title={collapsed ? 'Content' : undefined}
-              >
-                {!collapsed && <span className="flex-1 text-left">Content</span>}
-                {!collapsed && (
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 shrink-0 transition-transform',
-                      expandedGroups.Content && 'rotate-180',
-                    )}
-                  />
-                )}
-              </button>
-              {expandedGroups.Content && !collapsed && (
-                <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
-                  {SETTINGS_NAV_SECTIONS.find(s => s.label === 'General')?.items.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        setActiveTab(id)
-                        navigate('/settings')
-                      }}
-                      className={cn(
-                        'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
-                        activeTab === id && location.pathname === '/settings'
-                          ? 'bg-white/[0.08] text-[#10b981]'
-                          : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span className="flex-1 text-left">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Configuration group */}
-              <button
-                onClick={() => toggleGroup('Configuration')}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
-                  collapsed && 'justify-center px-0',
-                  'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
-                )}
-                title={collapsed ? 'Configuration' : undefined}
-              >
-                {!collapsed && <span className="flex-1 text-left">Configuration</span>}
-                {!collapsed && (
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 shrink-0 transition-transform',
-                      expandedGroups.Configuration && 'rotate-180',
-                    )}
-                  />
-                )}
-              </button>
-              {expandedGroups.Configuration && !collapsed && (
-                <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
-                  {SETTINGS_NAV_SECTIONS.find(s => s.label === 'Configuration')?.items.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        setActiveTab(id)
-                        navigate('/settings')
-                      }}
-                      className={cn(
-                        'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
-                        activeTab === id && location.pathname === '/settings'
-                          ? 'bg-white/[0.08] text-[#10b981]'
-                          : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span className="flex-1 text-left">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Integrations group */}
-              <button
-                onClick={() => toggleGroup('Integrations')}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
-                  collapsed && 'justify-center px-0',
-                  'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
-                )}
-                title={collapsed ? 'Integrations' : undefined}
-              >
-                {!collapsed && <span className="flex-1 text-left">Integrations</span>}
-                {!collapsed && (
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 shrink-0 transition-transform',
-                      expandedGroups.Integrations && 'rotate-180',
-                    )}
-                  />
-                )}
-              </button>
-              {expandedGroups.Integrations && !collapsed && (
-                <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
-                  {SETTINGS_NAV_SECTIONS.find(s => s.label === 'Integrations')?.items.map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        setActiveTab(id)
-                        navigate('/settings')
-                      }}
-                      className={cn(
-                        'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
-                        activeTab === id && location.pathname === '/settings'
-                          ? 'bg-white/[0.08] text-[#10b981]'
-                          : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span className="flex-1 text-left">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Team group */}
-              <button
-                onClick={() => toggleGroup('Team')}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
-                  collapsed && 'justify-center px-0',
-                  'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
-                )}
-                title={collapsed ? 'Team' : undefined}
-              >
-                {!collapsed && <span className="flex-1 text-left">Team</span>}
-                {!collapsed && (
-                  <ChevronDown
-                    className={cn(
-                      'h-4 w-4 shrink-0 transition-transform',
-                      expandedGroups.Team && 'rotate-180',
-                    )}
-                  />
-                )}
-              </button>
-              {expandedGroups.Team && !collapsed && (
-                <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
+              {SETTINGS_NAV_SECTIONS.map((section) => (
+                <div key={section.label}>
                   <button
-                    onClick={() => {
-                      setActiveTab('team')
-                      navigate('/settings')
-                    }}
+                    onClick={() => toggleGroup(section.label)}
                     className={cn(
-                      'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
-                      activeTab === 'team' && location.pathname === '/settings'
-                        ? 'bg-white/[0.08] text-[#10b981]'
-                        : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
+                      'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-all duration-150 w-full',
+                      collapsed && 'justify-center px-0',
+                      'text-white/50 hover:text-white/80 hover:bg-white/[0.04]',
                     )}
+                    title={collapsed ? section.label : undefined}
                   >
-                    <div className="h-3.5 w-3.5 shrink-0" />
-                    <span className="flex-1 text-left">Members</span>
+                    {!collapsed && <span className="flex-1 text-left">{section.label}</span>}
+                    {!collapsed && (
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 transition-transform',
+                          expandedGroups[section.label] && 'rotate-180',
+                        )}
+                      />
+                    )}
                   </button>
+                  {expandedGroups[section.label] && !collapsed && (
+                    <div className="mt-1 space-y-0.5 ml-2 border-l border-white/[0.05] pl-2">
+                      {section.items.map(({ id, label, icon: Icon }) => (
+                        <button
+                          key={id}
+                          onClick={() => {
+                            setActiveTab(id)
+                            navigate('/settings')
+                          }}
+                          className={cn(
+                            'flex items-center gap-2.5 w-full rounded-md px-2 py-1.5 text-xs transition-all',
+                            activeTab === id && location.pathname === '/settings'
+                              ? 'bg-white/[0.08] text-[#10b981]'
+                              : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]',
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="flex-1 text-left">{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           </>
         )}

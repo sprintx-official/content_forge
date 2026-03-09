@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { SETTINGS_NAV_SECTIONS } from '@/constants/settingsNav'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,11 @@ const FLAT_ITEMS = SETTINGS_NAV_SECTIONS.flatMap((s) => s.items)
 
 export default function SettingsPage() {
   const { activeTab, setActiveTab } = useAdminStore()
+
+  useEffect(() => {
+    document.title = 'Settings — ContentForge'
+    return () => { document.title = 'ContentForge' }
+  }, [])
 
   return (
     <div>

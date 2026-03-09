@@ -12,6 +12,9 @@ import {
   Bell,
   Eye,
   Plus,
+  Activity,
+  LayoutDashboard,
+  LayoutTemplate,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useAdminStore } from '@/stores/useAdminStore'
@@ -38,16 +41,19 @@ export default function CommandPalette() {
 
   const commands = useMemo<Command[]>(() => {
     const cmds: Command[] = [
-      { id: 'forge', label: 'Go to Forge', icon: Hammer, action: () => navigate('/forge'), keywords: ['create', 'generate', 'content'] },
-      { id: 'newsroom', label: 'Go to Newsroom', icon: Newspaper, action: () => navigate('/newsroom'), keywords: ['coverage', 'news', 'posts'] },
-      { id: 'history', label: 'Go to History', icon: Clock, action: () => navigate('/history'), keywords: ['past', 'previous'] },
+      { id: 'forge', label: 'Write Content', icon: Hammer, action: () => navigate('/flows/system-write'), keywords: ['create', 'generate', 'content'] },
+      { id: 'newsroom', label: 'Browse Flows', icon: Newspaper, action: () => navigate('/flows'), keywords: ['coverage', 'news', 'posts'] },
+      { id: 'history', label: 'View History', icon: Clock, action: () => navigate('/flows/system-write?tab=history'), keywords: ['past', 'previous'] },
       { id: 'settings', label: 'Go to Settings', icon: Settings, action: () => navigate('/settings'), admin: true },
       { id: 'agents', label: 'Manage Agents', icon: Bot, action: () => { navigate('/settings'); setActiveTab('agents') }, admin: true, keywords: ['bot', 'ai'] },
       { id: 'workflows', label: 'Manage Workflows', icon: GitBranch, action: () => { navigate('/settings'); setActiveTab('workflows') }, admin: true, keywords: ['pipeline', 'steps'] },
       { id: 'api-keys', label: 'API Keys', icon: Key, action: () => { navigate('/settings'); setActiveTab('api-keys') }, admin: true, keywords: ['openai', 'google', 'anthropic'] },
       { id: 'notifications', label: 'Notification Settings', icon: Bell, action: () => { navigate('/settings'); setActiveTab('notifications') }, admin: true, keywords: ['email', 'push', 'digest'] },
       { id: 'brand', label: 'Brand Monitor', icon: Eye, action: () => { navigate('/settings'); setActiveTab('brand-monitor') }, admin: true, keywords: ['monitor', 'sentiment', 'llm'] },
-      { id: 'new-content', label: 'New Content', icon: Plus, action: () => navigate('/forge'), keywords: ['create', 'write', 'generate'] },
+      { id: 'new-content', label: 'New Content', icon: Plus, action: () => navigate('/flows/system-write'), keywords: ['create', 'write', 'generate'] },
+      { id: 'monitoring', label: 'Flow Monitoring', icon: Activity, action: () => navigate('/monitoring'), keywords: ['pipeline', 'status', 'runs'] },
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, action: () => navigate('/'), keywords: ['home', 'overview'] },
+      { id: 'templates', label: 'Image Templates', icon: LayoutTemplate, action: () => { navigate('/settings'); setActiveTab('image-templates') }, admin: true, keywords: ['template', 'image', 'overlay'] },
     ]
 
     return cmds.filter(c => !c.admin || isAdmin)

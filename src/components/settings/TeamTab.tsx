@@ -7,11 +7,13 @@ import { getAdminCount } from '@/services/teamService'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Loader from '@/components/ui/Loader'
+import { useToast } from '@/components/ui/Toast'
 import AddMemberForm from './AddMemberForm'
 
 export default function TeamTab() {
   const { teamMembers, loading, loadTeam, changeRole, removeMember } = useAdminStore()
   const currentUser = useAuthStore((s) => s.user)
+  const { toast } = useToast()
   const [adminCount, setAdminCount] = useState(0)
   const [initialLoad, setInitialLoad] = useState(true)
 
@@ -24,12 +26,13 @@ export default function TeamTab() {
     const newRole = currentRole === 'admin' ? 'user' : 'admin'
 
     if (currentRole === 'admin' && adminCount <= 1) {
-      alert('Cannot remove the last admin. Promote another user first.')
+      toast('error', 'Cannot remove the last admin. Promote another user first.')
       return
     }
 
     const success = await changeRole(userId, newRole)
     if (success) {
+      toast('success', `Role updated to ${newRole}`)
       const count = await getAdminCount()
       setAdminCount(count)
     }
@@ -37,21 +40,24 @@ export default function TeamTab() {
 
   const handleRemove = async (userId: string) => {
     if (userId === currentUser?.id) {
-      alert('You cannot remove yourself.')
+      toast('error', 'You cannot remove yourself.')
       return
     }
 
     const member = teamMembers.find((m) => m.id === userId)
     if (member?.role === 'admin' && adminCount <= 1) {
-      alert('Cannot remove the last admin.')
+      toast('error', 'Cannot remove the last admin.')
       return
     }
 
-    if (confirm(`Remove ${member?.name}? This cannot be undone.`)) {
+    if (window.confirm(`Remove ${member?.name}? This cannot be undone.`)) {
       const success = await removeMember(userId)
       if (success) {
+        toast('success', `${member?.name} removed`)
         const count = await getAdminCount()
         setAdminCount(count)
+      } else {
+        toast('error', `Failed to remove ${member?.name}`)
       }
     }
   }
