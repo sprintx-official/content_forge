@@ -6,7 +6,7 @@ import * as workflowService from '@/services/workflowService'
 import * as apiKeyService from '@/services/apiKeyService'
 import * as pricingService from '@/services/pricingService'
 
-export type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys' | 'pricing' | 'content-options' | 'notifications' | 'webhooks' | 'brand-monitor'
+export type AdminTab = 'team' | 'agents' | 'workflows' | 'api-keys' | 'pricing' | 'content-options' | 'notifications' | 'webhooks' | 'brand-monitor' | 'image-templates'
 
 interface AdminState {
   activeTab: AdminTab

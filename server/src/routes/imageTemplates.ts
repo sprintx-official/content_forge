@@ -43,6 +43,102 @@ router.get('/presets/:presetId', authenticate, async (req: AuthenticatedRequest,
 })
 
 // ---------------------------------------------------------------------------
+// GET /api/image-templates/library — List all templates in library
+// ---------------------------------------------------------------------------
+router.get('/library', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const rows = await query<{ id: string; name: string; template_json: string; created_at: string; updated_at: string }>(
+    `SELECT id, name, template_json, created_at, updated_at FROM image_template_library ORDER BY updated_at DESC`,
+  )
+  res.json({
+    templates: rows.map((r) => {
+      const parsed = JSON.parse(r.template_json) as ImageTemplate
+      return {
+        id: r.id,
+        name: r.name,
+        elements: parsed.elements,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }
+    }),
+  })
+})
+
+// ---------------------------------------------------------------------------
+// POST /api/image-templates/library — Create new template in library
+// ---------------------------------------------------------------------------
+router.post('/library', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { name, template } = req.body as { name: string; template: ImageTemplate }
+  if (!name || !template) {
+    res.status(400).json({ error: 'name and template required' })
+    return
+  }
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  await execute(
+    `INSERT INTO image_template_library (id, name, template_json, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)`,
+    [id, name, JSON.stringify(template), now, now],
+  )
+  res.json({ id, name })
+})
+
+// ---------------------------------------------------------------------------
+// PUT /api/image-templates/library/:id — Update template in library
+// ---------------------------------------------------------------------------
+router.put('/library/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params
+  const { name, template } = req.body as { name?: string; template?: ImageTemplate }
+  const now = new Date().toISOString()
+  if (name) {
+    await execute(`UPDATE image_template_library SET name = $1, updated_at = $2 WHERE id = $3`, [name, now, id])
+  }
+  if (template) {
+    await execute(`UPDATE image_template_library SET template_json = $1, updated_at = $2 WHERE id = $3`, [JSON.stringify(template), now, id])
+  }
+  res.json({ success: true })
+})
+
+// ---------------------------------------------------------------------------
+// DELETE /api/image-templates/library/:id — Delete template from library
+// ---------------------------------------------------------------------------
+router.delete('/library/:id', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  await execute(`DELETE FROM image_template_library WHERE id = $1`, [req.params.id])
+  res.json({ success: true })
+})
+
+// ---------------------------------------------------------------------------
+// GET /api/image-templates/:agentId/assignments — Get agent's assigned templates
+// ---------------------------------------------------------------------------
+router.get('/:agentId/assignments', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const row = await queryOne<{ value: string }>(
+    `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
+    [req.params.agentId],
+  )
+  const templateIds = row ? (JSON.parse(row.value) as string[]) : []
+  res.json({ templateIds })
+})
+
+// ---------------------------------------------------------------------------
+// PUT /api/image-templates/:agentId/assignments — Set agent's assigned templates
+// ---------------------------------------------------------------------------
+router.put('/:agentId/assignments', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { templateIds } = req.body as { templateIds: string[] }
+  const agentId = req.params.agentId
+  const existing = await queryOne<{ id: string }>(
+    `SELECT id FROM agent_settings WHERE agent_id = $1 AND key = 'assigned_template_ids'`,
+    [agentId],
+  )
+  if (existing) {
+    await execute(`UPDATE agent_settings SET value = $1 WHERE id = $2`, [JSON.stringify(templateIds), existing.id])
+  } else {
+    await execute(
+      `INSERT INTO agent_settings (id, agent_id, key, value) VALUES ($1, $2, 'assigned_template_ids', $3)`,
+      [crypto.randomUUID(), agentId, JSON.stringify(templateIds)],
+    )
+  }
+  res.json({ success: true })
+})
+
+// ---------------------------------------------------------------------------
 // GET /api/image-templates/:agentId — Get agent's custom template (or default)
 // ---------------------------------------------------------------------------
 router.get('/:agentId', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {

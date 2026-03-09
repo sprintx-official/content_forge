@@ -580,6 +580,16 @@ export async function initializeSchema(): Promise<void> {
       edited_value TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Image template library
+    CREATE TABLE IF NOT EXISTS image_template_library (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      template_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_image_template_library_created_at ON image_template_library(created_at DESC);
   `)
 
   await runMigrations()

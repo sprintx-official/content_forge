@@ -10,6 +10,7 @@ import ContentOptionsTab from '@/components/settings/ContentOptionsTab'
 import NotificationsTab from '@/components/settings/NotificationsTab'
 import WebhooksTab from '@/components/settings/WebhooksTab'
 import BrandMonitorTab from '@/components/settings/BrandMonitorTab'
+import TemplatesTab from '@/components/settings/TemplatesTab'
 
 const FLAT_ITEMS = SETTINGS_NAV_SECTIONS.flatMap((s) => s.items)
 
@@ -58,6 +59,7 @@ export default function SettingsPage() {
         {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'webhooks' && <WebhooksTab />}
         {activeTab === 'brand-monitor' && <BrandMonitorTab />}
+        {activeTab === 'image-templates' && <TemplatesTab />}
       </div>
     </div>
   )

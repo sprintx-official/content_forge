@@ -1,4 +1,4 @@
-import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Eye, type LucideIcon } from 'lucide-react'
+import { Users, Bot, GitBranch, Key, DollarSign, SlidersHorizontal, Bell, Webhook, Eye, LayoutTemplate, type LucideIcon } from 'lucide-react'
 import type { AdminTab } from '@/stores/useAdminStore'
 
 export type NavItem = { id: AdminTab; label: string; icon: LucideIcon }
@@ -10,6 +10,7 @@ export const SETTINGS_NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
       { id: 'team', label: 'Team', icon: Users },
       { id: 'agents', label: 'Agents', icon: Bot },
       { id: 'workflows', label: 'Workflows', icon: GitBranch },
+      { id: 'image-templates', label: 'Templates', icon: LayoutTemplate },
     ],
   },
   {

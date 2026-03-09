@@ -218,7 +218,7 @@ async function startServer() {
   await initializeSchema()
   await seedDatabase()
 
-  app.listen(config.port, () => {
+  app.listen(config.port, '127.0.0.1', () => {
     console.log(`ContentForge server running on http://localhost:${config.port}`)
   })
 
