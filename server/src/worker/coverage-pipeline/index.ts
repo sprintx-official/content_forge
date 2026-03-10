@@ -5,6 +5,7 @@ import { deduplicateClusters } from './dedup.js'
 import { researchClusters } from './research.js'
 import { generateCoveragePost, linkUpdateArticles } from './generator.js'
 import { getAgentSetting, publishToCms, plainTextToHtml, generateTags, linkArticleToDevelopingStory } from '../../services/cmsClient.js'
+import { emitEvent, EVENTS } from '../../services/events.js'
 import type { ResearchResult } from './research.js'
 
 const SCHEDULER_CHECK_INTERVAL = 60 * 1000
@@ -17,8 +18,9 @@ interface AgentRow {
   system_prompt: string
 }
 
-async function updateStep(runId: string, step: string) {
+async function updateStep(runId: string, step: string, agentId?: string) {
   await execute(`UPDATE pipeline_runs SET current_step = $1 WHERE id = $2`, [step, runId])
+  emitEvent(EVENTS.PIPELINE_STEP, { runId, step, agentId }).catch(() => {})
 }
 
 async function runAgentPipeline(agent: AgentRow) {
@@ -31,9 +33,11 @@ async function runAgentPipeline(agent: AgentRow) {
     [runId, agent.id],
   )
 
+  emitEvent(EVENTS.PIPELINE_STARTED, { agentId: agent.id, agentName: agent.name, runId }).catch(() => {})
+
   try {
     // Step 1: Filter
-    await updateStep(runId, 'filtering')
+    await updateStep(runId, 'filtering', agent.id)
     const { scanned, relevant } = await filterArticles(agent.id, runId)
 
     if (relevant === 0) {
@@ -50,7 +54,7 @@ async function runAgentPipeline(agent: AgentRow) {
     }
 
     // Step 2: Cluster
-    await updateStep(runId, 'clustering')
+    await updateStep(runId, 'clustering', agent.id)
     const lastRunRow = await queryOne<{ completed_at: string }>(
       `SELECT completed_at FROM pipeline_runs
        WHERE agent_id = $1 AND id != $2 AND completed_at IS NOT NULL
@@ -71,11 +75,11 @@ async function runAgentPipeline(agent: AgentRow) {
     }
 
     // Step 3: Dedup
-    await updateStep(runId, 'deduplicating')
+    await updateStep(runId, 'deduplicating', agent.id)
     const { newClusters, updateClusters, skippedCount } = await deduplicateClusters(agent.id, clusters)
 
     // Step 4: Research
-    await updateStep(runId, 'researching')
+    await updateStep(runId, 'researching', agent.id)
     let researchBriefs = new Map<string, ResearchResult>()
     try {
       researchBriefs = await researchClusters(agent.id, newClusters)
@@ -90,7 +94,7 @@ async function runAgentPipeline(agent: AgentRow) {
     )
 
     // Step 5: Generate
-    await updateStep(runId, 'generating')
+    await updateStep(runId, 'generating', agent.id)
     let postsGenerated = 0
 
     for (const cluster of newClusters) {
@@ -98,6 +102,19 @@ async function runAgentPipeline(agent: AgentRow) {
         const brief = researchBriefs.get(cluster.fingerprint)
         const postId = await generateCoveragePost(agent.id, cluster, brief?.briefData ?? null)
         postsGenerated++
+
+        emitEvent(EVENTS.POST_GENERATED, {
+          agentId: agent.id, agentName: agent.name, postId,
+          title: cluster.fingerprint, urgency: cluster.urgency,
+        }).catch(() => {})
+
+        // Emit breaking news event for critical/high urgency
+        if (cluster.urgency === 'critical' || cluster.urgency === 'high') {
+          emitEvent(EVENTS.BREAKING_NEWS, {
+            agentId: agent.id, agentName: agent.name, postId,
+            title: cluster.fingerprint, urgency: cluster.urgency,
+          }).catch(() => {})
+        }
 
         // Auto-publish to CMS if enabled
         try {
@@ -158,6 +175,11 @@ async function runAgentPipeline(agent: AgentRow) {
        clusters_found = $3, posts_generated = $4, current_step = 'done' WHERE id = $5`,
       [scanned, relevant, clusters.length, postsGenerated, runId],
     )
+
+    emitEvent(EVENTS.PIPELINE_COMPLETED, {
+      agentId: agent.id, agentName: agent.name, runId,
+      scanned, relevant, clusters: clusters.length, generated: postsGenerated, deduped: skippedCount,
+    }).catch(() => {})
 
     console.log(`  [${agent.name}] Pipeline complete: ${scanned} scanned, ${relevant} relevant, ${clusters.length} clusters, ${postsGenerated} generated, ${skippedCount} deduped`)
   } catch (error) {

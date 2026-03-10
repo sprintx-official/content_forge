@@ -87,6 +87,14 @@ async function runMigrations(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_history_workflow_id ON history(workflow_id);
     CREATE INDEX IF NOT EXISTS idx_coverage_posts_workflow_id ON coverage_posts(workflow_id);
   `)
+
+  // Migration: Add hub_url to feeds (WebSub support)
+  const feedCols = await query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = 'feeds'`
+  )
+  if (!feedCols.some((c) => c.column_name === 'hub_url')) {
+    await exec("ALTER TABLE feeds ADD COLUMN hub_url TEXT")
+  }
 }
 
 export async function initializeSchema(): Promise<void> {

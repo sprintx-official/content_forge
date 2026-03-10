@@ -214,5 +214,6 @@ Rules:
 - Every factual claim must cite sources as [N] where N matches article numbers
 - Headline must be neutral and informative, not clickbait
 - Social posts must respect platform character limits
-- Image prompt should describe a realistic, photojournalistic scene (no text)`
+- Image prompt should describe a realistic, photojournalistic scene (no text)
+- confidence_score scoring: 5 = 3+ corroborating sources with consistent facts, 4 = 2+ sources mostly consistent, 3 = single strong source or minor discrepancies, 2 = thin sourcing or partial info, 1 = unverified/speculative`
 }

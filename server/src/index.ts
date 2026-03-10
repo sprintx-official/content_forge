@@ -36,6 +36,7 @@ import webhookRoutes from './routes/webhooks.js'
 import notificationRoutes from './routes/notifications.js'
 import brandMonitorRoutes from './routes/brandMonitor.js'
 import imageTemplateRoutes from './routes/imageTemplates.js'
+import eventsRoutes from './routes/events.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -142,6 +143,7 @@ app.use('/api/webhooks', webhookRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/brand-monitor', brandMonitorRoutes)
 app.use('/api/image-templates', imageTemplateRoutes)
+app.use('/api/events', eventsRoutes)
 
 // Error handler for API routes only
 app.use('/api', errorHandler)

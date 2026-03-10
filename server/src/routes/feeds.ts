@@ -188,4 +188,91 @@ router.delete('/agent/:agentId/:feedId', authenticate, requireAdmin, async (req:
   res.json({ success: true })
 })
 
+// ---------------------------------------------------------------------------
+// POST /api/feeds/discover — AI-powered feed discovery from a domain/topic
+// ---------------------------------------------------------------------------
+router.post('/discover', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { domain, region } = req.body as { domain: string; region?: string }
+  if (!domain) {
+    res.status(400).json({ error: 'domain is required' })
+    return
+  }
+
+  try {
+    // Try common RSS paths first
+    const commonPaths = ['/rss', '/feed', '/feeds', '/rss.xml', '/feed.xml', '/atom.xml', '/index.xml']
+    const Parser = (await import('rss-parser')).default
+    const parser = new Parser({ timeout: 8000 })
+    const discovered: { url: string; title: string; itemCount: number; status: string }[] = []
+
+    const baseUrl = domain.startsWith('http') ? domain : `https://${domain}`
+
+    // Test common paths in parallel
+    const tests = commonPaths.map(async (path) => {
+      const feedUrl = `${baseUrl.replace(/\/$/, '')}${path}`
+      try {
+        const feed = await parser.parseURL(feedUrl)
+        if (feed.items && feed.items.length > 0) {
+          // Check if already exists in DB
+          const existing = await queryOne<{ id: string }>('SELECT id FROM feeds WHERE url = $1', [feedUrl])
+          return {
+            url: feedUrl,
+            title: feed.title || domain,
+            itemCount: feed.items.length,
+            status: existing ? 'exists' : 'valid',
+          }
+        }
+      } catch {
+        // Not a valid feed at this path
+      }
+      return null
+    })
+
+    const results = await Promise.allSettled(tests)
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        discovered.push(result.value)
+      }
+    }
+
+    // Also try to find RSS link from the HTML page
+    try {
+      const htmlRes = await fetch(baseUrl, {
+        headers: { 'User-Agent': 'ContentForge/1.0 (Feed Discovery)' },
+        signal: AbortSignal.timeout(8000),
+      })
+      const html = await htmlRes.text()
+      const linkMatches = html.matchAll(/<link[^>]+type=["']application\/(rss|atom)\+xml["'][^>]*>/gi)
+      for (const match of linkMatches) {
+        const hrefMatch = match[0].match(/href=["']([^"']+)["']/)
+        if (hrefMatch?.[1]) {
+          let feedUrl = hrefMatch[1]
+          if (feedUrl.startsWith('/')) feedUrl = `${baseUrl.replace(/\/$/, '')}${feedUrl}`
+          if (!discovered.some(d => d.url === feedUrl)) {
+            try {
+              const feed = await parser.parseURL(feedUrl)
+              const existing = await queryOne<{ id: string }>('SELECT id FROM feeds WHERE url = $1', [feedUrl])
+              discovered.push({
+                url: feedUrl,
+                title: feed.title || domain,
+                itemCount: feed.items?.length || 0,
+                status: existing ? 'exists' : 'valid',
+              })
+            } catch {
+              // Invalid feed link
+            }
+          }
+        }
+      }
+    } catch {
+      // HTML fetch failed
+    }
+
+    res.json({ feeds: discovered })
+  } catch (err) {
+    console.error('[POST /api/feeds/discover] Error:', err)
+    res.status(500).json({ error: 'Feed discovery failed' })
+  }
+})
+
 export default router

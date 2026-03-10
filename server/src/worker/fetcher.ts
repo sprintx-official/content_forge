@@ -11,6 +11,7 @@ export interface FetchResult {
   feed: FeedRow
   items: Parser.Item[]
   error?: string
+  hubUrl?: string // WebSub hub URL if detected
 }
 
 const parser = new Parser({
@@ -61,7 +62,17 @@ export async function fetchFeedBatch(feeds: FeedRow[], batchSize = 20): Promise<
 async function fetchSingleFeed(feed: FeedRow): Promise<FetchResult> {
   try {
     const parsed = await parser.parseURL(feed.url)
-    return { feed, items: parsed.items || [] }
+
+    // Detect WebSub hub URL from feed links (Atom) or raw XML
+    let hubUrl: string | undefined
+    const feedObj = parsed as Record<string, unknown>
+    const links = feedObj.link as string | Array<{ $?: { rel?: string; href?: string } }> | undefined
+    if (Array.isArray(links)) {
+      const hubLink = links.find(l => l?.$?.rel === 'hub')
+      if (hubLink?.$?.href) hubUrl = hubLink.$.href
+    }
+
+    return { feed, items: parsed.items || [], hubUrl }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     return { feed, items: [], error: message }

@@ -3,8 +3,11 @@ import { query, execute } from '../database/connection.js'
 import { fetchFeedBatch, type FeedRow } from './fetcher.js'
 import { normalizeItem } from './parser.js'
 import { startPipelineWorker } from './coverage-pipeline/index.js'
+import { startPublishingWorker } from './publishingWorker.js'
 import { runDigestCycle } from '../services/email/digestBuilder.js'
 import { runBrandQueries } from '../services/brandMonitor.js'
+import { detectLanguage } from '../services/languageDetect.js'
+import { ensurePartitions, pruneOldPartitions } from '../services/partitionManager.js'
 
 const POLL_INTERVAL = 60 * 1000
 const BATCH_SIZE = 20
@@ -50,11 +53,20 @@ async function pollFeeds() {
       continue
     }
 
-    await execute(
-      `UPDATE feeds SET last_fetched_at = NOW(), status = 'active', last_error = NULL,
-       error_count = 0 WHERE id = $1`,
-      [result.feed.id],
-    )
+    // Update feed status and store WebSub hub URL if detected
+    if (result.hubUrl) {
+      await execute(
+        `UPDATE feeds SET last_fetched_at = NOW(), status = 'active', last_error = NULL,
+         error_count = 0, hub_url = $1 WHERE id = $2`,
+        [result.hubUrl, result.feed.id],
+      )
+    } else {
+      await execute(
+        `UPDATE feeds SET last_fetched_at = NOW(), status = 'active', last_error = NULL,
+         error_count = 0 WHERE id = $1`,
+        [result.feed.id],
+      )
+    }
 
     for (const item of result.items) {
       const normalized = normalizeItem(item)
@@ -62,6 +74,7 @@ async function pollFeeds() {
 
       try {
         const id = crypto.randomUUID()
+        const lang = detectLanguage(normalized.title + ' ' + (normalized.description || ''))
         await execute(
           `INSERT INTO articles (id, feed_id, guid, title, url, summary, content, author, published_at, language, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
@@ -76,7 +89,7 @@ async function pollFeeds() {
             normalized.content || '',
             normalized.author || '',
             normalized.published_at,
-            'en',
+            lang,
           ],
         )
         totalNew++
@@ -132,6 +145,9 @@ export async function startWorker() {
   // Start coverage pipeline worker
   await startPipelineWorker()
 
+  // Start social media publishing worker
+  await startPublishingWorker()
+
   // Start email digest cycle
   setInterval(async () => {
     try { await runDigestCycle() } catch (e) { console.error('Digest cycle error:', e) }
@@ -143,5 +159,13 @@ export async function startWorker() {
     try { await runBrandQueries() } catch (e) { console.error('Brand monitor error:', e) }
   }, BRAND_MONITOR_INTERVAL)
 
-  console.log(`Worker running: feeds every ${POLL_INTERVAL / 1000}s, cleanup every ${CLEANUP_INTERVAL / 60000}min, brand monitor hourly`)
+  // Ensure article partitions exist (non-blocking)
+  try { await ensurePartitions(3) } catch (e) { console.error('Partition setup error (non-fatal):', e) }
+
+  // Prune old partitions monthly (run hourly, checks internally)
+  setInterval(async () => {
+    try { await pruneOldPartitions(12) } catch (e) { console.error('Partition prune error:', e) }
+  }, 24 * 60 * 60 * 1000) // daily
+
+  console.log(`Worker running: feeds every ${POLL_INTERVAL / 1000}s, cleanup every ${CLEANUP_INTERVAL / 60000}min, publisher every 30s, brand monitor hourly`)
 }

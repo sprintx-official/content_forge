@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { Router, type Response } from 'express'
 import { query, queryOne, execute } from '../database/connection.js'
 import { authenticate } from '../middleware/auth.js'
@@ -174,6 +175,29 @@ router.patch('/:id', authenticate, requireAdmin, async (req: AuthenticatedReques
     const id = String(req.params.id)
     const { status, title, summary } = req.body as { status?: string; title?: string; summary?: string }
 
+    // Track editor diffs for learning loop
+    if (title || summary) {
+      const existing = await queryOne<{ title: string; summary: string }>(
+        'SELECT title, summary FROM coverage_posts WHERE id = $1', [id],
+      )
+      if (existing) {
+        if (title && title !== existing.title) {
+          await execute(
+            `INSERT INTO editor_diffs (id, coverage_post_id, field, original_value, edited_value, created_at)
+             VALUES ($1, $2, 'title', $3, $4, NOW())`,
+            [crypto.randomUUID(), id, existing.title, title],
+          )
+        }
+        if (summary && summary !== existing.summary) {
+          await execute(
+            `INSERT INTO editor_diffs (id, coverage_post_id, field, original_value, edited_value, created_at)
+             VALUES ($1, $2, 'summary', $3, $4, NOW())`,
+            [crypto.randomUUID(), id, existing.summary, summary],
+          )
+        }
+      }
+    }
+
     const updates: string[] = []
     const params: unknown[] = [id]
 
@@ -212,8 +236,25 @@ router.delete('/:id', authenticate, requireAdmin, async (req: AuthenticatedReque
 // ---------------------------------------------------------------------------
 router.patch('/:id/social/:socialId', authenticate, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    const id = String(req.params.id)
     const socialId = String(req.params.socialId)
     const { editedContent } = req.body as { editedContent: string }
+
+    // Track editor diff for learning loop
+    const existing = await queryOne<{ content: string; edited_content: string | null; platform: string }>(
+      'SELECT content, edited_content, platform FROM coverage_social_posts WHERE id = $1',
+      [socialId],
+    )
+    if (existing) {
+      const originalValue = existing.edited_content || existing.content
+      if (originalValue !== editedContent) {
+        await execute(
+          `INSERT INTO editor_diffs (id, coverage_post_id, field, original_value, edited_value, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [crypto.randomUUID(), id, `social_${existing.platform}`, originalValue, editedContent],
+        )
+      }
+    }
 
     await execute(
       'UPDATE coverage_social_posts SET edited_content = $1 WHERE id = $2',

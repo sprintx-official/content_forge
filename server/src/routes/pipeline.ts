@@ -73,6 +73,29 @@ router.patch('/posts/:postId', authenticate, requireAdmin, async (req: Authentic
     const postId = String(req.params.postId)
     const { status, title, summary } = req.body as { status?: string; title?: string; summary?: string }
 
+    // Track editor diffs for learning loop
+    if (title || summary) {
+      const existing = await queryOne<{ title: string; summary: string }>(
+        'SELECT title, summary FROM coverage_posts WHERE id = $1', [postId],
+      )
+      if (existing) {
+        if (title && title !== existing.title) {
+          await execute(
+            `INSERT INTO editor_diffs (id, coverage_post_id, field, original_value, edited_value, created_at)
+             VALUES ($1, $2, 'title', $3, $4, NOW())`,
+            [crypto.randomUUID(), postId, existing.title, title],
+          )
+        }
+        if (summary && summary !== existing.summary) {
+          await execute(
+            `INSERT INTO editor_diffs (id, coverage_post_id, field, original_value, edited_value, created_at)
+             VALUES ($1, $2, 'summary', $3, $4, NOW())`,
+            [crypto.randomUUID(), postId, existing.summary, summary],
+          )
+        }
+      }
+    }
+
     const updates: string[] = []
     const params: unknown[] = [postId]
 
