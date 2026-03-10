@@ -10,6 +10,11 @@ pg.types.setTypeParser(20, (val: string) => parseInt(val, 10))
 
 const pool = new pg.Pool({
   connectionString: config.databaseUrl,
+  max: 20,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  statement_timeout: 120_000,      // 2 min max per query
+  query_timeout: 120_000,
 })
 
 export async function query<T extends pg.QueryResultRow = any>(

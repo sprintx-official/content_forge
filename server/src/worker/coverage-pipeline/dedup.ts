@@ -47,55 +47,65 @@ export async function deduplicateClusters(agentId: string, clusters: TopicCluste
   const updateClusters: { cluster: TopicCluster; existingPostId: string }[] = []
   let skippedCount = 0
 
-  for (const cluster of clusters) {
+  // Pre-compute best matches (pure CPU, no I/O)
+  const clustersWithMatches: Array<{
+    cluster: TopicCluster
+    bestMatch: { post: typeof recentPosts[0]; overlapScore: number } | null
+  }> = clusters.map(cluster => {
     let bestMatch: { post: typeof recentPosts[0]; overlapScore: number } | null = null
-
     for (const post of recentPosts) {
       const existingWords = new Set(post.fingerprint.toLowerCase().split(/\s+/))
       const newWords = cluster.fingerprint.toLowerCase().split(/\s+/)
       const overlap = newWords.filter(w => existingWords.has(w)).length / Math.max(newWords.length, 1)
-
       if (overlap > 0.4 && (!bestMatch || overlap > bestMatch.overlapScore)) {
         bestMatch = { post, overlapScore: overlap }
       }
     }
+    return { cluster, bestMatch }
+  })
 
-    if (!bestMatch) {
-      newClusters.push(cluster)
-      continue
-    }
+  // Separate clusters that need API calls from those that don't
+  const noMatchClusters = clustersWithMatches.filter(c => !c.bestMatch)
+  const needsApiClusters = clustersWithMatches.filter(c => c.bestMatch)
 
-    try {
-      let existingKeyFacts: string[] = []
-      try { existingKeyFacts = JSON.parse(bestMatch.post.key_facts) } catch { /* */ }
+  noMatchClusters.forEach(c => newClusters.push(c.cluster))
 
-      const prompt = await buildDedupPrompt(
-        cluster.fingerprint,
-        cluster.key_facts,
-        bestMatch.post.fingerprint,
-        existingKeyFacts,
-        agentId,
-      )
+  // Dedup API calls in parallel batches of 5
+  const DEDUP_CONCURRENCY = 5
+  const model = await getAgentModel(agentId, 'model_dedup')
 
-      const model = await getAgentModel(agentId, 'model_dedup')
-      const response = await callOpenAI(model, prompt)
-      const dedupResult = extractJson(response) as { is_new_development: boolean; reason: string } | null
+  for (let i = 0; i < needsApiClusters.length; i += DEDUP_CONCURRENCY) {
+    const batch = needsApiClusters.slice(i, i + DEDUP_CONCURRENCY)
+    const results = await Promise.allSettled(
+      batch.map(async ({ cluster, bestMatch }) => {
+        let existingKeyFacts: string[] = []
+        try { existingKeyFacts = JSON.parse(bestMatch!.post.key_facts) } catch { /* */ }
 
-      if (!dedupResult) {
+        const prompt = await buildDedupPrompt(
+          cluster.fingerprint, cluster.key_facts,
+          bestMatch!.post.fingerprint, existingKeyFacts, agentId,
+        )
+        const response = await callOpenAI(model, prompt)
+        const dedupResult = extractJson(response) as { is_new_development: boolean; reason: string } | null
+        return { cluster, bestMatch, dedupResult }
+      }),
+    )
+
+    for (const settled of results) {
+      if (settled.status === 'rejected' || !settled.value.dedupResult) {
+        const cluster = settled.status === 'fulfilled' ? settled.value.cluster : batch[0].cluster
         newClusters.push(cluster)
         continue
       }
-
+      const { cluster, bestMatch, dedupResult } = settled.value
       if (dedupResult.is_new_development) {
         console.log(`  [Dedup] New: "${cluster.fingerprint}" — ${dedupResult.reason}`)
         newClusters.push(cluster)
       } else {
         console.log(`  [Dedup] Update: "${cluster.fingerprint}" — ${dedupResult.reason}`)
-        updateClusters.push({ cluster, existingPostId: bestMatch.post.id })
+        updateClusters.push({ cluster, existingPostId: bestMatch!.post.id })
         skippedCount++
       }
-    } catch {
-      newClusters.push(cluster)
     }
   }
 

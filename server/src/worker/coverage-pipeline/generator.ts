@@ -244,27 +244,30 @@ export async function generateCoveragePost(
     ],
   )
 
-  // Insert social posts
+  // Insert social posts + link source articles in parallel
+  const dbInserts: Promise<void>[] = []
+
   for (const platform of PLATFORMS) {
     const content = generated.social_posts[platform]
     if (content) {
-      await execute(
+      dbInserts.push(execute(
         `INSERT INTO coverage_social_posts (id, coverage_post_id, platform, content, created_at)
          VALUES ($1, $2, $3, $4, NOW())`,
         [crypto.randomUUID(), postId, platform, content],
-      )
+      ))
     }
   }
 
-  // Link source articles
   for (const articleId of cluster.article_ids) {
-    await execute(
+    dbInserts.push(execute(
       `INSERT INTO coverage_source_articles (id, coverage_post_id, article_id)
        VALUES ($1, $2, $3)
        ON CONFLICT DO NOTHING`,
       [crypto.randomUUID(), postId, articleId],
-    )
+    ))
   }
+
+  await Promise.all(dbInserts)
 
   console.log(`  [Generate] Created post "${generated.title}" (id: ${postId})`)
 
@@ -322,14 +325,16 @@ export async function linkUpdateArticles(
   cluster: TopicCluster,
   existingPostId: string,
 ): Promise<void> {
-  for (const articleId of cluster.article_ids) {
-    await execute(
-      `INSERT INTO coverage_source_articles (id, coverage_post_id, article_id)
-       VALUES ($1, $2, $3)
-       ON CONFLICT DO NOTHING`,
-      [crypto.randomUUID(), existingPostId, articleId],
-    )
-  }
+  await Promise.all(
+    cluster.article_ids.map(articleId =>
+      execute(
+        `INSERT INTO coverage_source_articles (id, coverage_post_id, article_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [crypto.randomUUID(), existingPostId, articleId],
+      ),
+    ),
+  )
   await execute(`UPDATE coverage_posts SET updated_at = NOW() WHERE id = $1`, [existingPostId])
   console.log(`  [Generate] Linked ${cluster.article_ids.length} update articles to post ${existingPostId}`)
 }

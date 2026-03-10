@@ -19,21 +19,26 @@ export async function getGemini() {
   return client
 }
 
+const DEFAULT_GENERATE_TIMEOUT_MS = 90_000  // 90 seconds
+const DEFAULT_IMAGE_TIMEOUT_MS = 120_000    // 2 minutes
+
 export async function geminiGenerate(
   model: string,
   prompt: string,
-  opts?: { useSearch?: boolean },
+  opts?: { useSearch?: boolean; timeoutMs?: number },
 ): Promise<string> {
   const ai = await getGemini()
   const config: Record<string, unknown> = {}
   if (opts?.useSearch) {
     config.tools = [{ googleSearch: {} }]
   }
-  const response = await ai.models.generateContent({
-    model,
-    contents: prompt,
-    config,
-  })
+  const timeout = opts?.timeoutMs ?? DEFAULT_GENERATE_TIMEOUT_MS
+  const response = await Promise.race([
+    ai.models.generateContent({ model, contents: prompt, config }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Gemini generate timed out after ${timeout / 1000}s (model: ${model})`)), timeout),
+    ),
+  ])
   return response.text ?? ''
 }
 
@@ -55,11 +60,12 @@ export async function geminiGenerateImage(
       if (systemInstruction) {
         config.systemInstruction = systemInstruction
       }
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config,
-      })
+      const response = await Promise.race([
+        ai.models.generateContent({ model, contents: prompt, config }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Image gen timed out after ${DEFAULT_IMAGE_TIMEOUT_MS / 1000}s`)), DEFAULT_IMAGE_TIMEOUT_MS),
+        ),
+      ])
 
       const parts = response.candidates?.[0]?.content?.parts
       if (!parts) {

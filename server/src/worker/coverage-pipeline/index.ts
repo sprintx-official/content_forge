@@ -11,6 +11,8 @@ import type { ResearchResult } from './research.js'
 const SCHEDULER_CHECK_INTERVAL = 60 * 1000
 const runningAgents = new Set<string>()
 const MAX_CONCURRENT_AGENTS = 3
+const GENERATE_CONCURRENCY = 3     // Max parallel cluster → post generation
+const PIPELINE_TIMEOUT_MS = 10 * 60 * 1000  // 10 min max per pipeline run
 
 interface AgentRow {
   id: string
@@ -45,10 +47,11 @@ async function runAgentPipeline(agent: AgentRow) {
         ? 'No unscreened articles found'
         : `Scanned ${scanned} articles but none passed relevance filter`
       console.log(`  [${agent.name}] ${reason}. Skipping.`)
+      // No unscreened articles is normal (not an error) — mark as done
       await execute(
         `UPDATE pipeline_runs SET completed_at = NOW(), articles_found = $1, articles_relevant = 0,
-         clusters_found = 0, posts_generated = 0, current_step = 'done', error = $2 WHERE id = $3`,
-        [scanned, scanned === 0 ? reason : null, runId],
+         clusters_found = 0, posts_generated = 0, current_step = 'done' WHERE id = $2`,
+        [scanned, runId],
       )
       return
     }
@@ -93,82 +96,89 @@ async function runAgentPipeline(agent: AgentRow) {
       (urgencyOrder[a.urgency ?? 'routine'] ?? 3) - (urgencyOrder[b.urgency ?? 'routine'] ?? 3),
     )
 
-    // Step 5: Generate
+    // Step 5: Generate (parallel in batches)
     await updateStep(runId, 'generating', agent.id)
     let postsGenerated = 0
 
-    for (const cluster of newClusters) {
-      try {
-        const brief = researchBriefs.get(cluster.fingerprint)
-        const postId = await generateCoveragePost(agent.id, cluster, brief?.briefData ?? null)
-        postsGenerated++
+    // Pre-fetch CMS config once (avoid repeated DB lookups per cluster)
+    const cmsEnabled = await getAgentSetting(agent.id, 'cms_enabled')
+    const cmsCategory = cmsEnabled === 'true' ? ((await getAgentSetting(agent.id, 'cms_category')) || 'general') : ''
+    const cmsStatus = cmsEnabled === 'true' ? ((await getAgentSetting(agent.id, 'cms_publish_status')) || 'draft') : ''
+    const cmsStoryId = cmsEnabled === 'true' ? (await getAgentSetting(agent.id, 'cms_story_id')) : null
 
-        emitEvent(EVENTS.POST_GENERATED, {
+    const generateCluster = async (cluster: typeof newClusters[0]) => {
+      const brief = researchBriefs.get(cluster.fingerprint)
+      const postId = await generateCoveragePost(agent.id, cluster, brief?.briefData ?? null)
+
+      emitEvent(EVENTS.POST_GENERATED, {
+        agentId: agent.id, agentName: agent.name, postId,
+        title: cluster.fingerprint, urgency: cluster.urgency,
+      }).catch(() => {})
+
+      if (cluster.urgency === 'critical' || cluster.urgency === 'high') {
+        emitEvent(EVENTS.BREAKING_NEWS, {
           agentId: agent.id, agentName: agent.name, postId,
           title: cluster.fingerprint, urgency: cluster.urgency,
         }).catch(() => {})
+      }
 
-        // Emit breaking news event for critical/high urgency
-        if (cluster.urgency === 'critical' || cluster.urgency === 'high') {
-          emitEvent(EVENTS.BREAKING_NEWS, {
-            agentId: agent.id, agentName: agent.name, postId,
-            title: cluster.fingerprint, urgency: cluster.urgency,
-          }).catch(() => {})
-        }
-
-        // Auto-publish to CMS if enabled
+      // Auto-publish to CMS if enabled
+      if (cmsEnabled === 'true') {
         try {
-          const cmsEnabled = await getAgentSetting(agent.id, 'cms_enabled')
-          if (cmsEnabled === 'true') {
-            const post = await queryOne<{ title: string; summary: string; slug: string; urgency: string; image_landscape: string | null }>(
-              'SELECT title, summary, slug, urgency, image_landscape FROM coverage_posts WHERE id = $1',
-              [postId],
-            )
-            if (post) {
-              const cmsCategory = (await getAgentSetting(agent.id, 'cms_category')) || 'general'
-              const cmsStatus = (await getAgentSetting(agent.id, 'cms_publish_status')) || 'draft'
-              const tags = generateTags(post.slug || null, null)
-              const excerpt = post.summary.split(/\n\n/)[0]?.substring(0, 200) || ''
-
-              const cmsResult = await publishToCms(agent.id, {
-                title: post.title,
-                slug: post.slug || `cf-${postId.slice(0, 8)}`,
-                content: plainTextToHtml(post.summary),
-                categorySlug: cmsCategory,
-                status: cmsStatus as 'draft' | 'published',
-                excerpt,
-                tags,
-                seoTitle: post.title,
-                seoDescription: excerpt,
-                externalId: postId,
-              })
-
-              if (cmsResult.success) {
-                console.log(`  [CMS] Published: ${cmsResult.slug}`)
-                // Link to developing story if applicable
-                const cmsStoryId = await getAgentSetting(agent.id, 'cms_story_id')
-                if (cmsStoryId && cmsResult.slug) {
-                  await linkArticleToDevelopingStory(agent.id, cmsStoryId, cmsResult.slug, post.title, post.summary, post.urgency, post.image_landscape ?? undefined)
-                }
+          const post = await queryOne<{ title: string; summary: string; slug: string; urgency: string; image_landscape: string | null }>(
+            'SELECT title, summary, slug, urgency, image_landscape FROM coverage_posts WHERE id = $1',
+            [postId],
+          )
+          if (post) {
+            const tags = generateTags(post.slug || null, null)
+            const excerpt = post.summary.split(/\n\n/)[0]?.substring(0, 200) || ''
+            const cmsResult = await publishToCms(agent.id, {
+              title: post.title,
+              slug: post.slug || `cf-${postId.slice(0, 8)}`,
+              content: plainTextToHtml(post.summary),
+              categorySlug: cmsCategory,
+              status: cmsStatus as 'draft' | 'published',
+              excerpt, tags,
+              seoTitle: post.title, seoDescription: excerpt,
+              externalId: postId,
+            })
+            if (cmsResult.success) {
+              console.log(`  [CMS] Published: ${cmsResult.slug}`)
+              if (cmsStoryId && cmsResult.slug) {
+                await linkArticleToDevelopingStory(agent.id, cmsStoryId, cmsResult.slug, post.title, post.summary, post.urgency, post.image_landscape ?? undefined)
               }
             }
           }
         } catch (cmsError) {
           console.error(`  [CMS] Non-blocking error:`, cmsError)
         }
-      } catch (error) {
-        console.error(`  [${agent.name}] Failed to generate post for "${cluster.fingerprint}":`, error instanceof Error ? error.message : error)
+      }
+
+      return postId
+    }
+
+    // Process clusters in parallel batches
+    for (let i = 0; i < newClusters.length; i += GENERATE_CONCURRENCY) {
+      const batch = newClusters.slice(i, i + GENERATE_CONCURRENCY)
+      const results = await Promise.allSettled(batch.map(generateCluster))
+      for (let j = 0; j < results.length; j++) {
+        if (results[j].status === 'fulfilled') {
+          postsGenerated++
+        } else {
+          const err = (results[j] as PromiseRejectedResult).reason
+          console.error(`  [${agent.name}] Failed to generate post for "${batch[j].fingerprint}":`, err instanceof Error ? err.message : err)
+        }
       }
     }
 
-    // Link update articles to existing posts
-    for (const { cluster, existingPostId } of updateClusters) {
-      try {
-        await linkUpdateArticles(cluster, existingPostId)
-      } catch (error) {
-        console.error(`  [${agent.name}] Failed to link updates for post ${existingPostId}:`, error)
-      }
-    }
+    // Link update articles to existing posts (parallel)
+    await Promise.allSettled(
+      updateClusters.map(({ cluster, existingPostId }) =>
+        linkUpdateArticles(cluster, existingPostId).catch(error =>
+          console.error(`  [${agent.name}] Failed to link updates for post ${existingPostId}:`, error),
+        ),
+      ),
+    )
 
     await execute(
       `UPDATE pipeline_runs SET completed_at = NOW(), articles_found = $1, articles_relevant = $2,
@@ -239,7 +249,23 @@ async function schedulerTick() {
     if (!shouldRun) continue
 
     runningAgents.add(agent.id)
-    runAgentPipeline(agent).finally(() => runningAgents.delete(agent.id))
+    // Wrap in timeout to prevent stuck pipelines
+    const pipelineWithTimeout = Promise.race([
+      runAgentPipeline(agent),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error(`Pipeline timed out after ${PIPELINE_TIMEOUT_MS / 60000} minutes`)), PIPELINE_TIMEOUT_MS),
+      ),
+    ]).catch(async (err) => {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`  [${agent.name}] Pipeline timeout/error: ${msg}`)
+      // Mark any running pipeline_run as timed out
+      await execute(
+        `UPDATE pipeline_runs SET completed_at = NOW(), current_step = 'error', error = $1
+         WHERE agent_id = $2 AND completed_at IS NULL`,
+        [msg, agent.id],
+      ).catch(() => {})
+    })
+    pipelineWithTimeout.finally(() => runningAgents.delete(agent.id))
   }
 }
 

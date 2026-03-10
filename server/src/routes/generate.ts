@@ -159,19 +159,20 @@ async function preparePipeline(req: AuthenticatedRequest, res: Response): Promis
         'SELECT * FROM workflow_steps WHERE workflow_id = $1 ORDER BY sort_order ASC', [effectiveWorkflowId]
       )
 
-      agentContexts = []
-      for (const step of steps) {
-        const agent = await queryOne<AgentRow>(
-          'SELECT * FROM agents WHERE id = $1', [step.agent_id]
-        )
-        if (agent) {
-          const files = await query<AgentFileRow>(
-            'SELECT * FROM agent_files WHERE agent_id = $1', [agent.id]
+      // Load all agent contexts in parallel
+      const agentContextResults = await Promise.all(
+        steps.map(async (step) => {
+          const agent = await queryOne<AgentRow>(
+            'SELECT * FROM agents WHERE id = $1', [step.agent_id]
           )
+          if (!agent) return null
 
-          const feedbackRows = await query<FeedbackRow>(
-            'SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]
-          )
+          const [files, feedbackRows, memoryRows] = await Promise.all([
+            query<AgentFileRow>('SELECT * FROM agent_files WHERE agent_id = $1', [agent.id]),
+            query<FeedbackRow>('SELECT * FROM feedback WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]),
+            query<AgentMemoryRow>('SELECT * FROM agent_memory WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]),
+          ])
+
           let feedbackCtx: AgentContext['feedback']
           if (feedbackRows.length > 0) {
             const sum = feedbackRows.reduce((acc, r) => acc + r.rating, 0)
@@ -180,26 +181,28 @@ async function preparePipeline(req: AuthenticatedRequest, res: Response): Promis
             feedbackCtx = { avgRating, recentTexts }
           }
 
-          const memoryRows = await query<AgentMemoryRow>(
-            'SELECT * FROM agent_memory WHERE agent_id = $1 ORDER BY created_at DESC LIMIT 10', [agent.id]
-          )
           const memoriesCtx = memoryRows.map((m) => ({
             topic: m.topic,
             summary: m.summary,
             createdAt: m.created_at,
           }))
 
-          agentContexts.push({
-            agent,
-            files,
+          return {
+            agent, files,
             instructions: step.instructions,
             stepType: step.step_type || 'text',
             feedback: feedbackCtx,
             memories: memoriesCtx.length > 0 ? memoriesCtx : undefined,
-          })
+          }
+        }),
+      )
 
-          if (!resolvedModelId && agent.model && agent.model.trim()) {
-            resolvedModelId = agent.model.trim()
+      agentContexts = []
+      for (const ctx of agentContextResults) {
+        if (ctx) {
+          agentContexts.push(ctx)
+          if (!resolvedModelId && ctx.agent.model && ctx.agent.model.trim()) {
+            resolvedModelId = ctx.agent.model.trim()
           }
         }
       }
@@ -476,24 +479,17 @@ async function saveResults(
     ]
   )
 
-  // Save agent memories
+  // Save agent memories (parallel)
   if (agentContexts && agentContexts.length > 0) {
-    for (let i = 0; i < agentContexts.length; i++) {
-      const ctx = agentContexts[i]
-      const agentOutput = agentPipeline[i]?.output || finalContent
-      await execute(
-        'INSERT INTO agent_memory (id, agent_id, topic, summary, output_text, history_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [
-          crypto.randomUUID(),
-          ctx.agent.id,
-          input.topic,
-          agentOutput.slice(0, 200),
-          agentOutput,
-          historyId,
-          now,
-        ]
-      )
-    }
+    await Promise.all(
+      agentContexts.map((ctx, i) => {
+        const agentOutput = agentPipeline[i]?.output || finalContent
+        return execute(
+          'INSERT INTO agent_memory (id, agent_id, topic, summary, output_text, history_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+          [crypto.randomUUID(), ctx.agent.id, input.topic, agentOutput.slice(0, 200), agentOutput, historyId, now]
+        )
+      }),
+    )
   }
 
   return { historyId, output, now }

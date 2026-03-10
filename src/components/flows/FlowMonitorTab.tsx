@@ -34,11 +34,13 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
   const [error, setError] = useState<string | null>(null)
   const [runningManual, setRunningManual] = useState<string | false>(false)
 
-  const isNews = flow.type === 'news'
   const isAutomated =
-    isNews || ('mode' in flow && (flow.mode === 'automated' || flow.mode === 'both'))
+    flow.type === 'news' || ('mode' in flow && (flow.mode === 'automated' || flow.mode === 'both'))
 
-  // For system-news, load all agents with pipeline_enabled
+  // Only show all-agents view for system-news (no pipelineAgentId)
+  const hasPipelineAgent = 'pipelineAgentId' in flow && !!(flow as any).pipelineAgentId
+  const isAllAgentsView = flow.type === 'news' && !hasPipelineAgent && 'isSystem' in flow
+
   useEffect(() => {
     if (!isAutomated) return
 
@@ -47,8 +49,8 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
         setLoading(true)
         setError(null)
 
-        if (isNews) {
-          // Load all agents and check which have pipeline enabled
+        if (isAllAgentsView) {
+          // System news flow: load all agents with pipeline enabled
           const allAgents = await api.get<{ id: string; name: string }[]>('/api/agents')
           const agentSummaries: AgentSummary[] = []
           for (const agent of allAgents) {
@@ -64,9 +66,10 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
             }
           }
           setAgents(agentSummaries)
-        } else if ('pipelineAgentId' in flow && flow.pipelineAgentId) {
+        } else if (hasPipelineAgent) {
+          // User workflow with specific agent: show only that agent
           const res = await api.get<{ runs: PipelineRun[] }>(
-            `/api/pipeline/${flow.pipelineAgentId}`
+            `/api/pipeline/${(flow as any).pipelineAgentId}`
           )
           setRuns(res.runs || [])
         }
@@ -78,7 +81,7 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
     }
 
     fetchData()
-  }, [flow, isAutomated, isNews])
+  }, [flow, isAutomated, isAllAgentsView, hasPipelineAgent])
 
   const handleManualRun = async (agentId?: string) => {
     const targetId = agentId || ('pipelineAgentId' in flow ? (flow as any).pipelineAgentId : null)
@@ -140,8 +143,8 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
     </div>
   )
 
-  // News type: show all agents with their pipeline runs
-  if (isNews) {
+  // System news: show all agents with their pipeline runs
+  if (isAllAgentsView) {
     return (
       <div className="space-y-6">
         <h3 className="font-semibold text-lg text-white">News Pipeline Monitor</h3>

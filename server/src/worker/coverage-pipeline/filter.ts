@@ -77,16 +77,18 @@ export async function filterArticles(
 
       const relevantSet = new Set(relevantIds)
 
-      for (const article of batch) {
+      // Batch insert all screenings in parallel
+      const screeningPromises = batch.map(article => {
         const isRelevant = relevantSet.has(article.id) || relevantSet.has(String(article.id)) ? 1 : 0
-        await execute(
+        if (isRelevant) totalRelevant++
+        return execute(
           `INSERT INTO agent_article_screenings (id, agent_id, article_id, is_relevant, screened_at)
            VALUES (gen_random_uuid(), $1, $2, $3, NOW())
            ON CONFLICT (agent_id, article_id) DO UPDATE SET is_relevant = $3, screened_at = NOW()`,
           [agentId, article.id, isRelevant],
         )
-        if (isRelevant) totalRelevant++
-      }
+      })
+      await Promise.all(screeningPromises)
       totalScanned += batch.length
 
       if (runId) {
