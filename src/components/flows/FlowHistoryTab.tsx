@@ -27,6 +27,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [coveragePosts, setCoveragePosts] = useState<CoveragePost[]>([])
   const [loading, setLoading] = useState(true)
+  const [coverageLoading, setCoverageLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
@@ -77,38 +78,63 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     setSearchParams({ tab: 'run' })
   }
 
+  // Fetch history items
   useEffect(() => {
-    const fetchData = async () => {
+    const controller = new AbortController()
+    const fetchHistory = async () => {
       try {
         setLoading(true)
         setError(null)
-
         const historyData = await api.get<{ data: HistoryItem[]; pagination: unknown }>(
           `/api/history?workflowId=${workflowId}&limit=50`
         )
-        setHistoryItems(historyData.data || [])
-
-        if ('mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')) {
-          try {
-            const agentParam = 'pipelineAgentId' in flow && flow.pipelineAgentId
-              ? `&agentId=${flow.pipelineAgentId}`
-              : ''
-            const coverageData = await api.get<{ posts: CoveragePost[] }>(
-              `/api/coverage?workflowId=${workflowId}${agentParam}&limit=50`
-            )
-            setCoveragePosts(coverageData.posts || [])
-          } catch (err) {
-            console.error('Failed to fetch coverage posts:', err)
-          }
+        if (!controller.signal.aborted) {
+          setHistoryItems(historyData.data || [])
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : 'Unknown error')
+        }
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
+    fetchHistory()
+    return () => controller.abort()
+  }, [workflowId])
 
-    fetchData()
+  // Fetch coverage posts independently (don't block main loading)
+  useEffect(() => {
+    const isAutomated = 'mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')
+    if (!isAutomated) return
+
+    const controller = new AbortController()
+    const fetchCoverage = async () => {
+      try {
+        setCoverageLoading(true)
+        const agentParam = 'pipelineAgentId' in flow && flow.pipelineAgentId
+          ? `&agentId=${flow.pipelineAgentId}`
+          : ''
+        const coverageData = await api.get<{ posts: CoveragePost[] }>(
+          `/api/coverage?workflowId=${workflowId}${agentParam}&limit=50`
+        )
+        if (!controller.signal.aborted) {
+          setCoveragePosts(coverageData.posts || [])
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          console.error('Failed to fetch coverage posts:', err)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setCoverageLoading(false)
+        }
+      }
+    }
+    fetchCoverage()
+    return () => controller.abort()
   }, [flow, workflowId])
 
   const filteredHistory = useMemo(() => {
@@ -149,7 +175,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
 
   const isAutomatedOnly = 'mode' in flow && flow.mode === 'automated'
 
-  if (!hasManualRuns && !hasAutomatedPosts) {
+  if (!hasManualRuns && !hasAutomatedPosts && !coverageLoading) {
     return (
       <div className="p-12 text-center">
         <Clock className="size-10 text-[#cbd5e1]/30 mx-auto mb-3" />
@@ -225,12 +251,16 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
         </div>
       )}
 
-      {hasAutomatedPosts && (
+      {(hasAutomatedPosts || coverageLoading) && (
         <div>
           <h3 className="font-semibold text-lg text-white mb-3 flex items-center gap-2">
             <Radio className="size-4 text-[#6366f1]" />
             Automated Posts
-            <span className="text-xs text-[#cbd5e1]/60 font-normal">({filteredPosts.length})</span>
+            {coverageLoading ? (
+              <div className="w-3 h-3 border border-[#6366f1] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span className="text-xs text-[#cbd5e1]/60 font-normal">({filteredPosts.length})</span>
+            )}
           </h3>
           {filteredPosts.length === 0 ? (
             <p className="text-sm text-[#cbd5e1]/60 py-4">No results match your search</p>
