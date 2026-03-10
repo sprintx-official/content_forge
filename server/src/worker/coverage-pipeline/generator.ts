@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import { query, queryOne, execute } from '../../database/connection.js'
 import { geminiGenerate, geminiGenerateImage, extractJson } from './geminiClient.js'
-import { buildGeneratePrompt, SETTING_DEFAULTS, getAgentModel } from './prompts.js'
+import { buildGeneratePrompt, buildUpdatePrompt, SETTING_DEFAULTS, getAgentModel } from './prompts.js'
 import { getAgentSetting, publishToCms, plainTextToHtml, mapCategoryToCmsSlug, generateTags, linkArticleToDevelopingStory } from '../../services/cmsClient.js'
 import { createDefaultTemplate, type ImageTemplate } from '../../services/templateTypes.js'
 
@@ -318,6 +318,198 @@ export async function generateCoveragePost(
     console.error('  [Generate] CMS auto-publish error:', err)
   }
 
+  return postId
+}
+
+export async function generateUpdatePost(
+  agentId: string,
+  cluster: TopicCluster,
+  existingPostId: string,
+  researchBrief: ResearchBriefData | null = null,
+): Promise<string> {
+  // Fetch the existing post we're updating
+  const existingPost = await queryOne<{ title: string; summary: string }>(
+    `SELECT title, summary FROM coverage_posts WHERE id = $1`,
+    [existingPostId],
+  )
+  if (!existingPost) {
+    throw new Error(`Existing post ${existingPostId} not found for update`)
+  }
+
+  // Fetch full article content for the new cluster
+  const placeholders = cluster.article_ids.map((_, i) => `$${i + 1}`).join(', ')
+  const articleRows = await query<ArticleForGeneration>(
+    `SELECT a.id, a.title, a.content, a.summary, a.language,
+            COALESCE(f.title, '') as feed_title
+     FROM articles a
+     JOIN feeds f ON a.feed_id = f.id
+     WHERE a.id IN (${placeholders})`,
+    cluster.article_ids,
+  )
+
+  const articlesForPrompt = articleRows.map(a => ({
+    title: a.title,
+    markdown: a.content || a.summary || a.title,
+    publication: a.feed_title,
+  }))
+
+  let prompt = await buildUpdatePrompt(
+    existingPost.title,
+    existingPost.summary,
+    articlesForPrompt,
+    agentId,
+  )
+
+  // Inject research brief
+  if (researchBrief) {
+    const briefSections: string[] = []
+    if (researchBrief.topic?.context_summary) {
+      briefSections.push(`Topic Context:\n${researchBrief.topic.context_summary}`)
+    }
+    if (researchBrief.seo?.primary_keywords?.length) {
+      briefSections.push(`SEO Keywords: ${researchBrief.seo.primary_keywords.join(', ')}`)
+    }
+    if (briefSections.length > 0) {
+      prompt += '\n\n--- RESEARCH BRIEF ---\n' + briefSections.join('\n\n')
+    }
+  }
+
+  const model = await getAgentModel(agentId, 'model_generate')
+  const response = await geminiGenerate(model, prompt, { useSearch: true })
+
+  let generated = extractJson(response) as GeneratedPost | null
+  if (!generated || !generated.title || !generated.summary) {
+    throw new Error(`Failed to parse update generation for "${cluster.fingerprint}"`)
+  }
+
+  generated.social_posts = validateAndFixSocialPosts(generated.social_posts) as typeof generated.social_posts
+
+  // Generate images (same logic as new posts)
+  const imageModel = await getAgentModel(agentId, 'model_image_generate')
+  const imageSystemPrompt = (await getAgentSetting(agentId, 'prompt_image_generate')) ?? SETTING_DEFAULTS.prompt_image_generate
+
+  let imageSquare: string | null = null
+  let imageLandscape: string | null = null
+  let imageVertical: string | null = null
+
+  if (generated.image_prompt) {
+    const formatsRow = await queryOne<{ value: string }>(
+      `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'image_output_formats'`,
+      [agentId],
+    )
+    let outputFormats: string[] = ['square', 'landscape']
+    if (formatsRow) {
+      try { outputFormats = JSON.parse(formatsRow.value) as string[] } catch { /* use defaults */ }
+    }
+
+    const imagePromises: Promise<Buffer | null>[] = []
+    const formatKeys: string[] = []
+
+    if (outputFormats.includes('square')) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '1:1', imageSystemPrompt))
+      formatKeys.push('square')
+    }
+    if (outputFormats.includes('landscape')) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '16:9', imageSystemPrompt))
+      formatKeys.push('landscape')
+    }
+    if (outputFormats.includes('vertical')) {
+      imagePromises.push(geminiGenerateImage(imageModel, generated.image_prompt, '3:4', imageSystemPrompt))
+      formatKeys.push('vertical')
+    }
+
+    const buffers = await Promise.all(imagePromises)
+    const bufferMap: Record<string, Buffer | null> = {}
+    formatKeys.forEach((key, i) => { bufferMap[key] = buffers[i] })
+
+    const squareBuf = bufferMap.square ?? null
+    const landscapeBuf = bufferMap.landscape ?? null
+    const verticalBuf = bufferMap.vertical ?? null
+
+    if (compositeAllFormats && generated.image_headline && (squareBuf || landscapeBuf || verticalBuf)) {
+      try {
+        const templateRow = await queryOne<{ value: string }>(
+          `SELECT value FROM agent_settings WHERE agent_id = $1 AND key = 'image_template'`,
+          [agentId],
+        )
+        const template: ImageTemplate = templateRow
+          ? JSON.parse(templateRow.value)
+          : createDefaultTemplate()
+
+        const composited = await compositeAllFormats(
+          template, squareBuf, landscapeBuf,
+          generated.image_headline, generated.category, null, verticalBuf,
+        )
+
+        if (composited.square) imageSquare = `data:image/png;base64,${composited.square.toString('base64')}`
+        if (composited.landscape) imageLandscape = `data:image/png;base64,${composited.landscape.toString('base64')}`
+        if (composited.vertical) imageVertical = `data:image/png;base64,${composited.vertical.toString('base64')}`
+      } catch {
+        if (squareBuf) imageSquare = `data:image/png;base64,${squareBuf.toString('base64')}`
+        if (landscapeBuf) imageLandscape = `data:image/png;base64,${landscapeBuf.toString('base64')}`
+        if (verticalBuf) imageVertical = `data:image/png;base64,${verticalBuf.toString('base64')}`
+      }
+    } else {
+      if (squareBuf) imageSquare = `data:image/png;base64,${squareBuf.toString('base64')}`
+      if (landscapeBuf) imageLandscape = `data:image/png;base64,${landscapeBuf.toString('base64')}`
+      if (verticalBuf) imageVertical = `data:image/png;base64,${verticalBuf.toString('base64')}`
+    }
+  }
+
+  const postId = crypto.randomUUID()
+  const imageUrl = articleRows.find(a => a.image_url)?.image_url ?? null
+
+  let workflowId: string | null = null
+  const workflowRow = await queryOne<{ id: string }>(
+    `SELECT id FROM workflows WHERE pipeline_agent_id = $1 AND mode IN ('automated', 'both') LIMIT 1`,
+    [agentId],
+  )
+  if (workflowRow) workflowId = workflowRow.id
+
+  await execute(
+    `INSERT INTO coverage_posts (
+       id, agent_id, title, slug, summary, category, urgency, story_stage,
+       confidence, fingerprint, key_facts, image_prompt,
+       image_original, image_square, image_landscape, image_vertical,
+       image_headline, status, workflow_id, parent_post_id, created_at, updated_at
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())`,
+    [
+      postId, agentId, generated.title, generated.slug ?? null,
+      generated.summary, generated.category ?? null,
+      cluster.urgency ?? 'routine', 'update',
+      generated.confidence_score ?? 3, cluster.fingerprint,
+      JSON.stringify(cluster.key_facts), generated.image_prompt ?? null,
+      imageUrl, imageSquare, imageLandscape, imageVertical,
+      generated.image_headline ?? null, 'draft', workflowId, existingPostId,
+    ],
+  )
+
+  // Insert social posts + link source articles in parallel
+  const dbInserts: Promise<void>[] = []
+
+  for (const platform of PLATFORMS) {
+    const content = generated.social_posts[platform]
+    if (content) {
+      dbInserts.push(execute(
+        `INSERT INTO coverage_social_posts (id, coverage_post_id, platform, content, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [crypto.randomUUID(), postId, platform, content],
+      ))
+    }
+  }
+
+  for (const articleId of cluster.article_ids) {
+    dbInserts.push(execute(
+      `INSERT INTO coverage_source_articles (id, coverage_post_id, article_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT DO NOTHING`,
+      [crypto.randomUUID(), postId, articleId],
+    ))
+  }
+
+  await Promise.all(dbInserts)
+
+  console.log(`  [Generate] Created UPDATE post "${generated.title}" (id: ${postId}, parent: ${existingPostId})`)
   return postId
 }
 

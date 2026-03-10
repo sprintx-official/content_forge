@@ -88,6 +88,11 @@ async function runMigrations(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_coverage_posts_workflow_id ON coverage_posts(workflow_id);
   `)
 
+  // Migration: Add parent_post_id to coverage_posts (for update/follow-up posts)
+  if (!coverageCols.some((c) => c.column_name === 'parent_post_id')) {
+    await exec("ALTER TABLE coverage_posts ADD COLUMN parent_post_id TEXT REFERENCES coverage_posts(id) ON DELETE SET NULL")
+  }
+
   // Migration: Add hub_url to feeds (WebSub support)
   const feedCols = await query<{ column_name: string }>(
     `SELECT column_name FROM information_schema.columns WHERE table_name = 'feeds'`

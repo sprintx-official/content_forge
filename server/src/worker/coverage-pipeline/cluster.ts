@@ -17,29 +17,40 @@ export interface TopicCluster {
   urgency?: string
 }
 
-export async function clusterArticles(agentId: string, sinceDate: string): Promise<TopicCluster[]> {
-  console.log(`  [Cluster] Looking for articles screened after: ${sinceDate}`)
+const MAX_ARTICLES_TO_CLUSTER = 200
 
-  const articles = await query<RelevantArticle>(
-    `SELECT a.id, a.title, a.summary as description, a.language FROM articles a
+/**
+ * Find relevant articles that haven't been used in any coverage post yet.
+ * This is the key query — it doesn't rely on timestamps, so it works
+ * even when all articles were screened hours ago.
+ */
+export async function clusterArticles(agentId: string): Promise<TopicCluster[]> {
+  // Primary: find relevant articles NOT yet linked to any coverage post
+  const uncovered = await query<RelevantArticle>(
+    `SELECT a.id, a.title, a.summary as description, a.language
+     FROM articles a
      JOIN agent_article_screenings aas ON aas.article_id = a.id AND aas.agent_id = $1
-     WHERE aas.is_relevant = 1 AND aas.screened_at > $2
-     ORDER BY a.created_at ASC`,
-    [agentId, sinceDate],
+     WHERE aas.is_relevant = 1
+       AND NOT EXISTS (
+         SELECT 1 FROM coverage_source_articles csa WHERE csa.article_id = a.id
+       )
+     ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+     LIMIT $2`,
+    [agentId, MAX_ARTICLES_TO_CLUSTER],
   )
 
-  if (articles.length === 0) {
-    console.log('  [Cluster] No newly relevant articles found since last run')
+  if (uncovered.length === 0) {
+    console.log('  [Cluster] No uncovered relevant articles found')
     return []
   }
 
-  console.log(`  [Cluster] ${articles.length} relevant articles to cluster`)
+  console.log(`  [Cluster] ${uncovered.length} uncovered relevant articles to cluster`)
 
   // Build index-to-ID mapping (prompt uses 1-based indices)
   const indexToId = new Map<number, string>()
-  articles.forEach((a, i) => indexToId.set(i + 1, a.id))
+  uncovered.forEach((a, i) => indexToId.set(i + 1, a.id))
 
-  const prompt = await buildClusterPrompt(articles, agentId)
+  const prompt = await buildClusterPrompt(uncovered, agentId)
   const model = await getAgentModel(agentId, 'model_cluster')
   const response = await geminiGenerate(model, prompt)
 

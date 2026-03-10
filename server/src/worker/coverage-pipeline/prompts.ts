@@ -217,3 +217,55 @@ Rules:
 - Image prompt should describe a realistic, photojournalistic scene (no text)
 - confidence_score scoring: 5 = 3+ corroborating sources with consistent facts, 4 = 2+ sources mostly consistent, 3 = single strong source or minor discrepancies, 2 = thin sourcing or partial info, 1 = unverified/speculative`
 }
+
+// ---------------------------------------------------------------------------
+// Update/follow-up post prompt
+// ---------------------------------------------------------------------------
+export async function buildUpdatePrompt(
+  existingTitle: string,
+  existingSummary: string,
+  articles: { title: string; markdown: string; publication: string }[],
+  agentId: string,
+): Promise<string> {
+  const { name, systemPrompt } = await getAgentContext(agentId)
+  const narrativeGuideline = await getAgentGuideline(agentId, 'narrative')
+  const articleGuideline = await getAgentGuideline(agentId, 'article')
+
+  const articleBlocks = articles
+    .map((a, i) => `--- New Article ${i + 1} (${a.publication}) ---\nTitle: ${a.title}\n${a.markdown.slice(0, 3000)}`)
+    .join('\n\n')
+
+  return `You are a senior journalist for "${name}". Write an UPDATE article for a developing story. You previously covered this story — now there are new developments.
+${systemPrompt ? `\nAGENT FOCUS:\n${systemPrompt}\n` : ''}${narrativeGuideline ? `\nNARRATIVE GUIDELINES:\n${narrativeGuideline}\n` : ''}${articleGuideline ? `\nARTICLE GUIDELINES:\n${articleGuideline}\n` : ''}
+PREVIOUS COVERAGE:
+Title: ${existingTitle}
+Summary: ${existingSummary.slice(0, 1500)}
+
+NEW DEVELOPMENTS:
+${articleBlocks}
+
+Return JSON:
+{
+  "title": "Update headline reflecting the new development",
+  "summary": "300-500 word update article. Reference previous coverage briefly, then focus on what's NEW. Use [N] source citations.",
+  "social_posts": {
+    "x": "Under 280 chars with hashtags — frame as UPDATE/BREAKING",
+    "linkedin": "Professional 150-300 word post with 3 hashtags",
+    "facebook": "40-80 words ending with a question",
+    "instagram": "125-200 word caption with 5-8 hashtags",
+    "threads": "Under 500 chars, conversational"
+  },
+  "image_prompt": "Detailed prompt for generating a photojournalistic image",
+  "slug": "url-friendly-slug-max-60-chars",
+  "category": "Primary Category",
+  "image_headline": "Short headline for image overlay (max 50 chars)",
+  "confidence_score": 1-5
+}
+
+Rules:
+- Focus on NEW information — don't rehash old coverage
+- Title should make clear this is an update/development
+- Every factual claim must cite sources as [N]
+- Social posts must respect platform character limits
+- confidence_score: 5 = 3+ corroborating sources, 4 = 2+ sources, 3 = single strong source, 2 = thin sourcing, 1 = unverified`
+}
