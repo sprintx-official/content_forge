@@ -98,7 +98,7 @@ For each cluster, return JSON:
 
 Rules:
 - Each article should appear in at most ONE cluster
-- Minimum 2 articles per cluster (single articles are not clusters)
+- Single-article clusters are allowed when the article covers a unique, significant topic
 - Fingerprint should be a neutral, descriptive headline
 - Urgency: critical = active crisis/breaking, high = significant development, developing = evolving story, routine = standard coverage
 - Return ONLY the JSON array`

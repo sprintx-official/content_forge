@@ -218,7 +218,7 @@ async function checkAgentShouldRun(agentId: string, pipelineInterval: number): P
     [agentId],
   )
   const lastRunTime = lastRun ? new Date(lastRun.completed_at).getTime() : 0
-  const intervalMs = (pipelineInterval || 1800) * 1000
+  const intervalMs = Math.max(pipelineInterval || 1800, 300) * 1000  // minimum 5 minutes
   return Date.now() - lastRunTime >= intervalMs
 }
 

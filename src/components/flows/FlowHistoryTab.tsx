@@ -114,11 +114,14 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     const fetchCoverage = async () => {
       try {
         setCoverageLoading(true)
-        const agentParam = 'pipelineAgentId' in flow && flow.pipelineAgentId
-          ? `&agentId=${flow.pipelineAgentId}`
-          : ''
+        // For news flows with a pipeline agent, fetch by agentId directly
+        // (coverage_posts may not have workflow_id set for older posts)
+        const pipelineAgentId = 'pipelineAgentId' in flow ? (flow as any).pipelineAgentId : null
+        const params = pipelineAgentId
+          ? `agentId=${pipelineAgentId}&limit=50`
+          : `workflowId=${workflowId}&limit=50`
         const coverageData = await api.get<{ posts: CoveragePost[] }>(
-          `/api/coverage?workflowId=${workflowId}${agentParam}&limit=50`
+          `/api/coverage?${params}`
         )
         if (!controller.signal.aborted) {
           setCoveragePosts(coverageData.posts || [])
