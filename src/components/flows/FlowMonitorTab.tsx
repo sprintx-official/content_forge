@@ -91,7 +91,7 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
       setRunningManual(targetId)
       await api.post(`/api/pipeline/${targetId}`)
       const res = await api.get<{ runs: PipelineRun[] }>(`/api/pipeline/${targetId}`)
-      if (isNews) {
+      if (isAllAgentsView) {
         setAgents(prev => prev.map(a => a.id === targetId ? { ...a, runs: res.runs || [] } : a))
       } else {
         setRuns(res.runs || [])
