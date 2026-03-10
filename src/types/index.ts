@@ -11,7 +11,7 @@ export type ForgeMode = 'content' | 'chat' | 'image' | 'video'
 export type WorkflowStepType = 'text' | 'image' | 'video'
 
 // ── Flows types ────────────────────────────────────────────
-export type FlowType = 'text' | 'chat' | 'image' | 'video'
+export type FlowType = 'text' | 'chat' | 'image' | 'video' | 'news'
 export type FlowMode = 'manual' | 'automated' | 'both'
 
 // ── Image generation types ─────────────────────────────────
@@ -264,11 +264,11 @@ export interface Workflow {
 }
 
 export interface SystemFlow {
-  id: 'system-write' | 'system-chat' | 'system-image' | 'system-video'
+  id: 'system-write' | 'system-chat' | 'system-image' | 'system-video' | 'system-news'
   name: string
   description: string
   type: FlowType
-  mode: 'manual'
+  mode: FlowMode
   isSystem: true
 }
 

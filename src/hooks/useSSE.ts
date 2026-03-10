@@ -16,7 +16,7 @@ export function useSSE(url: string, options: UseSSEOptions = {}) {
   const [lastEvent, setLastEvent] = useState<SSEEvent | null>(null)
   const [connected, setConnected] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const connect = useCallback(() => {
     if (!enabled) return

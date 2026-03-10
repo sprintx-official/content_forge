@@ -71,7 +71,7 @@ export const createWorkflowSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional().default(''),
   steps: z.array(workflowStepSchema).min(0).max(20, 'Too many steps'),
-  type: z.enum(['text', 'chat', 'image', 'video']).optional().default('text'),
+  type: z.enum(['text', 'chat', 'image', 'video', 'news']).optional().default('text'),
   mode: z.enum(['manual', 'automated', 'both']).optional().default('manual'),
   frequency: z.number().min(5, 'Minimum 5 minutes').max(525600, 'Maximum 1 year').optional().nullable(),
   pipelineAgentId: z.string().uuid('Invalid agent ID').optional().nullable(),

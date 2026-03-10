@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { AnyFlow } from '../../types'
 import { FLOW_TYPE_COLORS } from '../../constants/systemFlows'
-import { Brain, MessageSquare, Image as ImageIcon, Video } from 'lucide-react'
+import { Brain, MessageSquare, Image as ImageIcon, Video, Newspaper } from 'lucide-react'
 
 interface FlowCardProps {
   flow: AnyFlow
@@ -13,6 +13,7 @@ export function FlowCard({ flow }: FlowCardProps) {
     chat: MessageSquare,
     image: ImageIcon,
     video: Video,
+    news: Newspaper,
   }[flow.type]
 
   const TypeIcon = typeIcon

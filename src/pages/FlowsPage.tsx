@@ -63,6 +63,7 @@ function FlowsPage() {
     { id: 'chat', label: 'Chat', color: FLOW_TYPE_COLORS.chat },
     { id: 'image', label: 'Image', color: FLOW_TYPE_COLORS.image },
     { id: 'video', label: 'Video', color: FLOW_TYPE_COLORS.video },
+    { id: 'news', label: 'News', color: FLOW_TYPE_COLORS.news },
   ]
 
   return (

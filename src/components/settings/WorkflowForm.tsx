@@ -27,7 +27,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
   const [steps, setSteps] = useState<WorkflowStep[]>([])
   const [isActive, setIsActive] = useState(true)
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
-  const [type, setType] = useState<'text' | 'chat' | 'image' | 'video'>('text')
+  const [type, setType] = useState<'text' | 'chat' | 'image' | 'video' | 'news'>('text')
   const [mode, setMode] = useState<'manual' | 'automated' | 'both'>('manual')
   const [frequency, setFrequency] = useState<number>(1440)
   const [customFrequency, setCustomFrequency] = useState<string>('')
@@ -200,13 +200,18 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
           <label className="text-sm font-medium text-[#cbd5e1]">Type</label>
           <select
             value={type}
-            onChange={(e) => setType(e.target.value as any)}
+            onChange={(e) => {
+              const val = e.target.value as any
+              setType(val)
+              if (val === 'news') setMode('automated')
+            }}
             className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
           >
             <option value="text">Text</option>
             <option value="chat">Chat</option>
             <option value="image">Image</option>
             <option value="video">Video</option>
+            <option value="news">News</option>
           </select>
         </div>
 

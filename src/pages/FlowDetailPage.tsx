@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import type { AnyFlow, Workflow, User } from '../types'
-import { SYSTEM_FLOWS } from '../constants/systemFlows'
+import { SYSTEM_FLOWS, FLOW_TYPE_COLORS } from '../constants/systemFlows'
 import { api } from '../lib/api'
 import { formatFrequency } from '../lib/frequency'
 import { FlowRunTab } from '../components/flows/FlowRunTab'
@@ -21,7 +21,8 @@ function FlowDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const tab = (searchParams.get('tab') || 'run') as TabName
+  const defaultTab = flow?.type === 'news' ? 'monitor' : 'run'
+  const tab = (searchParams.get('tab') || defaultTab) as TabName
 
   // Fetch flow data (system or database)
   useEffect(() => {
@@ -115,7 +116,8 @@ function FlowDetailPage() {
   const isAutomated = 'mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')
 
   // Determine which tabs to show
-  const showMonitor = !isSystem && isAutomated
+  const isNews = flow.type === 'news'
+  const showMonitor = isNews || (!isSystem && isAutomated)
   const showSettings = !isSystem && isAdmin
 
   const tabItems: Array<{ id: TabName; label: string }> = [
@@ -150,7 +152,7 @@ function FlowDetailPage() {
           <h1 className="text-3xl font-bold text-white mb-2">{flow.name}</h1>
           <p className="text-gray-400 mb-4">{flow.description}</p>
           <div className="flex gap-2 flex-wrap">
-            <span className="px-3 py-1 text-sm rounded font-medium" style={{ backgroundColor: '#10b981' + '30', color: '#10b981' }}>
+            <span className="px-3 py-1 text-sm rounded font-medium" style={{ backgroundColor: (FLOW_TYPE_COLORS[flow.type] || '#10b981') + '30', color: FLOW_TYPE_COLORS[flow.type] || '#10b981' }}>
               {flow.type}
             </span>
             <span className="px-3 py-1 text-sm rounded font-medium bg-white/10 text-white/70">
