@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, X, Plus, Users } from 'lucide-react'
+import { Save, X, Plus, Users, Info } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import WorkflowStepEditor from './WorkflowStepEditor'
 import type { Workflow, WorkflowStep } from '@/types'
+
+const MODE_DESCRIPTIONS: Record<string, string> = {
+  manual: 'You trigger this flow manually and content is generated through the pipeline steps you define below.',
+  automated: 'An agent monitors RSS feeds and automatically generates content on a schedule. Configure the agent\'s feeds and prompts in Settings > Agents.',
+  both: 'Combines manual runs (using pipeline steps) with automated content generation from an agent on a schedule.',
+}
 
 interface WorkflowFormProps {
   workflow?: Workflow | null
@@ -95,7 +101,13 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
 
     // Only manual and both modes require steps
     if ((mode === 'manual' || mode === 'both') && steps.length === 0) {
-      setError('Manual workflows require at least one step.')
+      setError('Add at least one pipeline step for manual runs.')
+      return
+    }
+
+    // Automated modes require a monitoring agent
+    if ((mode === 'automated' || mode === 'both') && !pipelineAgentId) {
+      setError('Select a monitoring agent for automated runs.')
       return
     }
 
@@ -211,19 +223,32 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
           >
             <option value="manual">Manual</option>
             <option value="automated">Automated</option>
-            <option value="both">Both</option>
+            <option value="both">Both (Manual + Automated)</option>
           </select>
         </div>
       </div>
 
+      {/* Mode explanation */}
+      <div className="flex items-start gap-2 rounded-lg bg-[#10b981]/5 border border-[#10b981]/20 px-3 py-2.5">
+        <Info className="h-4 w-4 text-[#10b981] shrink-0 mt-0.5" />
+        <p className="text-xs text-[#cbd5e1]">{MODE_DESCRIPTIONS[mode]}</p>
+      </div>
+
+      {/* === AUTOMATED SECTION === */}
       {(mode === 'automated' || mode === 'both') && (
-        <div className="space-y-4">
+        <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+          <h4 className="text-sm font-semibold text-[#f8fafc] flex items-center gap-2">
+            Automated Pipeline
+            <span className="text-xs font-normal text-[#94a3b8]">runs on a schedule</span>
+          </h4>
+
           <div>
-            <label className="text-sm font-medium text-[#cbd5e1]">Pipeline Agent</label>
+            <label className="text-sm font-medium text-[#cbd5e1]">Monitoring Agent</label>
+            <p className="text-xs text-[#94a3b8] mb-1.5">This agent monitors RSS feeds, clusters news, and generates posts automatically. Set up feeds and prompts in the agent's settings.</p>
             <select
               value={pipelineAgentId}
               onChange={(e) => setPipelineAgentId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
             >
               <option value="">Select an agent...</option>
               {agents.map((agent) => (
@@ -235,7 +260,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-[#cbd5e1] block mb-2">Run Frequency (minutes)</label>
+            <label className="text-sm font-medium text-[#cbd5e1] block mb-2">Run Every</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               {[15, 30, 60, 1440].map((preset) => (
                 <button
@@ -256,57 +281,62 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
               ))}
             </div>
 
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min="5"
-                placeholder="Custom minutes..."
-                value={customFrequency}
-                onChange={(e) => {
-                  setCustomFrequency(e.target.value)
-                  if (e.target.value.trim()) {
-                    setFrequency(parseInt(e.target.value, 10) || 1440)
-                  }
-                }}
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
-              />
-            </div>
-            <p className="text-xs text-[#94a3b8] mt-2">Choose a preset or enter custom minutes (minimum 5)</p>
+            <input
+              type="number"
+              min="5"
+              placeholder="Custom minutes..."
+              value={customFrequency}
+              onChange={(e) => {
+                setCustomFrequency(e.target.value)
+                if (e.target.value.trim()) {
+                  setFrequency(parseInt(e.target.value, 10) || 1440)
+                }
+              }}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+            />
+            <p className="text-xs text-[#94a3b8] mt-1.5">Choose a preset or enter custom minutes (minimum 5)</p>
           </div>
         </div>
       )}
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-[#cbd5e1]">
-            Steps ({steps.length})
-          </label>
-          <Button type="button" variant="outline" size="sm" onClick={addStep}>
-            <Plus className="h-3.5 w-3.5" />
-            Add Step
-          </Button>
+      {/* === MANUAL STEPS SECTION === */}
+      {(mode === 'manual' || mode === 'both') && (
+        <div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold text-[#f8fafc] flex items-center gap-2">
+                Pipeline Steps
+                <span className="text-xs font-normal text-[#94a3b8]">({steps.length})</span>
+              </h4>
+              <p className="text-xs text-[#94a3b8] mt-0.5">Agents run in sequence when you click Generate</p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addStep}>
+              <Plus className="h-3.5 w-3.5" />
+              Add Step
+            </Button>
+          </div>
+
+          {steps.map((step, index) => (
+            <WorkflowStepEditor
+              key={index}
+              step={step}
+              index={index}
+              total={steps.length}
+              agents={agents}
+              onChange={updateStep}
+              onRemove={removeStep}
+              onMoveUp={(i) => moveStep(i, i - 1)}
+              onMoveDown={(i) => moveStep(i, i + 1)}
+            />
+          ))}
+
+          {steps.length === 0 && (
+            <p className="text-center text-[#94a3b8] text-sm py-4 border border-dashed border-white/10 rounded-lg">
+              No steps added yet. Click "Add Step" to build your pipeline.
+            </p>
+          )}
         </div>
-
-        {steps.map((step, index) => (
-          <WorkflowStepEditor
-            key={index}
-            step={step}
-            index={index}
-            total={steps.length}
-            agents={agents}
-            onChange={updateStep}
-            onRemove={removeStep}
-            onMoveUp={(i) => moveStep(i, i - 1)}
-            onMoveDown={(i) => moveStep(i, i + 1)}
-          />
-        ))}
-
-        {steps.length === 0 && (
-          <p className="text-center text-[#94a3b8] text-sm py-4 border border-dashed border-white/10 rounded-lg">
-            No steps added yet. Click "Add Step" to build your workflow.
-          </p>
-        )}
-      </div>
+      )}
 
       {/* User Access — only shown when editing an existing workflow */}
       {workflow && (
