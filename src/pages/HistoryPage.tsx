@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Clock, FileText, Workflow } from 'lucide-react'
+import { Search, Clock, FileText, Workflow, Eye } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useForgeStore } from '@/stores/useForgeStore'
+import { parseMultiFileContent } from '@/lib/fileParser'
 import { timeAgo } from '@/lib/timeAgo'
 import type { HistoryItem } from '@/types'
 
@@ -88,11 +90,23 @@ export default function HistoryPage() {
                     <button
                       key={item.id}
                       onClick={() => {
+                        // Load output into forge store and navigate to the flow
+                        if (item.output) {
+                          const parsedFiles = parseMultiFileContent(item.output.content)
+                          useForgeStore.setState({
+                            output: item.output,
+                            parsedFiles,
+                            activeFileIndex: 0,
+                            isProcessing: false,
+                            error: null,
+                          })
+                          if (item.input) useForgeStore.getState().setInput(item.input)
+                        }
                         if (item.workflowId) {
-                          navigate(`/flows/${item.workflowId}?tab=history`)
+                          navigate(`/flows/${item.workflowId}?tab=run`)
                         }
                       }}
-                      className="w-full text-left p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors"
+                      className="w-full text-left p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors group"
                     >
                       <div className="flex items-start justify-between gap-4 mb-1">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -101,6 +115,9 @@ export default function HistoryPage() {
                             {item.input?.topic || 'Untitled'}
                           </p>
                         </div>
+                        <span className="text-xs text-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <Eye className="size-3" /> View
+                        </span>
                         <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(item.createdAt)}</span>
                       </div>
                       <p className="text-sm text-[#cbd5e1] line-clamp-2 ml-6">

@@ -1,8 +1,11 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { AnyFlow, HistoryItem } from '../../types'
 import { CoveragePostCard } from './CoveragePostCard'
 import { api } from '../../lib/api'
-import { Search, Clock, FileText } from 'lucide-react'
+import { useForgeStore } from '@/stores/useForgeStore'
+import { parseMultiFileContent } from '@/lib/fileParser'
+import { Search, Clock, FileText, Eye } from 'lucide-react'
 import { timeAgo } from '@/lib/timeAgo'
 
 interface CoveragePost {
@@ -21,11 +24,31 @@ interface FlowHistoryTabProps {
 }
 
 export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
+  const [, setSearchParams] = useSearchParams()
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [coveragePosts, setCoveragePosts] = useState<CoveragePost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+
+  const handleViewItem = (item: HistoryItem) => {
+    // Load the history item's output into the forge store and switch to Run tab
+    const store = useForgeStore.getState()
+    if (item.input) {
+      store.setInput(item.input)
+    }
+    if (item.output) {
+      const parsedFiles = parseMultiFileContent(item.output.content)
+      useForgeStore.setState({
+        output: item.output,
+        parsedFiles,
+        activeFileIndex: 0,
+        isProcessing: false,
+        error: null,
+      })
+    }
+    setSearchParams({ tab: 'run' })
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -132,12 +155,21 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
           ) : (
             <div className="space-y-2">
               {filteredHistory.map((item) => (
-                <div key={item.id} className="p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
+                <button
+                  key={item.id}
+                  onClick={() => handleViewItem(item)}
+                  className="w-full text-left p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors group"
+                >
                   <div className="flex items-start justify-between gap-4 mb-1">
                     <p className="font-medium text-sm text-white line-clamp-1 flex-1">
                       {item.input?.topic || 'Untitled'}
                     </p>
-                    <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(item.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Eye className="size-3" /> View
+                      </span>
+                      <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(item.createdAt)}</span>
+                    </div>
                   </div>
                   <p className="text-sm text-[#cbd5e1] line-clamp-2">
                     {item.output?.content?.slice(0, 200)}
@@ -148,7 +180,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
                       <span>{item.output.metrics.readTimeMinutes}min read</span>
                     </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}

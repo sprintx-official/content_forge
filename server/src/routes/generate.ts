@@ -114,6 +114,7 @@ interface PipelineSetup {
   input: GenerateBody['input']
   agentContexts: AgentContext[] | undefined
   workflowName: string | undefined
+  workflowId: string | undefined
   resolvedModelId: string
   provider: string
   keyRow: ApiKeyRow
@@ -288,7 +289,7 @@ Requirements:
     if (userContent.length === 0) userContent = undefined
   }
 
-  return { input, agentContexts, workflowName, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens, userContent }
+  return { input, agentContexts, workflowName, workflowId: effectiveWorkflowId, resolvedModelId, provider, keyRow, initialUserPrompt, maxTokens, userContent }
 }
 
 // ---------------------------------------------------------------------------
@@ -396,7 +397,7 @@ async function saveResults(
   agentPipeline: AgentPipelineEntry[],
   userId: string,
 ): Promise<{ historyId: string; output: Record<string, unknown>; now: string }> {
-  const { input, workflowName, resolvedModelId, provider, agentContexts } = setup
+  const { input, workflowName, workflowId, resolvedModelId, provider, agentContexts } = setup
   const now = new Date().toISOString()
 
   const metrics = calculateMetrics(finalContent)
@@ -455,8 +456,8 @@ async function saveResults(
 
   const historyId = crypto.randomUUID()
   await execute(
-    'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-    [historyId, userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, now]
+    'INSERT INTO history (id, user_id, input_json, output_json, workflow_name, workflow_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [historyId, userId, JSON.stringify(input), JSON.stringify(output), workflowName || null, workflowId || null, now]
   )
 
   await execute(
@@ -730,6 +731,7 @@ router.post('/', authenticate, validateBody(generateSchema), async (req: Authent
       input,
       output,
       workflowName: setup.workflowName || undefined,
+      workflowId: setup.workflowId || undefined,
       createdAt: now,
     })
   } catch (err) {
@@ -1069,6 +1071,7 @@ router.post('/stream', authenticate, validateBody(generateSchema), async (req: A
       input,
       output,
       workflowName: setup.workflowName || undefined,
+      workflowId: setup.workflowId || undefined,
       createdAt: now,
     })
 
