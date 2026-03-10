@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { AnyFlow, HistoryItem } from '../../types'
-import { CoveragePostCard } from './CoveragePostCard'
 import { api } from '../../lib/api'
 import { useForgeStore } from '@/stores/useForgeStore'
 import { parseMultiFileContent } from '@/lib/fileParser'
-import { Search, Clock, FileText, Eye } from 'lucide-react'
+import { Search, Clock, FileText, Eye, Radio } from 'lucide-react'
 import { timeAgo } from '@/lib/timeAgo'
 
 interface CoveragePost {
@@ -32,7 +31,6 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const [search, setSearch] = useState('')
 
   const handleViewItem = (item: HistoryItem) => {
-    // Load the history item's output into the forge store and switch to Run tab
     const store = useForgeStore.getState()
     if (item.input) {
       store.setInput(item.input)
@@ -47,6 +45,35 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
         error: null,
       })
     }
+    setSearchParams({ tab: 'run' })
+  }
+
+  const handleViewCoveragePost = (post: CoveragePost) => {
+    // Build an output object from the coverage post and load into Run tab
+    const content = `# ${post.title}\n\n${post.summary}`
+    const wordCount = content.split(/\s+/).length
+    const sentences = content.split(/[.!?]+/).length - 1
+    const parsedFiles = parseMultiFileContent(content)
+    useForgeStore.setState({
+      output: {
+        content,
+        metrics: {
+          wordCount,
+          readTimeMinutes: Math.ceil(wordCount / 200),
+          sentenceCount: sentences,
+          avgSentenceLength: sentences > 0 ? Math.round(wordCount / sentences) : 0,
+          readabilityScore: 0,
+          gradeLevel: 0,
+        },
+        tips: [],
+        generatedAt: post.createdAt,
+      },
+      parsedFiles,
+      activeFileIndex: 0,
+      isProcessing: false,
+      error: null,
+    })
+    useForgeStore.getState().setInput({ topic: post.title })
     setSearchParams({ tab: 'run' })
   }
 
@@ -200,16 +227,46 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
 
       {hasAutomatedPosts && (
         <div>
-          <h3 className="font-semibold text-lg text-white mb-3">
+          <h3 className="font-semibold text-lg text-white mb-3 flex items-center gap-2">
+            <Radio className="size-4 text-[#6366f1]" />
             Automated Posts
-            <span className="text-xs text-[#cbd5e1]/60 font-normal ml-2">({filteredPosts.length})</span>
+            <span className="text-xs text-[#cbd5e1]/60 font-normal">({filteredPosts.length})</span>
           </h3>
           {filteredPosts.length === 0 ? (
             <p className="text-sm text-[#cbd5e1]/60 py-4">No results match your search</p>
           ) : (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <div className="space-y-2">
               {filteredPosts.map((post) => (
-                <CoveragePostCard key={post.id} post={post} />
+                <button
+                  key={post.id}
+                  onClick={() => handleViewCoveragePost(post)}
+                  className="w-full text-left p-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors group"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-1">
+                    <p className="font-medium text-sm text-white line-clamp-1 flex-1">
+                      {post.title}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                        post.status === 'published' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {post.status}
+                      </span>
+                      <span className="text-xs text-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Eye className="size-3" /> View
+                      </span>
+                      <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(post.createdAt)}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#cbd5e1] line-clamp-2">
+                    {post.summary?.slice(0, 200)}
+                  </p>
+                  {post.agentName && (
+                    <div className="flex gap-3 mt-2 text-xs text-[#cbd5e1]/50">
+                      <span>{post.agentName}</span>
+                    </div>
+                  )}
+                </button>
               ))}
             </div>
           )}

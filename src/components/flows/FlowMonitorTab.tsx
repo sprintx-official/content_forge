@@ -5,14 +5,14 @@ import { api } from '../../lib/api'
 
 interface PipelineRun {
   id: string
-  agentId: string
-  startedAt: string
-  completedAt: string | null
-  currentStep: string
-  articlesFound: number
-  articlesRelevant: number
-  clustersFound: number
-  postsGenerated: number
+  agent_id: string
+  started_at: string
+  completed_at: string | null
+  current_step: string
+  articles_found: number
+  articles_relevant: number
+  clusters_found: number
+  posts_generated: number
   error: string | null
 }
 
@@ -114,17 +114,17 @@ export function FlowMonitorTab({ flow }: FlowMonitorTabProps) {
             <div key={run.id} className="p-3 border border-white/10 rounded bg-white/5">
               <div className="flex justify-between items-start mb-2">
                 <p className="font-medium text-sm text-white">
-                  {run.currentStep.charAt(0).toUpperCase() + run.currentStep.slice(1)}
+                  {(run.current_step || 'unknown').charAt(0).toUpperCase() + (run.current_step || 'unknown').slice(1)}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {new Date(run.startedAt).toLocaleString()}
+                  {run.started_at ? new Date(run.started_at).toLocaleString() : '-'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-                <p>Articles: {run.articlesRelevant}/{run.articlesFound}</p>
-                <p>Clusters: {run.clustersFound}</p>
-                <p>Posts: {run.postsGenerated}</p>
-                {run.error && <p className="text-red-400">{run.error}</p>}
+                <p>Articles: {run.articles_relevant}/{run.articles_found}</p>
+                <p>Clusters: {run.clusters_found}</p>
+                <p>Posts: {run.posts_generated}</p>
+                {run.error && <p className="text-red-400 col-span-2">{run.error}</p>}
               </div>
             </div>
           ))}

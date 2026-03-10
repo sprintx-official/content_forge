@@ -48,9 +48,10 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
     const offset = Math.max(0, parseInt(String(req.query.offset || '0'), 10))
 
     const buildQuery = (useAgentIdFallback: boolean) => {
-      let sql = `SELECT cp.*,
-        a.name as agent_name,
-        (SELECT COUNT(*) FROM coverage_source_articles WHERE coverage_post_id = cp.id) as source_count
+      let sql = `SELECT cp.id, cp.agent_id, cp.title, cp.slug, cp.summary, cp.category,
+        cp.status, cp.created_at, cp.updated_at, cp.workflow_id,
+        cp.image_square, cp.image_landscape, cp.image_vertical, cp.image_headline,
+        a.name as agent_name
         FROM coverage_posts cp
         JOIN agents a ON a.id = cp.agent_id`
       const params: unknown[] = []
