@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, X, Plus, Users, Info } from 'lucide-react'
+import { Save, X, Plus, Users, Info, Timer } from 'lucide-react'
 import { useAdminStore } from '@/stores/useAdminStore'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,9 +9,9 @@ import WorkflowStepEditor from './WorkflowStepEditor'
 import type { Workflow, WorkflowStep } from '@/types'
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
-  manual: 'You trigger this flow manually and content is generated through the pipeline steps you define below.',
-  automated: 'An agent monitors RSS feeds and automatically generates content on a schedule. Configure the agent\'s feeds and prompts in Settings > Agents.',
-  both: 'Combines manual runs (using pipeline steps) with automated content generation from an agent on a schedule.',
+  manual: 'You trigger this flow manually by clicking Generate. The pipeline steps below run in sequence.',
+  automated: 'The pipeline steps below run automatically on a schedule. You set the frequency and the system handles the rest.',
+  both: 'You can trigger runs manually, and the pipeline also runs automatically on the schedule you set.',
 }
 
 interface WorkflowFormProps {
@@ -29,7 +29,6 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [type, setType] = useState<'text' | 'chat' | 'image' | 'video'>('text')
   const [mode, setMode] = useState<'manual' | 'automated' | 'both'>('manual')
-  const [pipelineAgentId, setPipelineAgentId] = useState('')
   const [frequency, setFrequency] = useState<number>(1440)
   const [customFrequency, setCustomFrequency] = useState<string>('')
   const [error, setError] = useState('')
@@ -49,7 +48,6 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       setSelectedUserIds(new Set(workflow.assignedUserIds ?? []))
       setType(workflow.type)
       setMode(workflow.mode)
-      setPipelineAgentId(workflow.pipelineAgentId || '')
       setFrequency(workflow.frequency || 1440)
       setCustomFrequency('')
     }
@@ -99,15 +97,8 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       return
     }
 
-    // Only manual and both modes require steps
-    if ((mode === 'manual' || mode === 'both') && steps.length === 0) {
-      setError('Add at least one pipeline step for manual runs.')
-      return
-    }
-
-    // Automated modes require a monitoring agent
-    if ((mode === 'automated' || mode === 'both') && !pipelineAgentId) {
-      setError('Select a monitoring agent for automated runs.')
+    if (steps.length === 0) {
+      setError('Add at least one pipeline step.')
       return
     }
 
@@ -128,6 +119,11 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       finalFrequency = customValue
     }
 
+    // Auto-set pipelineAgentId from first step for automated modes
+    const effectivePipelineAgentId = (mode === 'automated' || mode === 'both')
+      ? steps[0]?.agentId || null
+      : null
+
     const data = {
       name: name.trim(),
       description: description.trim(),
@@ -135,7 +131,7 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
       isActive,
       type,
       mode,
-      pipelineAgentId: pipelineAgentId || null,
+      pipelineAgentId: effectivePipelineAgentId,
       frequency: (mode === 'automated' || mode === 'both') ? finalFrequency : undefined,
     }
 
@@ -234,109 +230,94 @@ export default function WorkflowForm({ workflow, onClose }: WorkflowFormProps) {
         <p className="text-xs text-[#cbd5e1]">{MODE_DESCRIPTIONS[mode]}</p>
       </div>
 
-      {/* === AUTOMATED SECTION === */}
+      {/* === SCHEDULE (automated/both only) === */}
       {(mode === 'automated' || mode === 'both') && (
-        <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.02] p-4">
-          <h4 className="text-sm font-semibold text-[#f8fafc] flex items-center gap-2">
-            Automated Pipeline
-            <span className="text-xs font-normal text-[#94a3b8]">runs on a schedule</span>
-          </h4>
-
-          <div>
-            <label className="text-sm font-medium text-[#cbd5e1]">Monitoring Agent</label>
-            <p className="text-xs text-[#94a3b8] mb-1.5">This agent monitors RSS feeds, clusters news, and generates posts automatically. Set up feeds and prompts in the agent's settings.</p>
-            <select
-              value={pipelineAgentId}
-              onChange={(e) => setPipelineAgentId(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
-            >
-              <option value="">Select an agent...</option>
-              {agents.map((agent) => (
-                <option key={agent.id} value={agent.id}>
-                  {agent.name}
-                </option>
-              ))}
-            </select>
+        <div className="space-y-3 rounded-lg border border-[#10b981]/20 bg-[#10b981]/5 p-4">
+          <div className="flex items-center gap-2">
+            <Timer className="h-4 w-4 text-[#10b981]" />
+            <h4 className="text-sm font-semibold text-[#f8fafc]">Schedule</h4>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-[#cbd5e1] block mb-2">Run Every</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              {[15, 30, 60, 1440].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    setFrequency(preset)
-                    setCustomFrequency('')
-                  }}
-                  className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    frequency === preset && !customFrequency
-                      ? 'bg-[#10b981] text-[#0f172a]'
-                      : 'bg-white/10 text-[#f8fafc] hover:bg-white/15'
-                  }`}
-                >
-                  {preset === 1440 ? '1 day' : `${preset}m`}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="number"
-              min="5"
-              placeholder="Custom minutes..."
-              value={customFrequency}
-              onChange={(e) => {
-                setCustomFrequency(e.target.value)
-                if (e.target.value.trim()) {
-                  setFrequency(parseInt(e.target.value, 10) || 1440)
-                }
-              }}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
-            />
-            <p className="text-xs text-[#94a3b8] mt-1.5">Choose a preset or enter custom minutes (minimum 5)</p>
+          <label className="text-sm font-medium text-[#cbd5e1] block">Run Every</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[15, 30, 60, 1440].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => {
+                  setFrequency(preset)
+                  setCustomFrequency('')
+                }}
+                className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  frequency === preset && !customFrequency
+                    ? 'bg-[#10b981] text-[#0f172a]'
+                    : 'bg-white/10 text-[#f8fafc] hover:bg-white/15'
+                }`}
+              >
+                {preset === 1440 ? '1 day' : `${preset}m`}
+              </button>
+            ))}
           </div>
+
+          <input
+            type="number"
+            min="5"
+            placeholder="Custom minutes..."
+            value={customFrequency}
+            onChange={(e) => {
+              setCustomFrequency(e.target.value)
+              if (e.target.value.trim()) {
+                setFrequency(parseInt(e.target.value, 10) || 1440)
+              }
+            }}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+          />
+          <p className="text-xs text-[#94a3b8]">Choose a preset or enter custom minutes (minimum 5)</p>
         </div>
       )}
 
-      {/* === MANUAL STEPS SECTION === */}
-      {(mode === 'manual' || mode === 'both') && (
-        <div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.02] p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-[#f8fafc] flex items-center gap-2">
-                Pipeline Steps
-                <span className="text-xs font-normal text-[#94a3b8]">({steps.length})</span>
-              </h4>
-              <p className="text-xs text-[#94a3b8] mt-0.5">Agents run in sequence when you click Generate</p>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={addStep}>
-              <Plus className="h-3.5 w-3.5" />
-              Add Step
-            </Button>
-          </div>
-
-          {steps.map((step, index) => (
-            <WorkflowStepEditor
-              key={index}
-              step={step}
-              index={index}
-              total={steps.length}
-              agents={agents}
-              onChange={updateStep}
-              onRemove={removeStep}
-              onMoveUp={(i) => moveStep(i, i - 1)}
-              onMoveDown={(i) => moveStep(i, i + 1)}
-            />
-          ))}
-
-          {steps.length === 0 && (
-            <p className="text-center text-[#94a3b8] text-sm py-4 border border-dashed border-white/10 rounded-lg">
-              No steps added yet. Click "Add Step" to build your pipeline.
+      {/* === PIPELINE STEPS (all modes) === */}
+      <div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-[#f8fafc] flex items-center gap-2">
+              Pipeline Steps
+              <span className="text-xs font-normal text-[#94a3b8]">({steps.length})</span>
+            </h4>
+            <p className="text-xs text-[#94a3b8] mt-0.5">
+              {mode === 'automated'
+                ? 'Agents run in sequence on each scheduled run'
+                : mode === 'both'
+                  ? 'Agents run in sequence — both manually and on schedule'
+                  : 'Agents run in sequence when you click Generate'}
             </p>
-          )}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addStep}>
+            <Plus className="h-3.5 w-3.5" />
+            Add Step
+          </Button>
         </div>
-      )}
+
+        {steps.map((step, index) => (
+          <WorkflowStepEditor
+            key={index}
+            step={step}
+            index={index}
+            total={steps.length}
+            agents={agents}
+            onChange={updateStep}
+            onRemove={removeStep}
+            onMoveUp={(i) => moveStep(i, i - 1)}
+            onMoveDown={(i) => moveStep(i, i + 1)}
+          />
+        ))}
+
+        {steps.length === 0 && (
+          <p className="text-center text-[#94a3b8] text-sm py-4 border border-dashed border-white/10 rounded-lg">
+            No steps added yet. Click "Add Step" to build your pipeline.
+          </p>
+        )}
+      </div>
 
       {/* User Access — only shown when editing an existing workflow */}
       {workflow && (
