@@ -15,6 +15,30 @@ import type { AuthenticatedRequest } from '../types.js'
 const router = Router()
 
 // ---------------------------------------------------------------------------
+// Helper: format a raw coverage post row to camelCase for the frontend
+// ---------------------------------------------------------------------------
+function formatPost(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    agentId: row.agent_id,
+    title: row.title,
+    slug: row.slug,
+    summary: row.summary,
+    category: row.category,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    agentName: row.agent_name,
+    sourceCount: row.source_count,
+    imageSquare: row.image_square,
+    imageLandscape: row.image_landscape,
+    imageVertical: row.image_vertical,
+    imageHeadline: row.image_headline,
+    workflowId: row.workflow_id,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/coverage — List coverage posts (across all agents or filtered)
 // ---------------------------------------------------------------------------
 router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -23,52 +47,75 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
     const limit = Math.max(0, Math.min(parseInt(String(req.query.limit || '20'), 10), 100))
     const offset = Math.max(0, parseInt(String(req.query.offset || '0'), 10))
 
-    let sql = `SELECT cp.*,
-      a.name as agent_name,
-      (SELECT COUNT(*) FROM coverage_source_articles WHERE coverage_post_id = cp.id) as source_count
-      FROM coverage_posts cp
-      JOIN agents a ON a.id = cp.agent_id`
-    const params: unknown[] = []
-    const conditions: string[] = []
+    const buildQuery = (useAgentIdFallback: boolean) => {
+      let sql = `SELECT cp.*,
+        a.name as agent_name,
+        (SELECT COUNT(*) FROM coverage_source_articles WHERE coverage_post_id = cp.id) as source_count
+        FROM coverage_posts cp
+        JOIN agents a ON a.id = cp.agent_id`
+      const params: unknown[] = []
+      const conditions: string[] = []
 
-    if (agentId && typeof agentId === 'string') {
-      params.push(agentId)
-      conditions.push(`cp.agent_id = $${params.length}`)
-    }
-    if (status && typeof status === 'string') {
-      params.push(status)
-      conditions.push(`cp.status = $${params.length}`)
-    }
-    if (urgency && typeof urgency === 'string') {
-      params.push(urgency)
-      conditions.push(`cp.urgency = $${params.length}`)
-    }
-    if (search && typeof search === 'string') {
-      params.push(`%${search}%`)
-      conditions.push(`(cp.title ILIKE $${params.length} OR cp.summary ILIKE $${params.length})`)
-    }
-    if (workflowId && typeof workflowId === 'string') {
-      params.push(workflowId)
-      conditions.push(`cp.workflow_id = $${params.length}`)
+      if (agentId && typeof agentId === 'string') {
+        params.push(agentId)
+        conditions.push(`cp.agent_id = $${params.length}`)
+      }
+      if (status && typeof status === 'string') {
+        params.push(status)
+        conditions.push(`cp.status = $${params.length}`)
+      }
+      if (urgency && typeof urgency === 'string') {
+        params.push(urgency)
+        conditions.push(`cp.urgency = $${params.length}`)
+      }
+      if (search && typeof search === 'string') {
+        params.push(`%${search}%`)
+        conditions.push(`(cp.title ILIKE $${params.length} OR cp.summary ILIKE $${params.length})`)
+      }
+      if (workflowId && typeof workflowId === 'string' && !useAgentIdFallback) {
+        params.push(workflowId)
+        conditions.push(`cp.workflow_id = $${params.length}`)
+      }
+
+      if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ')
+      sql += ' ORDER BY cp.created_at DESC'
+      params.push(limit)
+      sql += ` LIMIT $${params.length}`
+      params.push(offset)
+      sql += ` OFFSET $${params.length}`
+
+      return { sql, params, conditionCount: conditions.length }
     }
 
-    if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ')
-    sql += ' ORDER BY cp.created_at DESC'
-    params.push(limit)
-    sql += ` LIMIT $${params.length}`
-    params.push(offset)
-    sql += ` OFFSET $${params.length}`
+    // Primary query
+    const primary = buildQuery(false)
+    let posts = await query<Record<string, unknown>>(primary.sql, primary.params)
 
-    const posts = await query<Record<string, unknown>>(sql, params)
+    // Fallback: if workflowId filter returned no results and agentId is provided, retry filtering by agent_id only
+    let usedParams = primary
+    if (posts.length === 0 && workflowId && typeof workflowId === 'string' && agentId && typeof agentId === 'string') {
+      const fallback = buildQuery(true)
+      posts = await query<Record<string, unknown>>(fallback.sql, fallback.params)
+      usedParams = fallback
+    }
 
     // Total count
     let countSql = 'SELECT COUNT(*) as count FROM coverage_posts cp'
-    if (conditions.length > 0) {
-      countSql += ' WHERE ' + conditions.join(' AND ')
+    const countParams = usedParams.params.slice(0, usedParams.conditionCount)
+    if (usedParams.conditionCount > 0) {
+      // Rebuild conditions for count query from the used params
+      const countConditions: string[] = []
+      let paramIdx = 0
+      if (agentId && typeof agentId === 'string') { paramIdx++; countConditions.push(`cp.agent_id = $${paramIdx}`) }
+      if (status && typeof status === 'string') { paramIdx++; countConditions.push(`cp.status = $${paramIdx}`) }
+      if (urgency && typeof urgency === 'string') { paramIdx++; countConditions.push(`cp.urgency = $${paramIdx}`) }
+      if (search && typeof search === 'string') { paramIdx++; countConditions.push(`(cp.title ILIKE $${paramIdx} OR cp.summary ILIKE $${paramIdx})`) }
+      if (workflowId && typeof workflowId === 'string' && usedParams === primary) { paramIdx++; countConditions.push(`cp.workflow_id = $${paramIdx}`) }
+      if (countConditions.length > 0) countSql += ' WHERE ' + countConditions.join(' AND ')
     }
-    const total = await queryOne<{ count: number }>(countSql, params.slice(0, conditions.length ? params.length - 2 : 0))
+    const total = await queryOne<{ count: number }>(countSql, countParams)
 
-    res.json({ posts, total: total?.count || 0 })
+    res.json({ posts: posts.map(formatPost), total: total?.count || 0 })
   } catch (err) {
     console.error('[GET /api/coverage] Error:', err)
     res.status(500).json({ error: 'Failed to fetch coverage posts' })

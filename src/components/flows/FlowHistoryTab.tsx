@@ -63,12 +63,15 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
 
         if ('mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')) {
           try {
+            const agentParam = 'pipelineAgentId' in flow && flow.pipelineAgentId
+              ? `&agentId=${flow.pipelineAgentId}`
+              : ''
             const coverageData = await api.get<{ posts: CoveragePost[] }>(
-              `/api/coverage?workflowId=${workflowId}&limit=50`
+              `/api/coverage?workflowId=${workflowId}${agentParam}&limit=50`
             )
             setCoveragePosts(coverageData.posts || [])
-          } catch {
-            // Coverage posts might not be available
+          } catch (err) {
+            console.error('Failed to fetch coverage posts:', err)
           }
         }
       } catch (err) {
@@ -117,12 +120,20 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const hasManualRuns = historyItems.length > 0
   const hasAutomatedPosts = coveragePosts.length > 0
 
+  const isAutomatedOnly = 'mode' in flow && flow.mode === 'automated'
+
   if (!hasManualRuns && !hasAutomatedPosts) {
     return (
       <div className="p-12 text-center">
         <Clock className="size-10 text-[#cbd5e1]/30 mx-auto mb-3" />
-        <p className="text-[#cbd5e1] mb-1">No history yet</p>
-        <p className="text-sm text-[#cbd5e1]/60">Run this flow to see results here</p>
+        <p className="text-[#cbd5e1] mb-1">
+          {isAutomatedOnly ? 'No posts generated yet' : 'No history yet'}
+        </p>
+        <p className="text-sm text-[#cbd5e1]/60">
+          {isAutomatedOnly
+            ? 'Check the Monitor tab for pipeline status.'
+            : 'Run this flow to see results here'}
+        </p>
       </div>
     )
   }
