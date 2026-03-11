@@ -31,6 +31,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const [coveragePosts, setCoveragePosts] = useState<CoveragePost[]>([])
   const [loading, setLoading] = useState(true)
   const isAutomated = 'mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')
+  const pipelineAgentId = 'pipelineAgentId' in flow ? (flow as any).pipelineAgentId : null
   const [coverageLoading, setCoverageLoading] = useState(isAutomated)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -147,9 +148,6 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     const fetchCoverage = async () => {
       try {
         setCoverageLoading(true)
-        // For news flows with a pipeline agent, fetch by agentId directly
-        // (coverage_posts may not have workflow_id set for older posts)
-        const pipelineAgentId = 'pipelineAgentId' in flow ? (flow as any).pipelineAgentId : null
         const params = pipelineAgentId
           ? `agentId=${pipelineAgentId}&limit=50`
           : `workflowId=${workflowId}&limit=50`
@@ -171,7 +169,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     }
     fetchCoverage()
     return () => controller.abort()
-  }, [flow, workflowId])
+  }, [isAutomated, pipelineAgentId, workflowId])
 
   const filteredHistory = useMemo(() => {
     if (!search.trim()) return historyItems
