@@ -36,6 +36,8 @@ function formatPost(row: Record<string, unknown>) {
     imageVertical: row.image_vertical,
     imageHeadline: row.image_headline,
     workflowId: row.workflow_id,
+    workflowName: row.workflow_name,
+    cmsUrl: row.cms_url,
   }
 }
 
@@ -52,9 +54,12 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
       let sql = `SELECT cp.id, cp.agent_id, cp.title, cp.slug, cp.summary, cp.category,
         cp.status, cp.created_at, cp.updated_at, cp.workflow_id,
         cp.image_square, cp.image_landscape, cp.image_vertical, cp.image_headline,
-        a.name as agent_name
+        cp.cms_url,
+        a.name as agent_name,
+        w.name as workflow_name
         FROM coverage_posts cp
-        JOIN agents a ON a.id = cp.agent_id`
+        JOIN agents a ON a.id = cp.agent_id
+        LEFT JOIN workflows w ON w.id = cp.workflow_id`
       const params: unknown[] = []
       const conditions: string[] = []
 

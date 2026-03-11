@@ -4,7 +4,7 @@ import type { AnyFlow, HistoryItem } from '../../types'
 import { api } from '../../lib/api'
 import { useForgeStore } from '@/stores/useForgeStore'
 import { parseMultiFileContent } from '@/lib/fileParser'
-import { Search, Clock, FileText, Eye, Radio } from 'lucide-react'
+import { Search, Clock, FileText, Eye, Radio, Copy, Check, Download } from 'lucide-react'
 import { timeAgo } from '@/lib/timeAgo'
 
 interface CoveragePost {
@@ -15,6 +15,9 @@ interface CoveragePost {
   status: string
   createdAt: string
   agentName?: string
+  category?: string
+  imageHeadline?: string
+  cmsUrl?: string
 }
 
 interface FlowHistoryTabProps {
@@ -27,9 +30,11 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [coveragePosts, setCoveragePosts] = useState<CoveragePost[]>([])
   const [loading, setLoading] = useState(true)
-  const [coverageLoading, setCoverageLoading] = useState(false)
+  const isAutomated = 'mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')
+  const [coverageLoading, setCoverageLoading] = useState(isAutomated)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const handleViewItem = (item: HistoryItem) => {
     const store = useForgeStore.getState()
@@ -49,9 +54,19 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     setSearchParams({ tab: 'run' })
   }
 
-  const handleViewCoveragePost = (post: CoveragePost) => {
-    // Build an output object from the coverage post and load into Run tab
-    const content = `# ${post.title}\n\n${post.summary}`
+  const handleViewCoveragePost = async (post: CoveragePost) => {
+    // Fetch full post detail from API
+    let fullSummary = post.summary
+    try {
+      const detail = await api.get<{ post: Record<string, unknown> }>(`/api/coverage/${post.id}`)
+      if (detail.post?.summary) {
+        fullSummary = String(detail.post.summary)
+      }
+    } catch {
+      // Fall back to summary from list
+    }
+
+    const content = `# ${post.title}\n\n${fullSummary}`
     const wordCount = content.split(/\s+/).length
     const sentences = content.split(/[.!?]+/).length - 1
     const parsedFiles = parseMultiFileContent(content)
@@ -76,6 +91,25 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
     })
     useForgeStore.getState().setInput({ topic: post.title })
     setSearchParams({ tab: 'run' })
+  }
+
+  const handleCopy = (e: React.MouseEvent, post: CoveragePost) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(`${post.title}\n\n${post.summary}`)
+    setCopiedId(post.id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleDownload = (e: React.MouseEvent, post: CoveragePost) => {
+    e.stopPropagation()
+    const content = `${post.title}\n\n${post.summary}`
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${post.title.replace(/[^a-z0-9]+/gi, '-').slice(0, 60)}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // Fetch history items
@@ -107,7 +141,6 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
 
   // Fetch coverage posts independently (don't block main loading)
   useEffect(() => {
-    const isAutomated = 'mode' in flow && (flow.mode === 'automated' || flow.mode === 'both')
     if (!isAutomated) return
 
     const controller = new AbortController()
@@ -176,7 +209,7 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
   const hasManualRuns = historyItems.length > 0
   const hasAutomatedPosts = coveragePosts.length > 0
 
-  const isAutomatedOnly = 'mode' in flow && flow.mode === 'automated'
+  const isAutomatedOnly = 'mode' in flow && (flow as any).mode === 'automated'
 
   if (!hasManualRuns && !hasAutomatedPosts && !coverageLoading) {
     return (
@@ -265,7 +298,12 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
               <span className="text-xs text-[#cbd5e1]/60 font-normal">({filteredPosts.length})</span>
             )}
           </h3>
-          {filteredPosts.length === 0 ? (
+          {coverageLoading ? (
+            <div className="p-6 text-center">
+              <div className="w-5 h-5 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-sm text-[#cbd5e1]/60">Loading posts...</p>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <p className="text-sm text-[#cbd5e1]/60 py-4">No results match your search</p>
           ) : (
             <div className="space-y-2">
@@ -285,20 +323,49 @@ export function FlowHistoryTab({ flow, workflowId }: FlowHistoryTabProps) {
                       }`}>
                         {post.status}
                       </span>
-                      <span className="text-xs text-[#10b981] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                        <Eye className="size-3" /> View
+                      <span className="px-2 py-0.5 text-xs rounded font-medium bg-[#6366f1]/20 text-[#a5b4fc]">
+                        Coverage
                       </span>
+                      {post.cmsUrl && (
+                        <a
+                          href={post.cmsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-[#10b981] flex items-center gap-1 hover:underline"
+                        >
+                          <Eye className="size-3" /> View
+                        </a>
+                      )}
                       <span className="text-xs text-[#cbd5e1]/60 whitespace-nowrap">{timeAgo(post.createdAt)}</span>
                     </div>
                   </div>
                   <p className="text-sm text-[#cbd5e1] line-clamp-2">
                     {post.summary?.slice(0, 200)}
                   </p>
-                  {post.agentName && (
-                    <div className="flex gap-3 mt-2 text-xs text-[#cbd5e1]/50">
-                      <span>{post.agentName}</span>
+                  <div className="flex items-center justify-between mt-2">
+                    {post.category && (
+                      <span className="text-xs text-[#cbd5e1]/50">{post.category}</span>
+                    )}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                      <span
+                        onClick={(e) => handleCopy(e, post)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-white/10 text-[#cbd5e1] transition-colors cursor-pointer"
+                      >
+                        {copiedId === post.id ? <Check className="size-3 text-[#10b981]" /> : <Copy className="size-3" />}
+                        {copiedId === post.id ? 'Copied' : 'Copy'}
+                      </span>
+                      <span
+                        onClick={(e) => handleDownload(e, post)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-white/10 text-[#cbd5e1] transition-colors cursor-pointer"
+                      >
+                        <Download className="size-3" /> Download
+                      </span>
+                      <span className="flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-white/10 text-[#10b981] transition-colors cursor-pointer">
+                        <Eye className="size-3" /> Open
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </button>
               ))}
             </div>

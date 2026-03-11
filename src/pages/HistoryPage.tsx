@@ -16,6 +16,7 @@ interface CoveragePost {
   createdAt: string
   agentName?: string
   workflowId?: string
+  workflowName?: string
 }
 
 type UnifiedItem =
@@ -175,7 +176,7 @@ export default function HistoryPage() {
       if (entry.kind === 'history') {
         key = entry.data.workflowName || 'Ungrouped'
       } else {
-        key = entry.data.agentName || 'Coverage Pipeline'
+        key = entry.data.workflowName || entry.data.agentName || 'Coverage Pipeline'
       }
       if (!groups[key]) groups[key] = []
       groups[key].push(entry)
