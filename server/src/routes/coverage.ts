@@ -19,7 +19,7 @@ const router = Router()
 // Helper: format a raw coverage post row to camelCase for the frontend
 // ---------------------------------------------------------------------------
 function formatPost(row: Record<string, unknown>) {
-  return {
+  const post: Record<string, unknown> = {
     id: row.id,
     agentId: row.agent_id,
     title: row.title,
@@ -30,15 +30,16 @@ function formatPost(row: Record<string, unknown>) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     agentName: row.agent_name,
-    sourceCount: row.source_count,
-    imageSquare: row.image_square,
-    imageLandscape: row.image_landscape,
-    imageVertical: row.image_vertical,
-    imageHeadline: row.image_headline,
     workflowId: row.workflow_id,
     workflowName: row.workflow_name,
     cmsUrl: row.cms_url,
   }
+  if (row.source_count !== undefined) post.sourceCount = row.source_count
+  if (row.image_square) post.imageSquare = row.image_square
+  if (row.image_landscape) post.imageLandscape = row.image_landscape
+  if (row.image_vertical) post.imageVertical = row.image_vertical
+  if (row.image_headline) post.imageHeadline = row.image_headline
+  return post
 }
 
 // ---------------------------------------------------------------------------
@@ -51,9 +52,9 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
     const offset = Math.max(0, parseInt(String(req.query.offset || '0'), 10))
 
     const buildQuery = (useAgentIdFallback: boolean) => {
-      let sql = `SELECT cp.id, cp.agent_id, cp.title, cp.slug, cp.summary, cp.category,
+      let sql = `SELECT cp.id, cp.agent_id, cp.title, cp.slug,
+        LEFT(cp.summary, 300) as summary, cp.category,
         cp.status, cp.created_at, cp.updated_at, cp.workflow_id,
-        cp.image_square, cp.image_landscape, cp.image_vertical, cp.image_headline,
         cp.cms_url,
         a.name as agent_name,
         w.name as workflow_name

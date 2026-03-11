@@ -31,3 +31,4 @@ server/dist/
 *.njsproj
 *.sln
 *.sw?
+config.bat
