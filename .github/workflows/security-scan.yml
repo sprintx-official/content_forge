@@ -18,532 +18,278 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Security Scanner
-        id: scan
+      - name: "Check: Committed secret files"
+        id: secrets_files
         shell: bash
         run: |
-          echo "## Security Scan Results" > $GITHUB_STEP_SUMMARY
-          FAILED=0
-          WARNINGS=0
-
-          # ============================================================
-          # 1. COMMITTED .env FILES
-          #    Detects .env files that should never be in the repo
-          # ============================================================
           echo "### Committed Secrets Files" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
 
           ENV_FILES=$(find . -maxdepth 5 -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/.next/*" -not -path "*/dist/*" -not -path "*/build/*" \
             \( -name ".env" -o -name ".env.local" -o -name ".env.production" -o -name ".env.staging" \
             -o -name ".env.development" -o -name ".env.prod" -o -name ".env.dev" \
-            -o -name ".env.production.local" -o -name ".env.development.local" \
-            -o -name ".env.test.local" \) 2>/dev/null)
+            -o -name ".env.production.local" -o -name ".env.development.local" -o -name ".env.test.local" \) 2>/dev/null || true)
 
-          if [ -n "$ENV_FILES" ]; then
-            for file in $ENV_FILES; do
-              # Skip if it's a .env.example or .env.sample or .env.template
-              if echo "$file" | grep -qiE '\.(example|sample|template)$'; then
-                continue
-              fi
-              echo "::error file=$file::COMMITTED SECRET: $file should not be in the repository"
-              echo "- BLOCKED: \`$file\` is committed — this file likely contains secrets" >> $GITHUB_STEP_SUMMARY
-              FAILED=1
-            done
-          fi
+          for file in $ENV_FILES; do
+            echo "$file" | grep -qiE '\.(example|sample|template)$' && continue
+            echo "::error file=$file::COMMITTED SECRET: $file should not be in the repository"
+            echo "- BLOCKED: \`$file\` committed — likely contains secrets" >> $GITHUB_STEP_SUMMARY
+            FAILED=1
+          done
 
-          # Also check for other secret files
           SECRET_FILES=$(find . -maxdepth 5 -not -path "*/.git/*" -not -path "*/node_modules/*" \
             \( -name "*.pem" -o -name "*.key" -o -name "*.p12" -o -name "*.pfx" \
-            -o -name "*.jks" -o -name "*.keystore" -o -name "id_rsa" -o -name "id_ed25519" \
-            -o -name "id_dsa" -o -name ".htpasswd" -o -name "credentials.json" \
-            -o -name "service-account*.json" -o -name "*-credentials.json" \
-            -o -name "firebase-adminsdk*.json" \) 2>/dev/null)
+            -o -name "*.jks" -o -name "id_rsa" -o -name "id_ed25519" -o -name ".htpasswd" \
+            -o -name "credentials.json" -o -name "service-account*.json" \
+            -o -name "firebase-adminsdk*.json" \) 2>/dev/null || true)
 
-          if [ -n "$SECRET_FILES" ]; then
-            for file in $SECRET_FILES; do
-              echo "::error file=$file::COMMITTED SECRET: $file likely contains credentials"
-              echo "- BLOCKED: \`$file\` likely contains credentials/keys" >> $GITHUB_STEP_SUMMARY
-              FAILED=1
-            done
-          fi
+          for file in $SECRET_FILES; do
+            echo "::error file=$file::COMMITTED SECRET: $file likely contains credentials"
+            echo "- BLOCKED: \`$file\` likely contains credentials" >> $GITHUB_STEP_SUMMARY
+            FAILED=1
+          done
 
-          if [ $FAILED -eq 0 ]; then
-            echo "- No committed secret files found" >> $GITHUB_STEP_SUMMARY
-          fi
+          [ $FAILED -eq 0 ] && echo "- No committed secret files found" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
 
-          # ============================================================
-          # 2. PostCSS / CONFIG FILE MALWARE
-          #    Catches obfuscation, C2 patterns, and supply chain injection
-          # ============================================================
+      - name: "Check: Config file malware"
+        id: config_malware
+        shell: bash
+        run: |
           echo "### Config File Malware Scan" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
 
           CONFIG_FILES=$(find . -maxdepth 4 \
             \( -name "postcss.config.*" -o -name "*.config.js" -o -name "*.config.mjs" \
-            -o -name "*.config.cjs" -o -name "*.config.ts" -o -name ".babelrc.js" \
-            -o -name "jest.config.*" -o -name "webpack.config.*" -o -name "vite.config.*" \
-            -o -name "rollup.config.*" -o -name "next.config.*" -o -name "nuxt.config.*" \
-            -o -name "tailwind.config.*" -o -name "tsconfig.*" -o -name ".eslintrc.*" \) \
-            -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null)
+            -o -name "*.config.cjs" -o -name "*.config.ts" -o -name "webpack.config.*" \
+            -o -name "vite.config.*" -o -name "rollup.config.*" -o -name "next.config.*" \
+            -o -name "nuxt.config.*" -o -name "tailwind.config.*" \) \
+            -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null || true)
 
-          CONFIG_MALWARE=0
-          if [ -n "$CONFIG_FILES" ]; then
-            for file in $CONFIG_FILES; do
-              # Known malware obfuscation markers
-              if grep -qE '_\$_[a-zA-Z0-9]{4}|_\$[a-z]{2}[0-9]+|global\[.!\.\]|sfL\(|joW\(|dgC\(' "$file" 2>/dev/null; then
-                echo "::error file=$file::MALWARE DETECTED: Known obfuscation pattern"
-                echo "- BLOCKED: \`$file\` contains known malware patterns" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CONFIG_MALWARE=1
-              fi
+          for file in $CONFIG_FILES; do
+            if grep -qE '_\$_[a-zA-Z0-9]{4}|_\$[a-z]{2}[0-9]+|global\[.!\.\]|sfL\(|joW\(|dgC\(' "$file" 2>/dev/null; then
+              echo "::error file=$file::MALWARE DETECTED"; FAILED=1
+              echo "- BLOCKED: \`$file\` contains known malware" >> $GITHUB_STEP_SUMMARY
+            fi
+            if awk 'length > 300 && /[^ ]/ && / {50,}/' "$file" 2>/dev/null | grep -q .; then
+              echo "::error file=$file::Whitespace padding malware"; FAILED=1
+              echo "- BLOCKED: \`$file\` has suspicious whitespace padding" >> $GITHUB_STEP_SUMMARY
+            fi
+            if grep -qE '\beval\s*\(|new\s+Function\s*\(|Function\s*\(' "$file" 2>/dev/null; then
+              echo "::error file=$file::eval/Function in config"; FAILED=1
+              echo "- BLOCKED: \`$file\` uses eval()/Function()" >> $GITHUB_STEP_SUMMARY
+            fi
+            if grep -qE "require\s*\(\s*['\"]https?['\"]|require\s*\(\s*['\"]child_process['\"]|require\s*\(\s*['\"]net['\"]" "$file" 2>/dev/null; then
+              echo "::error file=$file::Network/process imports in config"; FAILED=1
+              echo "- BLOCKED: \`$file\` imports network/process modules" >> $GITHUB_STEP_SUMMARY
+            fi
+            if grep -qE '0x[a-fA-F0-9]{40,}|T[A-Za-z1-9]{33}' "$file" 2>/dev/null; then
+              echo "::error file=$file::Blockchain address in config"; FAILED=1
+              echo "- BLOCKED: \`$file\` contains blockchain addresses" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
 
-              # Excessive whitespace padding (hiding code)
-              if awk 'length > 300 && /[^ ]/ && / {50,}/' "$file" 2>/dev/null | grep -q .; then
-                echo "::error file=$file::SUSPICIOUS: Whitespace padding detected"
-                echo "- BLOCKED: \`$file\` has suspicious whitespace padding" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CONFIG_MALWARE=1
-              fi
+          [ $FAILED -eq 0 ] && echo "- All config files clean" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
 
-              # eval/Function constructor in config files
-              if grep -qE '\beval\s*\(|new\s+Function\s*\(|Function\s*\(' "$file" 2>/dev/null; then
-                echo "::error file=$file::SUSPICIOUS: eval/Function in config"
-                echo "- BLOCKED: \`$file\` uses eval() or Function() — should not be in configs" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CONFIG_MALWARE=1
-              fi
-
-              # Network/process imports in config files
-              if grep -qE "require\s*\(\s*['\"]https?['\"]|require\s*\(\s*['\"]child_process['\"]|require\s*\(\s*['\"]net['\"]|require\s*\(\s*['\"]dgram['\"]|require\s*\(\s*['\"]tls['\"]" "$file" 2>/dev/null; then
-                echo "::error file=$file::SUSPICIOUS: Network/process imports in config"
-                echo "- BLOCKED: \`$file\` imports network/process modules" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CONFIG_MALWARE=1
-              fi
-
-              # Obfuscated variable names (many in one file)
-              obf_count=$(grep -coE '_\$[a-zA-Z0-9_]{6,}' "$file" 2>/dev/null || echo 0)
-              if [ "$obf_count" -gt 3 ]; then
-                echo "::warning file=$file::SUSPICIOUS: $obf_count obfuscated variables"
-                echo "- WARNING: \`$file\` has $obf_count obfuscated variable names" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1))
-              fi
-
-              # Blockchain addresses in configs
-              if grep -qE '0x[a-fA-F0-9]{40,}|T[A-Za-z1-9]{33}' "$file" 2>/dev/null; then
-                echo "::error file=$file::SUSPICIOUS: Blockchain address in config"
-                echo "- BLOCKED: \`$file\` contains blockchain addresses" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CONFIG_MALWARE=1
-              fi
-
-              # Long base64 strings (encoded payloads)
-              if grep -qE '[A-Za-z0-9+/]{200,}={0,2}' "$file" 2>/dev/null; then
-                echo "::warning file=$file::SUSPICIOUS: Long encoded string in config"
-                echo "- WARNING: \`$file\` contains long encoded strings" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1))
-              fi
-            done
-          fi
-
-          if [ $CONFIG_MALWARE -eq 0 ]; then
-            echo "- All config files clean" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 3. .gitignore GUARD
-          # ============================================================
+      - name: "Check: .gitignore guard"
+        id: gitignore
+        shell: bash
+        run: |
           echo "### .gitignore Guard" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            GITIGNORE_DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- .gitignore 2>/dev/null || true)
-            if echo "$GITIGNORE_DIFF" | grep -qE '^\-.*\.env'; then
-              echo "::error file=.gitignore::BLOCKED: .env entries removed from .gitignore"
-              echo "- BLOCKED: PR removes \`.env*\` from \`.gitignore\` (malware indicator)" >> $GITHUB_STEP_SUMMARY
-              FAILED=1
+            DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- .gitignore 2>/dev/null || true)
+            if echo "$DIFF" | grep -qE '^\-.*\.env'; then
+              echo "::error file=.gitignore::.env entries removed"; FAILED=1
+              echo "- BLOCKED: PR removes \`.env*\` from \`.gitignore\`" >> $GITHUB_STEP_SUMMARY
             else
               echo "- .gitignore intact" >> $GITHUB_STEP_SUMMARY
             fi
           else
-            if [ -f .gitignore ]; then
-              if ! grep -qE '^\s*\.env' .gitignore 2>/dev/null; then
-                echo "::warning file=.gitignore::Missing .env entries"
-                echo "- WARNING: \`.gitignore\` does not contain \`.env\` entries" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1))
-              else
-                echo "- .gitignore has .env entries" >> $GITHUB_STEP_SUMMARY
-              fi
-            fi
-          fi
-
-          # ============================================================
-          # 4. SECRET LEAK DETECTION IN DIFF
-          #    Similar to GitGuardian / GitHub Secret Scanning
-          # ============================================================
-          echo "### Secret Leak Detection" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            DIFF_CONTENT=$(git diff origin/${{ github.base_ref }}...HEAD 2>/dev/null || true)
-          else
-            DIFF_CONTENT=$(git diff HEAD~1...HEAD 2>/dev/null || true)
-          fi
-
-          SECRET_FOUND=0
-          if [ -n "$DIFF_CONTENT" ]; then
-            # AWS keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*AKIA[0-9A-Z]{16}'; then
-              echo "::error::SECRET: AWS Access Key ID"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: AWS Access Key ID found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # AWS Secret Key
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(aws_secret_access_key|AWS_SECRET_ACCESS_KEY)\s*[=:]\s*[A-Za-z0-9/+=]{40}'; then
-              echo "::error::SECRET: AWS Secret Access Key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: AWS Secret Access Key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # OpenAI keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*sk-[A-Za-z0-9]{20,}'; then
-              echo "::error::SECRET: OpenAI API key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: OpenAI API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Anthropic keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*sk-ant-[A-Za-z0-9-]{20,}'; then
-              echo "::error::SECRET: Anthropic API key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Anthropic API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Google/GCP keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*AIza[0-9A-Za-z_-]{35}'; then
-              echo "::error::SECRET: Google API key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Google API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Stripe keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(sk_live_|rk_live_|sk_test_)[A-Za-z0-9]{20,}'; then
-              echo "::error::SECRET: Stripe key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Stripe API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Twilio
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*SK[a-f0-9]{32}'; then
-              echo "::error::SECRET: Twilio API key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Twilio API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # SendGrid
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}'; then
-              echo "::error::SECRET: SendGrid API key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: SendGrid API key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Slack tokens
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*xox[bporas]-[A-Za-z0-9-]{10,}'; then
-              echo "::error::SECRET: Slack token"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Slack token found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # GitHub tokens
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(ghp_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9]{36,}'; then
-              echo "::error::SECRET: GitHub token"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: GitHub token found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Firebase / GCP service account
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*"type"\s*:\s*"service_account"'; then
-              echo "::error::SECRET: GCP service account JSON"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: GCP service account credentials found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Private keys
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'; then
-              echo "::error::SECRET: Private key"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Private key found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Database connection strings with passwords
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(mongodb(\+srv)?|postgres(ql)?|mysql|redis|amqp)://[^\s]+:[^\s]+@'; then
-              echo "::error::SECRET: Database connection string"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: Database connection string with credentials" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # JWT secrets
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(jwt_secret|JWT_SECRET|jwt_key|JWT_KEY)\s*[=:]\s*["\x27][^\s]{8,}'; then
-              echo "::error::SECRET: JWT secret"; FAILED=1; SECRET_FOUND=1
-              echo "- BLOCKED: JWT secret found" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            # Generic high-entropy secrets
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(api_key|apikey|api_secret|secret_key|access_token|auth_token|private_key|client_secret)\s*[=:]\s*["\x27][A-Za-z0-9+/_.=-]{20,}'; then
-              echo "::warning::Potential API key or token in diff"
-              echo "- WARNING: Possible API key/token assignment detected" >> $GITHUB_STEP_SUMMARY
-              WARNINGS=$((WARNINGS+1)); SECRET_FOUND=1
-            fi
-
-            # Sentry DSN
-            if echo "$DIFF_CONTENT" | grep -qE '^\+.*https://[a-f0-9]{32}@[a-z0-9]+\.ingest\.sentry\.io'; then
-              echo "::warning::Sentry DSN found in diff"
-              echo "- WARNING: Sentry DSN found (consider using env variable)" >> $GITHUB_STEP_SUMMARY
-              WARNINGS=$((WARNINGS+1)); SECRET_FOUND=1
-            fi
-          fi
-
-          if [ $SECRET_FOUND -eq 0 ]; then
-            echo "- No secrets detected" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 5. SUSPICIOUS NPM SCRIPTS & DEPENDENCIES
-          # ============================================================
-          echo "### NPM Security Audit" >> $GITHUB_STEP_SUMMARY
-
-          NPM_ISSUES=0
-          PACKAGE_FILES=$(find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 4 2>/dev/null)
-
-          if [ -n "$PACKAGE_FILES" ]; then
-            for file in $PACKAGE_FILES; do
-              # Dangerous install scripts
-              if grep -qE '"(preinstall|postinstall|preuninstall)".*"(curl |wget |node -e|bash |sh |eval |nc |ncat )' "$file" 2>/dev/null; then
-                echo "::error file=$file::Dangerous install script"
-                echo "- BLOCKED: \`$file\` has dangerous pre/post install scripts" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; NPM_ISSUES=1
-              fi
-
-              # Typosquatting indicators - packages with suspicious names
-              if grep -qE '"(lod[a-z]sh|reacr|reqiest|axois|expresss|mongose|momnet)"' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Possible typosquat dependency"
-                echo "- WARNING: \`$file\` may have typosquat package names" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); NPM_ISSUES=1
-              fi
-            done
-          fi
-
-          if [ $NPM_ISSUES -eq 0 ]; then
-            echo "- No suspicious npm patterns found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 6. DANGEROUS CODE PATTERNS (SAST-lite)
-          #    Similar to SonarQube / Semgrep basic rules
-          # ============================================================
-          echo "### Code Security Patterns" >> $GITHUB_STEP_SUMMARY
-
-          CODE_ISSUES=0
-
-          # Only scan changed files for performance
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | grep -v node_modules || true)
-          else
-            CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD 2>/dev/null | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | grep -v node_modules || true)
-          fi
-
-          if [ -n "$CHANGED_FILES" ]; then
-            for file in $CHANGED_FILES; do
-              [ -f "$file" ] || continue
-
-              # SQL Injection - string concatenation in queries
-              if grep -nE "(query|execute|raw)\s*\(\s*['\"\`].*\\\$\{|\.query\s*\(\s*['\"].*\+\s*" "$file" 2>/dev/null | head -1 | grep -q .; then
-                echo "::warning file=$file::Potential SQL injection (string concatenation in query)"
-                echo "- WARNING: \`$file\` — possible SQL injection (use parameterized queries)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-
-              # XSS - dangerouslySetInnerHTML with dynamic content
-              if grep -qE 'dangerouslySetInnerHTML.*\{.*__html.*[^"'"'"']' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Potential XSS via dangerouslySetInnerHTML"
-                echo "- WARNING: \`$file\` — dangerouslySetInnerHTML with dynamic content" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-
-              # Command injection - exec/spawn with user input
-              if grep -nE "(exec|execSync|spawn|spawnSync)\s*\(\s*['\"\`].*\\\$\{|exec\s*\(\s*.*\+\s*" "$file" 2>/dev/null | head -1 | grep -q .; then
-                echo "::warning file=$file::Potential command injection"
-                echo "- WARNING: \`$file\` — possible command injection (use parameterized commands)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-
-              # Hardcoded credentials in source
-              if grep -nEi '(password|passwd|pwd|secret)\s*[=:]\s*["\x27][^"\x27]{8,}["\x27]' "$file" 2>/dev/null | grep -vE '(example|placeholder|changeme|password123|YOUR_|TODO|FIXME|xxx|test)' | head -1 | grep -q .; then
-                echo "::warning file=$file::Potential hardcoded credential"
-                echo "- WARNING: \`$file\` — possible hardcoded password/secret" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-
-              # Insecure crypto
-              if grep -qE "createHash\s*\(\s*['\"]md5['\"]|createHash\s*\(\s*['\"]sha1['\"]" "$file" 2>/dev/null; then
-                echo "::warning file=$file::Weak cryptographic hash (MD5/SHA1)"
-                echo "- WARNING: \`$file\` — uses MD5 or SHA1 (use SHA256+)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-
-              # Disabled TLS verification
-              if grep -qE 'rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED.*0|verify\s*=\s*False' "$file" 2>/dev/null; then
-                echo "::error file=$file::TLS verification disabled"
-                echo "- BLOCKED: \`$file\` disables TLS certificate verification" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CODE_ISSUES=1
-              fi
-
-              # Crypto mining indicators
-              if grep -qiE 'coinhive|cryptonight|stratum\+tcp|minergate|hashrate|cryptoloot' "$file" 2>/dev/null; then
-                echo "::error file=$file::Crypto mining code detected"
-                echo "- BLOCKED: \`$file\` contains crypto mining indicators" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; CODE_ISSUES=1
-              fi
-
-              # Data exfiltration patterns
-              if grep -qE '(fetch|axios|http\.request|XMLHttpRequest).*document\.cookie|(fetch|axios).*localStorage' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Potential data exfiltration"
-                echo "- WARNING: \`$file\` — sends cookies/localStorage to external endpoint" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); CODE_ISSUES=1
-              fi
-            done
-          fi
-
-          if [ $CODE_ISSUES -eq 0 ]; then
-            echo "- No dangerous code patterns found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 7. DOCKER / INFRASTRUCTURE SECURITY
-          # ============================================================
-          echo "### Infrastructure Security" >> $GITHUB_STEP_SUMMARY
-
-          INFRA_ISSUES=0
-          DOCKERFILES=$(find . -maxdepth 3 -name "Dockerfile*" -o -name "docker-compose*.yml" -o -name "docker-compose*.yaml" 2>/dev/null | grep -v node_modules)
-
-          if [ -n "$DOCKERFILES" ]; then
-            for file in $DOCKERFILES; do
-              # Running as root
-              if grep -qiE '^\s*USER\s+root\s*$' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Container runs as root"
-                echo "- WARNING: \`$file\` runs container as root" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); INFRA_ISSUES=1
-              fi
-
-              # Privileged mode
-              if grep -qE 'privileged:\s*true' "$file" 2>/dev/null; then
-                echo "::error file=$file::Container uses privileged mode"
-                echo "- BLOCKED: \`$file\` uses privileged mode" >> $GITHUB_STEP_SUMMARY
-                FAILED=1; INFRA_ISSUES=1
-              fi
-
-              # Secrets in Dockerfile
-              if grep -qEi '(ENV|ARG).*(PASSWORD|SECRET|API_KEY|TOKEN|PRIVATE_KEY)\s*=' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Secrets in Dockerfile ENV/ARG"
-                echo "- WARNING: \`$file\` has secrets in ENV/ARG (use build secrets)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); INFRA_ISSUES=1
-              fi
-
-              # Latest tag
-              if grep -qE '^FROM\s+\S+:latest' "$file" 2>/dev/null; then
-                echo "::warning file=$file::Uses :latest tag"
-                echo "- WARNING: \`$file\` uses :latest tag (pin specific version)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1)); INFRA_ISSUES=1
-              fi
-            done
-          fi
-
-          # GitHub Actions workflow security
-          WORKFLOW_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null)
-          if [ -n "$WORKFLOW_FILES" ]; then
-            for file in $WORKFLOW_FILES; do
-              # Untrusted input in run commands (injection via PR title/body)
-              if grep -qE '\$\{\{\s*github\.event\.(pull_request\.(title|body)|issue\.(title|body)|comment\.body|review\.body)' "$file" 2>/dev/null; then
-                if grep -qE 'run:' "$file" 2>/dev/null; then
-                  echo "::warning file=$file::Potential Actions injection"
-                  echo "- WARNING: \`$file\` may use untrusted input in run commands" >> $GITHUB_STEP_SUMMARY
-                  WARNINGS=$((WARNINGS+1)); INFRA_ISSUES=1
-                fi
-              fi
-
-              # pull_request_target with checkout (dangerous)
-              if grep -qE 'pull_request_target' "$file" 2>/dev/null; then
-                if grep -qE 'actions/checkout.*ref.*pull_request' "$file" 2>/dev/null; then
-                  echo "::error file=$file::Dangerous pull_request_target + checkout"
-                  echo "- BLOCKED: \`$file\` uses pull_request_target with PR checkout (code execution risk)" >> $GITHUB_STEP_SUMMARY
-                  FAILED=1; INFRA_ISSUES=1
-                fi
-              fi
-            done
-          fi
-
-          if [ $INFRA_ISSUES -eq 0 ]; then
-            echo "- No infrastructure security issues found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 8. LARGE / SUSPICIOUS FILES
-          # ============================================================
-          echo "### Suspicious Files" >> $GITHUB_STEP_SUMMARY
-
-          LARGE_ISSUES=0
-
-          # Binary files in unexpected places
-          SUSPICIOUS_BINS=$(find . -maxdepth 4 -not -path "*/.git/*" -not -path "*/node_modules/*" \
-            -not -path "*/public/*" -not -path "*/assets/*" -not -path "*/static/*" \
-            \( -name "*.exe" -o -name "*.dll" -o -name "*.so" -o -name "*.dylib" \
-            -o -name "*.bin" -o -name "*.dat" \) 2>/dev/null)
-
-          if [ -n "$SUSPICIOUS_BINS" ]; then
-            for file in $SUSPICIOUS_BINS; do
-              echo "::warning file=$file::Binary file in source tree"
-              echo "- WARNING: \`$file\` — binary file should not be in source" >> $GITHUB_STEP_SUMMARY
-              WARNINGS=$((WARNINGS+1)); LARGE_ISSUES=1
-            done
-          fi
-
-          # Minified/obfuscated JS not in expected dirs
-          OBFUSCATED=$(find . -maxdepth 3 -name "*.js" \
-            -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/build/*" \
-            -not -path "*/.next/*" -not -path "*/public/*" -not -path "*/static/*" \
-            -not -path "*/.git/*" -not -name "*.min.js" \
-            -exec sh -c 'lines=$(wc -l < "$1"); chars=$(wc -c < "$1"); if [ "$lines" -lt 5 ] && [ "$chars" -gt 10000 ]; then echo "$1 ($chars bytes, $lines lines)"; fi' _ {} \; 2>/dev/null)
-
-          if [ -n "$OBFUSCATED" ]; then
-            echo "::warning::Potentially obfuscated JavaScript files found"
-            echo "$OBFUSCATED" | while read f; do
-              echo "- WARNING: Obfuscated JS: \`$f\`" >> $GITHUB_STEP_SUMMARY
-            done
-            WARNINGS=$((WARNINGS+1)); LARGE_ISSUES=1
-          fi
-
-          if [ $LARGE_ISSUES -eq 0 ]; then
-            echo "- No suspicious files found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # ============================================================
-          # 9. DEPENDENCY VULNERABILITY CHECK
-          # ============================================================
-          echo "### Dependency Audit" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f "package-lock.json" ] || [ -f "yarn.lock" ] || [ -f "pnpm-lock.yaml" ]; then
-            if [ -f "package-lock.json" ]; then
-              AUDIT_OUTPUT=$(npm audit --json 2>/dev/null || true)
-              CRITICAL=$(echo "$AUDIT_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); v=d.get('metadata',{}).get('vulnerabilities',{}); print(v.get('critical',0)+v.get('high',0))" 2>/dev/null || echo "0")
-              TOTAL=$(echo "$AUDIT_OUTPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('metadata',{}).get('vulnerabilities',{}).get('total',0))" 2>/dev/null || echo "0")
-
-              if [ "$CRITICAL" -gt 0 ]; then
-                echo "::warning::$CRITICAL critical/high vulnerabilities in dependencies"
-                echo "- WARNING: $CRITICAL critical/high dependency vulnerabilities (run \`npm audit fix\`)" >> $GITHUB_STEP_SUMMARY
-                WARNINGS=$((WARNINGS+1))
-              fi
-
-              if [ "$TOTAL" -gt 0 ]; then
-                echo "- $TOTAL total dependency vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "- No known dependency vulnerabilities" >> $GITHUB_STEP_SUMMARY
-              fi
+            if [ -f .gitignore ] && ! grep -qE '^\s*\.env' .gitignore 2>/dev/null; then
+              echo "::warning file=.gitignore::Missing .env entries"
+              echo "- WARNING: \`.gitignore\` missing \`.env\` entries" >> $GITHUB_STEP_SUMMARY
             else
-              echo "- Lock file found but audit skipped (non-npm)" >> $GITHUB_STEP_SUMMARY
+              echo "- .gitignore OK" >> $GITHUB_STEP_SUMMARY
             fi
+          fi
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: "Check: Secret leaks in diff"
+        id: secret_leaks
+        shell: bash
+        run: |
+          echo "### Secret Leak Detection" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            DIFF=$(git diff origin/${{ github.base_ref }}...HEAD 2>/dev/null || true)
           else
-            echo "- No lock file found (skipped)" >> $GITHUB_STEP_SUMMARY
+            DIFF=$(git diff HEAD~1...HEAD 2>/dev/null || true)
           fi
 
-          # ============================================================
-          # FINAL RESULT
-          # ============================================================
-          echo "" >> $GITHUB_STEP_SUMMARY
+          check_secret() {
+            local pattern="$1" label="$2" block="$3"
+            if echo "$DIFF" | grep -qE "$pattern"; then
+              if [ "$block" = "1" ]; then
+                echo "::error::SECRET: $label"; FAILED=1
+                echo "- BLOCKED: $label found" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "::warning::$label"
+                echo "- WARNING: $label" >> $GITHUB_STEP_SUMMARY
+              fi
+              return 0
+            fi
+            return 1
+          }
+
+          check_secret '^\+.*AKIA[0-9A-Z]{16}' "AWS Access Key ID" 1
+          check_secret '^\+.*sk-[A-Za-z0-9]{20,}' "OpenAI API key" 1
+          check_secret '^\+.*sk-ant-[A-Za-z0-9-]{20,}' "Anthropic API key" 1
+          check_secret '^\+.*AIza[0-9A-Za-z_-]{35}' "Google API key" 1
+          check_secret '^\+.*(sk_live_|rk_live_|sk_test_)[A-Za-z0-9]{20,}' "Stripe key" 1
+          check_secret '^\+.*SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}' "SendGrid API key" 1
+          check_secret '^\+.*xox[bporas]-[A-Za-z0-9-]{10,}' "Slack token" 1
+          check_secret '^\+.*(ghp_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9]{36,}' "GitHub token" 1
+          check_secret '^\+.*-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----' "Private key" 1
+          check_secret '^\+.*(mongodb(\+srv)?|postgres(ql)?|mysql|redis|amqp)://[^ ]+:[^ ]+@' "Database connection string" 1
+          check_secret '^\+.*"type"\s*:\s*"service_account"' "GCP service account" 1
+          check_secret '^\+.*SK[a-f0-9]{32}' "Twilio API key" 1
+
+          [ $FAILED -eq 0 ] && echo "- No secrets detected" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: "Check: NPM security"
+        id: npm_security
+        shell: bash
+        run: |
+          echo "### NPM Security" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
+
+          PKGS=$(find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 4 2>/dev/null || true)
+          for file in $PKGS; do
+            if grep -qE '"(preinstall|postinstall|preuninstall)".*"(curl |wget |node -e|bash |sh |eval |nc )' "$file" 2>/dev/null; then
+              echo "::error file=$file::Dangerous install script"; FAILED=1
+              echo "- BLOCKED: \`$file\` has dangerous install scripts" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          [ $FAILED -eq 0 ] && echo "- No suspicious npm patterns" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: "Check: Code security patterns (SAST)"
+        id: sast
+        shell: bash
+        run: |
+          echo "### Code Security (SAST)" >> $GITHUB_STEP_SUMMARY
+          FAILED=0; WARNS=0
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | grep -v node_modules || true)
+          else
+            FILES=$(git diff --name-only HEAD~1...HEAD 2>/dev/null | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | grep -v node_modules || true)
+          fi
+
+          for file in $FILES; do
+            [ -f "$file" ] || continue
+
+            if grep -qE 'rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED.*0' "$file" 2>/dev/null; then
+              echo "::error file=$file::TLS verification disabled"; FAILED=1
+              echo "- BLOCKED: \`$file\` disables TLS verification" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if grep -qiE 'coinhive|cryptonight|stratum\+tcp|minergate|cryptoloot' "$file" 2>/dev/null; then
+              echo "::error file=$file::Crypto mining code"; FAILED=1
+              echo "- BLOCKED: \`$file\` contains crypto mining code" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if grep -nE "(exec|execSync|spawn)\s*\(\s*['\"\`].*\\\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
+              echo "::warning file=$file::Potential command injection"; WARNS=$((WARNS+1))
+              echo "- WARNING: \`$file\` possible command injection" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if grep -nE "(query|execute|raw)\s*\(\s*['\"\`].*\\\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
+              echo "::warning file=$file::Potential SQL injection"; WARNS=$((WARNS+1))
+              echo "- WARNING: \`$file\` possible SQL injection" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if grep -qE "createHash\s*\(\s*['\"]md5['\"]" "$file" 2>/dev/null; then
+              echo "::warning file=$file::Weak hash (MD5)"; WARNS=$((WARNS+1))
+              echo "- WARNING: \`$file\` uses MD5" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          [ $FAILED -eq 0 ] && [ $WARNS -eq 0 ] && echo "- No code security issues" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: "Check: Docker & infra security"
+        id: infra
+        shell: bash
+        run: |
+          echo "### Infrastructure Security" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
+
+          DFILES=$(find . -maxdepth 3 \( -name "Dockerfile*" -o -name "docker-compose*.yml" -o -name "docker-compose*.yaml" \) -not -path "*/node_modules/*" 2>/dev/null || true)
+          for file in $DFILES; do
+            if grep -qE 'privileged:\s*true' "$file" 2>/dev/null; then
+              echo "::error file=$file::Privileged container"; FAILED=1
+              echo "- BLOCKED: \`$file\` uses privileged mode" >> $GITHUB_STEP_SUMMARY
+            fi
+            if grep -qEi '(ENV|ARG).*(PASSWORD|SECRET|API_KEY|TOKEN)\s*=' "$file" 2>/dev/null; then
+              echo "::warning file=$file::Secrets in Dockerfile"
+              echo "- WARNING: \`$file\` has secrets in ENV/ARG" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          WFILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null || true)
+          for file in $WFILES; do
+            if grep -qE 'pull_request_target' "$file" 2>/dev/null && grep -qE 'actions/checkout' "$file" 2>/dev/null; then
+              echo "::warning file=$file::pull_request_target with checkout"
+              echo "- WARNING: \`$file\` uses pull_request_target + checkout" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          [ $FAILED -eq 0 ] && echo "- No infrastructure issues" >> $GITHUB_STEP_SUMMARY
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: "Check: Suspicious files"
+        id: suspicious
+        shell: bash
+        run: |
+          echo "### Suspicious Files" >> $GITHUB_STEP_SUMMARY
+          FOUND=0
+
+          BINS=$(find . -maxdepth 4 -not -path "*/.git/*" -not -path "*/node_modules/*" \
+            -not -path "*/public/*" -not -path "*/assets/*" -not -path "*/static/*" \
+            \( -name "*.exe" -o -name "*.dll" -o -name "*.so" -o -name "*.dylib" \) 2>/dev/null || true)
+
+          for file in $BINS; do
+            echo "::warning file=$file::Binary in source tree"; FOUND=1
+            echo "- WARNING: \`$file\` binary should not be in source" >> $GITHUB_STEP_SUMMARY
+          done
+
+          [ $FOUND -eq 0 ] && echo "- No suspicious files" >> $GITHUB_STEP_SUMMARY
+
+      - name: "Final result"
+        if: always()
+        shell: bash
+        run: |
           echo "---" >> $GITHUB_STEP_SUMMARY
-          if [ $FAILED -ne 0 ]; then
-            echo "### SCAN FAILED — $FAILED blocking issues found" >> $GITHUB_STEP_SUMMARY
+          TOTAL_FAILED=0
+
+          [ "${{ steps.secrets_files.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.config_malware.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.gitignore.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.secret_leaks.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.npm_security.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.sast.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+          [ "${{ steps.infra.outputs.failed }}" = "1" ] && TOTAL_FAILED=$((TOTAL_FAILED+1))
+
+          if [ $TOTAL_FAILED -gt 0 ]; then
+            echo "### SCAN FAILED — $TOTAL_FAILED check(s) have blocking issues" >> $GITHUB_STEP_SUMMARY
             exit 1
-          elif [ $WARNINGS -gt 0 ]; then
-            echo "### SCAN PASSED with $WARNINGS warnings" >> $GITHUB_STEP_SUMMARY
           else
             echo "### All checks passed" >> $GITHUB_STEP_SUMMARY
           fi
