@@ -1,8 +1,253 @@
-name: Security Scan
+name: Security Scanner
+
 on:
   pull_request:
   push:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
-  security:
-    uses: sprintx-official/security-scanner/.github/workflows/reusable-security-scan.yml@main
+  malware-scan:
+    name: Malware & Supply Chain Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Security Scanner
+        id: scan
+        shell: bash
+        run: |
+          echo "## Security Scan Results" > $GITHUB_STEP_SUMMARY
+          FAILED=0
+
+          # ============================================================
+          # 1. PostCSS config malware detection
+          #    Catches the exact obfuscation patterns from the incident
+          # ============================================================
+          echo "### PostCSS Config Scan" >> $GITHUB_STEP_SUMMARY
+
+          POSTCSS_FILES=$(find . -name "postcss.config.*" -o -name "postcss.config.js" -o -name "postcss.config.mjs" -o -name "postcss.config.cjs" 2>/dev/null)
+
+          if [ -n "$POSTCSS_FILES" ]; then
+            for file in $POSTCSS_FILES; do
+              # Check for known obfuscation markers
+              if grep -qE '_\$_[a-zA-Z0-9]{4}|_\$[a-z]{2}[0-9]+|global\[.!\.\]|sfL\(|joW\(|dgC\(' "$file" 2>/dev/null; then
+                echo "::error file=$file::MALWARE DETECTED: Known obfuscation pattern found in $file"
+                echo "- BLOCKED: \`$file\` contains known malware obfuscation patterns" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+
+              # Check for excessive trailing whitespace (padding technique)
+              if awk 'length > 300 && /[^ ]/ && / {50,}/' "$file" | grep -q .; then
+                echo "::error file=$file::SUSPICIOUS: Excessive whitespace padding detected in $file"
+                echo "- BLOCKED: \`$file\` contains suspicious whitespace padding (malware hiding technique)" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+
+              # Check for encoded/obfuscated strings in config files
+              if grep -qE 'String\.fromCharCode|\\x[0-9a-fA-F]{2}|eval\(|Function\(' "$file" 2>/dev/null; then
+                echo "::error file=$file::SUSPICIOUS: Obfuscated code in config file $file"
+                echo "- BLOCKED: \`$file\` contains obfuscated code (eval/fromCharCode/Function constructor)" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+
+              # Check for network/child_process imports in config files
+              if grep -qE "require\(['\"]https?['\"\)]|require\(['\"]child_process['\"\)]|require\(['\"]net['\"\)]|require\(['\"]dgram['\"\)]" "$file" 2>/dev/null; then
+                echo "::error file=$file::SUSPICIOUS: Network or process imports in config file $file"
+                echo "- BLOCKED: \`$file\` imports network/process modules (should not be in a config)" >> $GITHUB_STEP_SUMMARY
+                FAILED=1
+              fi
+            done
+
+            if [ $FAILED -eq 0 ]; then
+              echo "- All PostCSS config files are clean" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- No PostCSS config files found (skipped)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # ============================================================
+          # 2. Config file integrity check
+          #    Scans all JS/TS config files for suspicious patterns
+          # ============================================================
+          echo "### Config File Integrity" >> $GITHUB_STEP_SUMMARY
+
+          CONFIG_FILES=$(find . -maxdepth 3 \
+            \( -name "*.config.js" -o -name "*.config.mjs" -o -name "*.config.cjs" \
+            -o -name "*.config.ts" -o -name ".babelrc.js" -o -name "jest.config.*" \
+            -o -name "webpack.config.*" -o -name "vite.config.*" -o -name "rollup.config.*" \
+            -o -name "next.config.*" -o -name "nuxt.config.*" \) \
+            -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null)
+
+          CONFIG_ISSUES=0
+          if [ -n "$CONFIG_FILES" ]; then
+            for file in $CONFIG_FILES; do
+              # Check for obfuscated variable names (common in supply chain attacks)
+              if grep -cE '_\$[a-zA-Z0-9_]{6,}' "$file" 2>/dev/null | grep -qv '^0$'; then
+                count=$(grep -cE '_\$[a-zA-Z0-9_]{6,}' "$file" 2>/dev/null)
+                if [ "$count" -gt 3 ]; then
+                  echo "::warning file=$file::SUSPICIOUS: $count obfuscated variable names found in $file"
+                  echo "- WARNING: \`$file\` has $count obfuscated variable names" >> $GITHUB_STEP_SUMMARY
+                  CONFIG_ISSUES=1
+                fi
+              fi
+
+              # Check for base64-encoded strings longer than 100 chars
+              if grep -qE '[A-Za-z0-9+/]{100,}={0,2}' "$file" 2>/dev/null; then
+                echo "::warning file=$file::SUSPICIOUS: Long base64-like string in config file $file"
+                echo "- WARNING: \`$file\` contains long encoded strings" >> $GITHUB_STEP_SUMMARY
+                CONFIG_ISSUES=1
+              fi
+
+              # Blockchain/crypto addresses in config files
+              if grep -qE '0x[a-fA-F0-9]{40,}|T[A-Za-z1-9]{33}' "$file" 2>/dev/null; then
+                echo "::warning file=$file::SUSPICIOUS: Blockchain address found in config file $file"
+                echo "- WARNING: \`$file\` contains blockchain addresses" >> $GITHUB_STEP_SUMMARY
+                CONFIG_ISSUES=1
+              fi
+            done
+          fi
+
+          if [ $CONFIG_ISSUES -eq 0 ]; then
+            echo "- All config files look clean" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # ============================================================
+          # 3. .gitignore guard
+          #    Alerts if .env* entries are removed
+          # ============================================================
+          echo "### .gitignore Guard" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            GITIGNORE_DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- .gitignore 2>/dev/null || true)
+            if echo "$GITIGNORE_DIFF" | grep -qE '^\-.*\.env'; then
+              echo "::error file=.gitignore::BLOCKED: .env entries removed from .gitignore"
+              echo "- BLOCKED: PR removes \`.env*\` entries from \`.gitignore\` — this is a known malware indicator" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+            else
+              echo "- .gitignore is intact" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            # On push, just verify .env* is in .gitignore
+            if [ -f .gitignore ]; then
+              if ! grep -qE '\.env' .gitignore 2>/dev/null; then
+                echo "::warning file=.gitignore::Missing .env entries in .gitignore"
+                echo "- WARNING: \`.gitignore\` does not contain \`.env\` entries" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "- .gitignore contains .env entries" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          fi
+
+          # ============================================================
+          # 4. Secret leak detection in diff
+          #    Scans changed files for API keys, tokens, passwords
+          # ============================================================
+          echo "### Secret Leak Detection" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            DIFF_CONTENT=$(git diff origin/${{ github.base_ref }}...HEAD 2>/dev/null || true)
+          else
+            DIFF_CONTENT=$(git diff HEAD~1...HEAD 2>/dev/null || true)
+          fi
+
+          SECRET_FOUND=0
+          if [ -n "$DIFF_CONTENT" ]; then
+            # AWS keys
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*AKIA[0-9A-Z]{16}'; then
+              echo "::error::SECRET LEAK: AWS Access Key ID detected in diff"
+              echo "- BLOCKED: AWS Access Key ID found in changed files" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+
+            # Generic API keys/tokens (long hex or base64 strings assigned to key-like variables)
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(api_key|apikey|api_secret|secret_key|access_token|auth_token|private_key)\s*[=:]\s*["\x27][A-Za-z0-9+/_.=-]{20,}'; then
+              echo "::warning::Potential API key or token found in diff"
+              echo "- WARNING: Possible API key/token assignment detected in changed files" >> $GITHUB_STEP_SUMMARY
+              SECRET_FOUND=1
+            fi
+
+            # OpenAI keys
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*sk-[A-Za-z0-9]{20,}'; then
+              echo "::error::SECRET LEAK: OpenAI API key detected in diff"
+              echo "- BLOCKED: OpenAI API key found in changed files" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+
+            # Anthropic keys
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*sk-ant-[A-Za-z0-9-]{20,}'; then
+              echo "::error::SECRET LEAK: Anthropic API key detected in diff"
+              echo "- BLOCKED: Anthropic API key found in changed files" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+
+            # Google/GCP keys
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*AIza[0-9A-Za-z_-]{35}'; then
+              echo "::error::SECRET LEAK: Google API key detected in diff"
+              echo "- BLOCKED: Google API key found in changed files" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+
+            # Private keys
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'; then
+              echo "::error::SECRET LEAK: Private key detected in diff"
+              echo "- BLOCKED: Private key found in changed files" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+
+            # Connection strings
+            if echo "$DIFF_CONTENT" | grep -qE '^\+.*(mongodb(\+srv)?|postgres(ql)?|mysql|redis)://[^\s]+:[^\s]+@'; then
+              echo "::error::SECRET LEAK: Database connection string with credentials detected"
+              echo "- BLOCKED: Database connection string with credentials found" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+              SECRET_FOUND=1
+            fi
+          fi
+
+          if [ $SECRET_FOUND -eq 0 ]; then
+            echo "- No secrets detected in diff" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # ============================================================
+          # 5. Suspicious npm script detection
+          # ============================================================
+          echo "### NPM Script Audit" >> $GITHUB_STEP_SUMMARY
+
+          NPM_ISSUES=0
+          PACKAGE_FILES=$(find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 3 2>/dev/null)
+
+          if [ -n "$PACKAGE_FILES" ]; then
+            for file in $PACKAGE_FILES; do
+              # Check for suspicious preinstall/postinstall scripts
+              if grep -qE '"(preinstall|postinstall|preuninstall)".*"(curl |wget |node -e|bash |sh |eval )' "$file" 2>/dev/null; then
+                echo "::warning file=$file::SUSPICIOUS: Potentially dangerous install script in $file"
+                echo "- WARNING: \`$file\` has suspicious pre/post install scripts" >> $GITHUB_STEP_SUMMARY
+                NPM_ISSUES=1
+              fi
+            done
+          fi
+
+          if [ $NPM_ISSUES -eq 0 ]; then
+            echo "- No suspicious npm scripts found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # ============================================================
+          # Final result
+          # ============================================================
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ $FAILED -ne 0 ]; then
+            echo "### SCAN FAILED — Issues must be resolved before merge" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "### All checks passed" >> $GITHUB_STEP_SUMMARY
+          fi
