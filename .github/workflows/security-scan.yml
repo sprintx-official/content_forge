@@ -1,0 +1,10 @@
+name: Security Scan
+on:
+  pull_request:
+    branches: [main, master, production, dev, staging]
+  push:
+    branches: [main, master, production, dev, staging]
+
+jobs:
+  security:
+    uses: sprintx-official/security-scanner/.github/workflows/reusable-security-scan.yml@main
