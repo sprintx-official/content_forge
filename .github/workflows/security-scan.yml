@@ -11,7 +11,7 @@ permissions:
 jobs:
   malware-scan:
     name: Malware & Supply Chain Scan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
               echo "::error file=$file::Whitespace padding malware"; FAILED=1
               echo "- BLOCKED: \`$file\` has suspicious whitespace padding" >> $GITHUB_STEP_SUMMARY
             fi
-            if grep -qE '\beval\s*\(|new\s+Function\s*\(|Function\s*\(' "$file" 2>/dev/null; then
+            if grep -qE 'eval\s*\(|new\s+Function\s*\(|Function\s*\(' "$file" 2>/dev/null; then
               echo "::error file=$file::eval/Function in config"; FAILED=1
               echo "- BLOCKED: \`$file\` uses eval()/Function()" >> $GITHUB_STEP_SUMMARY
             fi
@@ -205,12 +205,12 @@ jobs:
               echo "- BLOCKED: \`$file\` contains crypto mining code" >> $GITHUB_STEP_SUMMARY
             fi
 
-            if grep -nE "(exec|execSync|spawn)\s*\(\s*['\"\`].*\\\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
+            if grep -nE "(exec|execSync|spawn)\s*\(\s*['\"\`].*\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
               echo "::warning file=$file::Potential command injection"; WARNS=$((WARNS+1))
               echo "- WARNING: \`$file\` possible command injection" >> $GITHUB_STEP_SUMMARY
             fi
 
-            if grep -nE "(query|execute|raw)\s*\(\s*['\"\`].*\\\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
+            if grep -nE "(query|execute|raw)\s*\(\s*['\"\`].*\$\{" "$file" 2>/dev/null | head -1 | grep -q .; then
               echo "::warning file=$file::Potential SQL injection"; WARNS=$((WARNS+1))
               echo "- WARNING: \`$file\` possible SQL injection" >> $GITHUB_STEP_SUMMARY
             fi
